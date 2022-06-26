@@ -40,7 +40,7 @@ class LocalRepositoryProvider:
 
 
 class LocalRepository:
-    def __init__(self, config, logger, file_system, store_migrator, external_drives_repository):
+    def __init__(self, config, logger, file_system, store_migrator):
         self._config = config
         self._logger = logger
         self._file_system = file_system

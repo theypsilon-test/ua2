@@ -16,5 +16,5 @@
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
 
-def migrations(config, file_system_factory, path_resolver_factory):
+def migrations():
     return []

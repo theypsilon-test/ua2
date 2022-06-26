@@ -15,25 +15,11 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from update_all.base_path_relocator import BasePathRelocator
-from update_all.certificates_fix import CertificatesFix
-from update_all.db_gateway import DbGateway
-from update_all.external_drives_repository import ExternalDrivesRepositoryFactory
-from update_all.file_downloader import make_file_downloader_factory
-from update_all.file_filter import FileFilterFactory
-from update_all.file_system import FileSystemFactory
-from update_all.full_run_service import FullRunService
-from update_all.os_utils import LinuxOsUtils
-from update_all.storage_priority_resolver import StoragePriorityResolver
-from update_all.linux_updater import LinuxUpdater
-from update_all.local_repository import LocalRepository
-from update_all.migrations import migrations
-from update_all.offline_importer import OfflineImporter
-from update_all.online_importer import OnlineImporter
-from update_all.path_resolver import PathResolverFactory
-from update_all.reboot_calculator import RebootCalculator
+
 from update_all.store_migrator import StoreMigrator
-from update_all.waiter import Waiter
+from update_all.migrations import migrations
+from update_all.local_repository import LocalRepository
+from update_all.file_system import FileSystemFactory
 
 
 class UpdateAllServiceFactory:
@@ -42,12 +28,17 @@ class UpdateAllServiceFactory:
         self._local_repository_provider = local_repository_provider
 
     def create(self, config):
-        return UpdateAllService(self._logger, self._local_repository_provider)
+        store_migrator = StoreMigrator(migrations(), self._logger)
+        file_system = FileSystemFactory(config, {}, self._logger).create_for_system_scope()
+        local_repository = LocalRepository(config, self._logger, file_system, store_migrator)
+        self._local_repository_provider.initialize(local_repository)
+        return UpdateAllService(self._logger, self._local_repository_provider, store_migrator)
 
 class UpdateAllService:
-    def __init__(self, logger, local_repository_provider):
+    def __init__(self, logger, local_repository_provider, store_migrator):
         self._logger = logger
         self._local_repository_provider = local_repository_provider
+        self._store_migrator = store_migrator
 
     def full_run(self):
         return 0

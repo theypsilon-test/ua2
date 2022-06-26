@@ -31,6 +31,10 @@ class UnreachableException(Exception):
 _calling_test_only = False
 
 
+def empty_store_without_base_path():
+    return {}
+
+
 def test_only(func):
     def wrapper(*args, **kwargs):
         if 'unittest' not in sys.modules.keys():
@@ -88,6 +92,7 @@ def _cached_method(func):
         return getattr(self, attr_name)
 
     return wrapper
+
 
 class ClosableValue:
     def __init__(self, value, callback):

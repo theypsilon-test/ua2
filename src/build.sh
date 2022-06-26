@@ -19,9 +19,9 @@ pin_metadata() {
 
 cd src
 
-find downloader -type f -iname "*.py" -print0 | while IFS= read -r -d '' file ; do pin_metadata "${file}" ; done
+find update_all -type f -iname "*.py" -print0 | while IFS= read -r -d '' file ; do pin_metadata "${file}" ; done
 pin_metadata __main__.py
-zip -q -0 -D -X -A -r "${TEMP_ZIP1}" __main__.py downloader -x "*/__pycache__/*"
+zip -q -0 -D -X -A -r "${TEMP_ZIP1}" __main__.py update_all -x "*/__pycache__/*"
 pin_metadata "${TEMP_ZIP1}"
 echo '#!/usr/bin/env python3' | cat - "${TEMP_ZIP1}" > "${TEMP_ZIP2}"
 pin_metadata "${TEMP_ZIP2}"
@@ -31,7 +31,6 @@ cd ..
 cat <<-EOF
 #!/usr/bin/env bash
 set -euo pipefail
-export DOWNLOADER_LAUNCHER_PATH="\${DOWNLOADER_LAUNCHER_PATH:-\${0}}"
 ${EXPORTS}
 ${UUDECODE_CMD} "\${0}" | xzcat -d -c > "${BIN}"
 chmod a+x "${BIN}"

@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022 José Manuel Barroso Galindo <theypsilon@gmail.com>
+# Copyright (c) 2022 José Manuel Barroso Galindo <theypsilon@gmail.com>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # You can download the latest version of this tool from:
-# https://github.com/MiSTer-devel/Downloader_MiSTer
+# https://github.com/theypsilon-test/ua2
 
 import os
 import hashlib
@@ -25,9 +25,9 @@ import tempfile
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path
-from downloader.config import AllowDelete
-from downloader.constants import K_ALLOW_DELETE, K_BASE_PATH
-from downloader.other import ClosableValue
+from update_all.config import AllowDelete
+from update_all.constants import K_ALLOW_DELETE, K_BASE_PATH
+from update_all.other import ClosableValue
 
 
 class FileSystemFactory:

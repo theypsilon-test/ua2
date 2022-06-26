@@ -21,14 +21,12 @@ from enum import unique, Enum
 
 DEFAULT_CACERT_FILE = '/etc/ssl/certs/cacert.pem'
 DEFAULT_CURL_SSL_OPTIONS = '--cacert %s' % DEFAULT_CACERT_FILE
+DEFAULT_INI_PATH = '/media/fat/Scripts/update_all.ini'
+DEFAULT_COMMIT = 'unknown'
 
 # Downloader files
-FILE_update_all_storage = 'Scripts/.config/downloader/update_all.json.zip'
-FILE_downloader_external_storage = '.downloader_db.json'
-FILE_downloader_last_successful_run = 'Scripts/.config/downloader/%s.last_successful_run'
-FILE_update_all_log = 'Scripts/.config/downloader/%s.log'
-FILE_downloader_ini = '/media/fat/update_all.ini'
-FILE_downloader_launcher_script = 'Scripts/update_all.sh'
+FILE_update_all_storage = 'Scripts/.config/update_all/update_all.json.zip'
+FILE_update_all_log = 'Scripts/.config/update_all/update_all.log'
 
 # Reboot files
 FILE_downloader_needs_reboot_after_linux_update = '/tmp/downloader_needs_reboot_after_linux_update'
@@ -91,17 +89,9 @@ K_DEFAULT_DB_ID = 'default_db_id'
 K_START_TIME = 'start_time'
 
 # Env
-KENV_DOWNLOADER_LAUNCHER_PATH = 'DOWNLOADER_LAUNCHER_PATH'
 KENV_INI_PATH = 'INI_PATH'
 KENV_CURL_SSL = 'CURL_SSL'
 KENV_COMMIT = 'COMMIT'
-KENV_ALLOW_REBOOT = 'ALLOW_REBOOT'
-KENV_UPDATE_LINUX = 'UPDATE_LINUX'
-KENV_DEFAULT_DB_URL = 'DEFAULT_DB_URL'
-KENV_DEFAULT_DB_ID = 'DEFAULT_DB_ID'
-KENV_DEFAULT_BASE_PATH = 'DEFAULT_BASE_PATH'
-KENV_DEBUG = 'DEBUG'
-KENV_FAIL_ON_FILE_ERROR = 'FAIL_ON_FILE_ERROR'
 
 
 @unique
