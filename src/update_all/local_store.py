@@ -15,9 +15,32 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-import time
+
+class LocalStore:
+    def __init__(self, local_store):
+        self._local_store = local_store
+        self._dirty = False
+
+    def unwrap_local_store(self):
+        return self._local_store
+
+    def mark_force_save(self):
+        self._dirty = True
+
+    def needs_save(self):
+        return self._dirty
 
 
-class Waiter:
-    def sleep(self, value):
-        time.sleep(value)
+class LocalStoreProvider:
+    _local_store: LocalStore
+
+    def __init__(self):
+        self._local_store = None
+
+    def initialize(self, local_store: LocalStore) -> None:
+        assert(self._local_store is None)
+        self._local_store = local_store
+
+    def get(self) -> LocalStore:
+        assert(self._local_store is not None)
+        return self._local_store

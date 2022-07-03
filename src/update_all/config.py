@@ -15,24 +15,16 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-
-import configparser
 import json
-import re
 import time
-from enum import IntEnum, unique
-from pathlib import Path, PurePosixPath
+from dataclasses import dataclass
+from enum import unique, IntEnum
+from pathlib import Path
+from typing import Tuple
 
-from update_all.constants import K_BASE_PATH, K_ALLOW_REBOOT, K_ALLOW_DELETE, K_UPDATE_LINUX, K_VERBOSE, K_CONFIG_PATH, KENV_INI_PATH, \
-    MEDIA_FAT, K_DEBUG, K_CURL_SSL, KENV_CURL_SSL, KENV_COMMIT, \
-    K_FAIL_ON_FILE_ERROR, K_COMMIT, K_UPDATE_LINUX_ENVIRONMENT, K_DEFAULT_DB_ID, K_START_TIME
-from update_all.ini_parser import IniParser
-
-
-def config_with_base_path(config, base_path):
-    result = config.copy()
-    result[K_BASE_PATH] = base_path
-    return result
+from update_all.constants import KENV_INI_PATH, MEDIA_FAT, KENV_CURL_SSL, KENV_COMMIT, DEFAULT_CURL_SSL_OPTIONS, \
+    DEFAULT_COMMIT, DEFAULT_INI_PATH
+from update_all.logger import Logger
 
 
 @unique
@@ -42,64 +34,97 @@ class AllowDelete(IntEnum):
     OLD_RBF = 2
 
 
-@unique
-class AllowReboot(IntEnum):
-    NEVER = 0
-    ALWAYS = 1
-    ONLY_AFTER_LINUX_UPDATE = 2
+@dataclass
+class Config:
+    # Not really a config
+    start_time: float = 0.0
+
+    # From the environment
+    curl_ssl: str = DEFAULT_CURL_SSL_OPTIONS
+    commit: str = DEFAULT_COMMIT
+    ini_path: Path = Path(DEFAULT_INI_PATH)
+
+    # General options
+    base_path: str = MEDIA_FAT
+    allow_reboot: bool = True
+    update_linux: bool = True
+    verbose: bool = False
+    debug: bool = False
+
+    # Global Updating Toggles
+    main_updater: bool = True
+    jotego_updater: bool = True
+    unofficial_updater: bool = False
+    llapi_updater: bool = False
+    arcade_offset_downloader: bool = False
+    arcade_roms_db_downloader: bool = False
+    tty2oled_files_downloader: bool = False
+    i2c2oled_files_downloader: bool = False
+    mistersam_files_downloader: bool = False
+    bios_getter: bool = False
+    mame_getter: bool = False
+    hbmame_getter: bool = False
+    names_txt_updater: bool = True
+    arcade_organizer: bool = True
+
+    # Specific Updating Toggles
+    encc_forks: bool = False
+    download_beta_cores: bool = False
+    names_region: str = 'JP'
+    names_char_code: str = 'CHAR18'
+    names_sort_code: str = 'Common'
+
+    # Misc Options
+    wait_time_for_reading: int = 4
 
 
-@unique
-class UpdateLinuxEnvironment(IntEnum):
-    TRUE = 0
-    FALSE = 1
-    ONLY = 2
+class ConfigProvider:
+    _config: Config
 
+    def __init__(self):
+        self._config = None
 
-def default_config():
-    return {
-        K_CONFIG_PATH: Path('/tmp/wrong_config_path.ini'),
-        K_BASE_PATH: MEDIA_FAT,
-        K_ALLOW_DELETE: AllowDelete.ALL,
-        K_ALLOW_REBOOT: AllowReboot.ALWAYS,
-        K_UPDATE_LINUX: True,
-        K_VERBOSE: False,
-        K_DEBUG: False,
-        K_START_TIME: 0
-    }
+    def initialize(self, config: Config) -> None:
+        assert(self._config is None)
+        self._config = config
+
+    def get(self) -> Config:
+        assert(self._config is not None)
+        return self._config
 
 
 class ConfigReader:
-    def __init__(self, logger, env):
+    def __init__(self, logger: Logger, env: dict[str, str]):
         self._logger = logger
         self._env = env
 
-    def read_config(self):
-        config_path = self._env[KENV_INI_PATH]
-        self._logger.print("Reading file: %s" % config_path)
+    @property
+    def ini_path(self) -> str:
+        return self._env[KENV_INI_PATH]
 
-        result = default_config()
+    def read_config(self) -> Tuple[Config, bool]:
+        result = Config()
+        is_file_read = False
 
-        result[K_BASE_PATH] = str(Path(config_path).resolve().parent.parent)
-        result[K_CURL_SSL] = self._valid_max_length(KENV_CURL_SSL, self._env[KENV_CURL_SSL], 50)
-        result[K_COMMIT] = self._valid_max_length(KENV_COMMIT, self._env[KENV_COMMIT], 50)
-        result[K_START_TIME] = time.time()
-        result[K_CONFIG_PATH] = config_path
+        result.base_path = str(Path(self.ini_path).resolve().parent.parent)
+        result.curl_ssl = self._valid_max_length(KENV_CURL_SSL, self._env[KENV_CURL_SSL], 50)
+        result.commit = self._valid_max_length(KENV_COMMIT, self._env[KENV_COMMIT], 50)
+        result.start_time = time.time()
 
         self._logger.configure(result)
 
         self._logger.debug('env: ' + json.dumps(self._env, indent=4))
-        self._logger.debug('config: ' + json.dumps(result, default=lambda o: o.__dict__, indent=4))
+        self._logger.debug('config: ' + json.dumps(result, default=lambda o: str(o) if isinstance(o, Path) else o.__dict__, indent=4))
 
-        result[K_CONFIG_PATH] = Path(result[K_CONFIG_PATH])
+        result.ini_path = Path(self.ini_path)
 
-        return result
+        return result, is_file_read
 
-    def _valid_max_length(self, key, value, max_limit):
+    def _valid_max_length(self, key: str, value: str, max_limit: int) -> str:
         if len(value) <= max_limit:
             return value
 
-        raise InvalidConfigParameter("Invalid %s with value '%s'. Too long string (max is %s)." % (key, value, max_limit))
+        raise InvalidConfigParameter(f"Invalid {key} with value '{value}'. Too long string (max is {max_limit}).")
 
 
 class InvalidConfigParameter(Exception):

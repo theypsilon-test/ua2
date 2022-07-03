@@ -32,7 +32,6 @@ FILE_update_all_log = 'Scripts/.config/update_all/update_all.log'
 FILE_downloader_needs_reboot_after_linux_update = '/tmp/downloader_needs_reboot_after_linux_update'
 FILE_mister_downloader_needs_reboot = '/tmp/MiSTer_downloader_needs_reboot'
 
-
 # Standard Drives
 MEDIA_USB0 = '/media/usb0'
 MEDIA_USB1 = '/media/usb1'
@@ -54,7 +53,6 @@ STORAGE_PATHS_PRIORITY_SEQUENCE = [
     MEDIA_FAT_CIFS,
     MEDIA_FAT
 ]
-
 
 # Dictionary Keys:
 
@@ -88,6 +86,37 @@ K_UPDATE_LINUX_ENVIRONMENT = 'update_linux_environment'
 K_DEFAULT_DB_ID = 'default_db_id'
 K_START_TIME = 'start_time'
 
+# Update All old options
+## "Updaters"
+K_MAIN_UPDATER = "main_updater"
+K_JOTEGO_UPDATER = "jotego_updater"
+K_UNOFFICIAL_UPDATER = "unofficial_updater"
+K_LLAPI_UPDATER = "llapi_updater"
+K_ARCADE_OFFSET_DOWNLOADER = "arcade_offset_downloader"
+K_ARCADE_ROMS_DB_DOWNLOADER = "arcade_roms_db_downloader"
+K_TTY2OLED_FILES_DOWNLOADER = "tty2oled_files_downloader"
+K_I2C2OLED_FILES_DOWNLOADER = "i2c2oled_files_downloader"
+K_MISTERSAM_FILES_DOWNLOADER = "mistersam_files_downloader"
+K_BIOS_GETTER = "bios_getter"
+K_MAME_GETTER = "mame_getter"
+K_HBMAME_GETTER = "hbmame_getter"
+K_NAMES_TXT_UPDATER = "names_txt_updater"
+K_ARCADE_ORGANIZER = "arcade_organizer"
+
+## Options
+K_ENCC_FORKS = "encc_forks"
+K_DOWNLOAD_BETA_CORES = "download_beta_cores"
+
+## Misc
+K_COUNTDOWN_TIME = "countdown_time"
+K_WAIT_TIME_FOR_READING = "wait_time_for_reading"
+K_AUTOREBOOT = "autoreboot"
+K_KEEP_USBMOUNT_CONF = "keep_usbmount_conf"
+K_NAMES_REGION = "names_region"
+K_NAMES_CHAR_CODE = "names_char_code"
+K_NAMES_SORT_CODE = "names_sort_code"
+
+
 # Env
 KENV_INI_PATH = 'INI_PATH'
 KENV_CURL_SSL = 'CURL_SSL'
@@ -98,3 +127,30 @@ KENV_COMMIT = 'COMMIT'
 class PathType(Enum):
     FILE = 0
     FOLDER = 1
+
+
+# Update All old constants
+UPDATE_ALL_VERSION = "2.0"
+UPDATE_ALL_PC_UPDATER = "false"
+UPDATE_ALL_OS = "MiSTer_Linux"
+UPDATE_ALL_LAUNCHER_MD5 = "ac10fbada40e3e5f133bc0eee0dd53d5"
+UPDATE_ALL_PATREON_KEY_PATH = "/media/fat/Scripts/update_all.patreonkey"
+UPDATE_ALL_PATREON_KEY_SIZE = "16384"
+UPDATE_ALL_PATREON_KEY_MD5Q0 = "00e9f6acaec74650ddd38a14334ebaef"
+SETTINGS_ON_FILENAME = "settings-on"
+WORK_PATH = "/media/fat/Scripts/.config/update_all"
+MISTER_DOWNLOADER_WORK_FOLDER = "/media/fat/Scripts/.config/downloader"
+ARCADE_ORGANIZER_INSTALLED_NAMES_TXT = "/media/fat/Scripts/.config/arcade-organizer/installed_names.txt"
+ARCADE_ORGANIZER_FOLDER_OPTION_1 = "/media/fat/_Arcade/_Organized"
+ARCADE_ORGANIZER_FOLDER_OPTION_2 = "/media/fat/_Arcade"
+ARCADE_ORGANIZER_FOLDER_OPTION_3 = "/media/fat/_Arcade Organized"
+MISTER_INI_PATH = "/media/fat/MiSTer.ini"
+NAMES_TXT_PATH = "/media/fat/names.txt"
+USBMOUNT_CONF_PATH = "/etc/usbmount/usbmount.conf"
+USBMOUNT_CONF_TMP = "/tmp/ua_usbmount.conf"
+UPDATE_ALL_URL = "https://raw.githubusercontent.com/theypsilon/Update_All_MiSTer/master/update_all.sh"
+DOWNLOADER_URL = "https://github.com/MiSTer-devel/Downloader_MiSTer/releases/download/latest/dont_download.zip"
+ARCADE_ORGANIZER_URL = "https://raw.githubusercontent.com/theypsilon/_arcade-organizer/master/_arcade-organizer.sh"
+DOWNLOADER_INI_STANDARD_PATH = "/media/fat/downloader.ini"
+DOWNLOADER_INI_TEMP_PATH = "/tmp/downloader.ini"
+TEST_UNSTABLE_SPINNER_FIRMWARE_MD5 = "cc0518143d90f5662d27f140f3f3d697"

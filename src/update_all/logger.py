@@ -54,9 +54,9 @@ class PrintLogger(Logger):
         pass
 
     def configure(self, config):
-        if config[K_VERBOSE]:
+        if config.verbose:
             self._verbose_mode = True
-            self._start_time = config[K_START_TIME]
+            self._start_time = config.start_time
 
     def print(self, *args, sep='', end='\n', file=sys.stdout, flush=True):
         self._do_print(*args, sep=sep, end=end, file=file, flush=flush)
@@ -99,7 +99,7 @@ class FileLoggerDecorator(Logger):
             return
 
         self._logfile.close()
-        self._local_repository_provider.local_repository.save_log_from_tmp(self._logfile.name)
+        self._local_repository_provider.get().save_log_from_tmp(self._logfile.name)
         self._logfile = None
 
     def print(self, *args, sep='', end='\n', file=sys.stdout, flush=True):

@@ -18,10 +18,6 @@
 # https://github.com/theypsilon-test/ua2
 
 import traceback
-import sys
-from pathlib import Path
-
-from update_all.config import ConfigReader
 from update_all.local_repository import LocalRepositoryProvider
 from update_all.logger import FileLoggerDecorator, PrintLogger
 from update_all.update_all_service import UpdateAllServiceFactory
@@ -30,13 +26,11 @@ from update_all.update_all_service import UpdateAllServiceFactory
 def main(env):
     local_repository_provider = LocalRepositoryProvider()
     logger = FileLoggerDecorator(PrintLogger(), local_repository_provider)
-    logger.print('START!')
-    logger.print()
     # noinspection PyBroadException
     try:
         exit_code = execute_update_all(
             UpdateAllServiceFactory(logger, local_repository_provider=local_repository_provider),
-            ConfigReader(logger, env)
+            env
         )
     except Exception as _:
         logger.print(traceback.format_exc())
@@ -46,6 +40,6 @@ def main(env):
     return exit_code
 
 
-def execute_update_all(update_all_service, config_reader):
-    return update_all_service.create(config_reader.read_config()).full_run()
+def execute_update_all(factory, env):
+    return factory.create(env).full_run()
 

@@ -15,8 +15,24 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from update_all.store_migrator import Migration
+import sys
+
+from update_all.logger import Logger
 
 
-def migrations() -> list[Migration]:
-    return []
+class NoLogger(Logger):
+    def print(self, *args, sep='', end='\n', file=sys.stdout, flush=False):
+        pass
+
+    def debug(self, *args, sep='', end='\n', file=sys.stdout, flush=False):
+        pass
+
+    def bench(self, _label):
+        pass
+
+    def configure(self, _config):
+        pass
+
+    def finalize(self):
+        pass
+

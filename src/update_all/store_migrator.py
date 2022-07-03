@@ -18,9 +18,22 @@
 
 from abc import ABC, abstractmethod
 
+from update_all.logger import Logger
+
+
+class Migration(ABC):
+    @property
+    @abstractmethod
+    def version(self) -> int:
+        """Version of the migration object"""
+
+    @abstractmethod
+    def migrate(self, local_store) -> None:
+        """Migrate the local store"""
+
 
 class StoreMigrator:
-    def __init__(self, migration_list, logger):
+    def __init__(self, migration_list: list[Migration], logger: Logger):
         self._migrations = migration_list
         self._logger = logger
 
@@ -43,7 +56,7 @@ class StoreMigrator:
 
         self._logger.bench('Migration done.')
 
-    def latest_migration_version(self):
+    def latest_migration_version(self) -> int:
         return len(self._migrations)
 
 
@@ -57,13 +70,3 @@ def make_new_local_store(store_migrator):
 
 class WrongMigrationException(Exception):
     pass
-
-
-class MigrationBase(ABC):
-    @property
-    @abstractmethod
-    def version(self):
-        """Version of the migration object"""
-
-    def migrate(self, local_store):
-        """Migrate the local store"""

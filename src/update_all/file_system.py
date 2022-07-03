@@ -52,6 +52,14 @@ class FileSystem(ABC):
         """interface"""
 
     @abstractmethod
+    def temp_file_by_id(self, file_id):
+        """interface"""
+
+    @abstractmethod
+    def clean_temp_files_with_ids(self):
+        """interface"""
+
+    @abstractmethod
     def unique_temp_filename(self):
         """interface"""
 
@@ -73,6 +81,10 @@ class FileSystem(ABC):
 
     @abstractmethod
     def write_file_contents(self, path, content):
+        """interface"""
+
+    @abstractmethod
+    def write_file_bytes(self, path, content_bytes):
         """interface"""
 
     @abstractmethod
@@ -153,9 +165,21 @@ class _FileSystem(FileSystem):
         self._path_dictionary = path_dictionary
         self._logger = logger
         self._unique_temp_filenames = unique_temp_filenames
+        self._temp_files_with_ids = {}
 
     def temp_file(self):
         return tempfile.NamedTemporaryFile(prefix='temp_file')
+
+    def temp_file_by_id(self, file_id):
+        if file_id not in self._temp_files_with_ids:
+            self._temp_files_with_ids[file_id] = tempfile.NamedTemporaryFile()
+        return self._temp_files_with_ids[file_id]
+
+    def clean_temp_files_with_ids(self):
+        for file_id in list(self._temp_files_with_ids):
+            temp_file = self._temp_files_with_ids[file_id]
+            temp_file.close()
+            del self._temp_files_with_ids[file_id]
 
     def unique_temp_filename(self):
         name = None
@@ -180,6 +204,10 @@ class _FileSystem(FileSystem):
     def write_file_contents(self, path, content):
         with open(self._path(path), 'w') as f:
             return f.write(content)
+
+    def write_file_bytes(self, path, content_bytes):
+        with open(self._path(path), 'wb') as f:
+            return f.write(content_bytes)
 
     def touch(self, path):
         return Path(self._path(path)).touch()
@@ -232,7 +260,7 @@ class _FileSystem(FileSystem):
         raise Exception('folders Not implemented')
 
     def remove_folder(self, path):
-        if self._config[K_ALLOW_DELETE] != AllowDelete.ALL:
+        if self._config.get()[K_ALLOW_DELETE] != AllowDelete.ALL:
             return
 
         self._logger.print('Deleting empty folder %s' % path)
@@ -248,7 +276,7 @@ class _FileSystem(FileSystem):
         self._logger.debug('Ignoring error.')
 
     def remove_non_empty_folder(self, path):
-        if self._config[K_ALLOW_DELETE] != AllowDelete.ALL:
+        if self._config.get()[K_ALLOW_DELETE] != AllowDelete.ALL:
             return
 
         try:
@@ -262,8 +290,8 @@ class _FileSystem(FileSystem):
 
     def unlink(self, path, verbose=True):
         verbose = verbose and not path.startswith('/tmp/')
-        if self._config[K_ALLOW_DELETE] != AllowDelete.ALL:
-            if self._config[K_ALLOW_DELETE] == AllowDelete.OLD_RBF and path[-4:].lower() == ".rbf":
+        if self._config.get()[K_ALLOW_DELETE] != AllowDelete.ALL:
+            if self._config.get()[K_ALLOW_DELETE] == AllowDelete.OLD_RBF and path[-4:].lower() == ".rbf":
                 return self._unlink(path, verbose)
 
             return True
@@ -271,7 +299,7 @@ class _FileSystem(FileSystem):
         return self._unlink(path, verbose)
 
     def delete_previous(self, file):
-        if self._config[K_ALLOW_DELETE] != AllowDelete.ALL:
+        if self._config.get()[K_ALLOW_DELETE] != AllowDelete.ALL:
             return True
 
         path = Path(self._path(file))
@@ -350,7 +378,7 @@ class _FileSystem(FileSystem):
         if path_lower in self._path_dictionary:
             return '%s/%s' % (self._path_dictionary[path_lower], path)
 
-        return '%s/%s' % (self._config[K_BASE_PATH], path)
+        return '%s/%s' % (self._config.get().base_path, path)
 
 
 class InvalidFileResolution(Exception):

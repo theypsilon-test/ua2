@@ -3,6 +3,10 @@
 
 set -euo pipefail
 
+echo "Type checks:"
+python3 -m mypy src
+echo
+
 cd src
 echo "Unit Tests:"
 python3 -m unittest discover -s test/unit

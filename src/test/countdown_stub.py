@@ -15,8 +15,12 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from update_all.store_migrator import Migration
+from update_all.countdown import Countdown, CountdownOutcome
 
 
-def migrations() -> list[Migration]:
-    return []
+class CountdownStub(Countdown):
+    def __init__(self, outcome: CountdownOutcome = CountdownOutcome.CONTINUE):
+        self._outcome = outcome
+
+    def execute_count(self, _) -> CountdownOutcome:
+        return self._outcome

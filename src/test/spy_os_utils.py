@@ -15,8 +15,32 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from update_all.store_migrator import Migration
+
+from update_all.os_utils import OsUtils
 
 
-def migrations() -> list[Migration]:
-    return []
+class SpyOsUtils(OsUtils):
+    def __init__(self):
+        super().__init__()
+        self.calls_to_sync = 0
+        self.calls_to_reboot = 0
+        self.calls_to_sleep = []
+        self.calls_to_execute_process = []
+        self.calls_to_download = []
+
+    def sync(self):
+        self.calls_to_sync += 1
+
+    def reboot(self):
+        self.calls_to_reboot += 1
+
+    def sleep(self, seconds):
+        self.calls_to_sleep.append(seconds)
+
+    def execute_process(self, launcher, env):
+        self.calls_to_execute_process.append((launcher, env))
+        return 0
+
+    def download(self, url) -> bytes:
+        self.calls_to_download.append(url)
+        return bytes()
