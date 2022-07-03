@@ -53,7 +53,7 @@ class ReadCharactersData:
 
 def read_characters(data: ReadCharactersData):
     while not data.ends:
-        data.character = _getch()
+        data.character = _getch(data)
         time.sleep(1.0 / 120.0)
 
 
@@ -112,22 +112,22 @@ class _Getch:
         except ImportError:
             self._impl = _GetchUnix()
 
-    def __call__(self): return self._impl()
+    def __call__(self, data): return self._impl(data)
 
 
 class _GetchUnix:
     def __init__(self):
         import tty, sys
 
-    def __call__(self):
+    def __call__(self, data):
         import sys, tty, termios
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
+        old_settings = termios.tcgetattr(data.fd)
         try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
+            tty.setraw(data.fd)
+            with open(data.fd) as f:
+                ch = f.read(1)
         finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            termios.tcsetattr(data.fd, termios.TCSADRAIN, old_settings)
         return ch
 
 
@@ -135,7 +135,7 @@ class _GetchWindows:
     def __init__(self):
         import msvcrt
 
-    def __call__(self):
+    def __call__(self, data):
         import msvcrt
         return msvcrt.getch()
 
