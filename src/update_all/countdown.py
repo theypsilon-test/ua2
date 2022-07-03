@@ -16,16 +16,12 @@
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
 import math
+import os
 import sys
-import termios
 import time
-import tty
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from enum import unique, IntEnum, auto
-from io import StringIO
-from multiprocessing import Process
-from threading import Thread
+from multiprocessing import Process, Value
 
 
 @unique
@@ -40,23 +36,6 @@ class Countdown(ABC):
         """Runs a countdown for 'n' seconds, and returns the outcome"""
 
 
-class ReadCharactersData:
-    def __init__(self):
-        self.character: str = ''
-        self.ends: bool = False
-        try:
-            import msvcrt
-        except:
-            import tty, sys
-            self.fd = sys.stdin.fileno()
-
-
-def read_characters(data: ReadCharactersData):
-    while not data.ends:
-        data.character = _getch(data)
-        time.sleep(1.0 / 120.0)
-
-
 class CountdownImpl(Countdown):
     def execute_count(self, count) -> CountdownOutcome:
         print()
@@ -64,70 +43,82 @@ class CountdownImpl(Countdown):
         print(" *Press <DOWN>, To continue now.")
         print()
 
-        #os_stdio = _PrepareStdio()
-        #os_stdio.save_state()
+        os_specifics = make_os_specifics()
+        os_specifics.initialize()
 
-        read_characters_data = ReadCharactersData()
-        read_characters_task = Process(target=read_characters, args=(read_characters_data,))
-        read_characters_task.daemon = True
-        read_characters_task.start()
+        char = Value('i', 0)
+        ends = Value('i', 0)
 
-        result = CountdownOutcome.CONTINUE
-        begin = time.time()
-        end = begin + float(count)
-        now = begin
-        latest_seconds = -1
-        while now < end:
-            seconds = math.floor(end - now) + 1
-            if seconds != latest_seconds:
-                seconds_str = f'{seconds} seconds' if seconds >= 10 else f' {seconds} seconds'
-                print(f'                                        \rStarting in {seconds_str}.', end='')
-                for _ in range(count - seconds + 1):
-                    print('.', end='')
-                sys.stdout.flush()
-                latest_seconds = seconds
+        child_process = Process(target=read_characters, args=(char, ends, os_specifics.context()), daemon=True)
 
-            if read_characters_data.character == 'A':
-                result = CountdownOutcome.SETTINGS_SCREEN
-                break
-            elif read_characters_data.character == 'B':
-                break
+        try:
+            child_process.start()
 
-            time.sleep(1.0 / 120.0)
-            now = time.time()
+            result = CountdownOutcome.CONTINUE
+            begin = time.time()
+            end = begin + float(count)
+            now = begin
+            latest_seconds = -1
+            while now < end:
+                seconds = math.floor(end - now) + 1
+                if seconds != latest_seconds:
+                    seconds_str = f'{seconds} seconds' if seconds >= 10 else f' {seconds} seconds'
+                    print(f'                                        \rStarting in {seconds_str}.', end='')
+                    for _ in range(count - seconds + 1):
+                        print('.', end='')
+                    sys.stdout.flush()
+                    latest_seconds = seconds
 
-        read_characters_data.ends = True
-        #os_stdio.restore_state()
-        time.sleep(1.0 / 60.0)
+                char_value = chr(char.value)
+                if char_value == 'A':
+                    result = CountdownOutcome.SETTINGS_SCREEN
+                    break
+                elif char_value == 'B':
+                    break
 
-        read_characters_task.terminate()
+                time.sleep(1.0 / 120.0)
+                now = time.time()
+
+        finally:
+            ends.value = 1
+            time.sleep(1.0 / 60.0)
+
+            child_process.terminate()
+            time.sleep(1.0 / 60.0)
+
+            child_process.close()
+            os_specifics.finalize()
 
         return result
 
 
-class _Getch:
-    def __init__(self):
-        try:
-            self._impl = _GetchWindows()
-        except ImportError:
-            self._impl = _GetchUnix()
+def read_characters(char, ends, context):
+    with context:
+        while ends.value == 0:
+            char.value = ord(_getch())
+            time.sleep(1.0 / 120.0)
 
-    def __call__(self, data): return self._impl(data)
+
+def make_getch():
+    try:
+        return _GetchWindows()
+    except ImportError:
+        return _GetchUnix()
 
 
 class _GetchUnix:
     def __init__(self):
-        import tty, sys
-
-    def __call__(self, data):
         import sys, tty, termios
-        old_settings = termios.tcgetattr(data.fd)
+
+    def __call__(self):
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
         try:
-            tty.setraw(data.fd)
-            with open(data.fd) as f:
-                ch = f.read(1)
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
         finally:
-            termios.tcsetattr(data.fd, termios.TCSADRAIN, old_settings)
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
 
 
@@ -135,49 +126,70 @@ class _GetchWindows:
     def __init__(self):
         import msvcrt
 
-    def __call__(self, data):
+    def __call__(self):
         import msvcrt
         return msvcrt.getch()
 
 
-_getch = _Getch()
+_getch = make_getch()
 
 
-class _PrepareStdio:
+def make_os_specifics():
+    try:
+        return _OsSpecificsWindows()
+    except ImportError:
+        return _OsSpecificsLinux()
+
+
+class _OsSpecificsLinux:
     def __init__(self):
-        try:
-            self._impl = _PrepareLinux()
-        except ImportError:
-            self._impl = _PrepareLinux()
+        import tty, sys, termios
+        self._oldtty = None
+        self._fdstdin = sys.stdin.fileno()
 
-    def save_state(self): return self._impl.prepare()
-    def restore_state(self): return self._impl.cleanup()
+    def initialize(self):
+        import termios, sys
+        self._oldtty = termios.tcgetattr(sys.stdin)
+
+    def finalize(self):
+        import termios, sys
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self._oldtty)
+
+    def context(self):
+        class _LinuxContext(object):
+            def __init__(self, fdstdin):
+                self.fdstdin = fdstdin
+
+            def __enter__(self):
+                self.fin = os.fdopen(self.fdstdin)
+                sys.stdin = self.fin
+                return self
+
+            def __exit__(self, type, value, traceback):
+                self.fin.close()
+
+        return _LinuxContext(self._fdstdin)
 
 
-class _PrepareLinux:
-    def __init__(self):
-        import tty, sys
-        self._fd = None
-        self._old_settings = None
-
-    def prepare(self):
-        self._fd = sys.stdin.fileno()
-        #self._old_settings = termios.tcgetattr(self._fd)
-
-    def cleanup(self):
-        #termios.tcsetattr(self._fd, termios.TCSADRAIN, self._old_settings)
-        with open(self._fd, 'w') as f:
-            f.write('\n')
-            f.flush()
-
-        #termios.tcflush(self._fd, termios.TCIOFLUSH)
-
-class _PrepareWindows:
+class _OsSpecificsWindows:
     def __init__(self):
         import msvcrt
 
-    def prepare(self):
+    def initialize(self):
         pass
 
-    def cleanup(self):
+    def finalize(self):
         pass
+
+    def context(self):
+        class _WindowsContext(object):
+            def __init__(self):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, type, value, traceback):
+                pass
+
+        return _WindowsContext()
