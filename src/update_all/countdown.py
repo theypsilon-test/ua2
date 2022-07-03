@@ -43,6 +43,8 @@ class CountdownImpl(Countdown):
         print(" *Press <DOWN>, To continue now.")
         print()
 
+        result = CountdownOutcome.CONTINUE
+
         os_specifics = make_os_specifics()
         os_specifics.initialize()
 
@@ -54,7 +56,6 @@ class CountdownImpl(Countdown):
         try:
             child_process.start()
 
-            result = CountdownOutcome.CONTINUE
             begin = time.time()
             end = begin + float(count)
             now = begin
