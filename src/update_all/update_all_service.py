@@ -160,7 +160,7 @@ class UpdateAllService:
             'ALLOW_REBOOT': '0',
             'CURL_SSL': self._config_provider.get().curl_ssl,
             'UPDATE_LINUX': 'false' if self._config_provider.get().arcade_organizer else 'true',
-            'LOGFILE': '/media/fat/Scripts/.config/downloader/downloader1.log'
+            'LOGFILE': f'{self._config_provider.get().base_path}/Scripts/.config/downloader/downloader1.log'
         })
 
         if return_code != 0:
@@ -181,7 +181,7 @@ class UpdateAllService:
 
         return_code = self._os_utils.execute_process(temp_file.name, {
             'SSL_SECURITY_OPTION': self._config_provider.get().curl_ssl,
-            'INI_FILE': '/media/fat/Scripts/update_arcade-organizer.ini'
+            'INI_FILE': f'{self._config_provider.get().base_path}/Scripts/update_arcade-organizer.ini'
         })
 
         if return_code != 0:
@@ -205,7 +205,7 @@ class UpdateAllService:
             'ALLOW_REBOOT': '0',
             'CURL_SSL': self._config_provider.get().curl_ssl,
             'UPDATE_LINUX': 'only',
-            'LOGFILE': '/media/fat/Scripts/.config/downloader/downloader2.log'
+            'LOGFILE': f'{self._config_provider.get().base_path}/Scripts/.config/downloader/downloader2.log'
         })
 
         if return_code != 0:

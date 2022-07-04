@@ -18,7 +18,7 @@
 from pathlib import Path
 
 from update_all.config import Config
-from update_all.constants import DOWNLOADER_INI_STANDARD_PATH
+from update_all.constants import DOWNLOADER_INI_STANDARD_PATH, MEDIA_FAT
 from update_all.update_all_service import UpdateAllService
 from test.fake_filesystem import FileSystemFactory
 from test.file_system_tester_state import FileSystemState
@@ -32,6 +32,9 @@ def tester(files=None, folders=None, config: Config = None):
     return UpdateAllServiceTester(config_reader=config_reader_tester, file_system=FileSystemFactory(state=state).create_for_system_scope()), state
 
 
+downloader_ini = f'{MEDIA_FAT}/{DOWNLOADER_INI_STANDARD_PATH}'
+
+
 class TestUpdateAllService(unittest.TestCase):
     def test_factory_create___on_default_environment___returns_update_all_service(self):
         self.assertIsInstance(UpdateAllServiceFactoryTester().create({}), UpdateAllService)
@@ -43,11 +46,11 @@ class TestUpdateAllService(unittest.TestCase):
     def test_full_run___on_empty_environment___writes_default_downloader_ini(self):
         sut, fs = tester()
         sut.full_run()
-        self.assertEqual(Path('test/fixtures/default_downloader.ini').read_text(), fs.files[DOWNLOADER_INI_STANDARD_PATH]['content'])
+        self.assertEqual(Path('test/fixtures/default_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
     def test_full_run___over_dirty_downloader_ini_after_changing_some_options___writes_changed_downloader(self):
         sut, fs = tester(files={
-            DOWNLOADER_INI_STANDARD_PATH: {'content': Path('test/fixtures/dirty_downloader.ini').read_text()}
+            downloader_ini: {'content': Path('test/fixtures/dirty_downloader.ini').read_text()}
         }, config=Config(main_updater=False, llapi_updater=True, names_region='EU', names_char_code='CHAR28', names_sort_code='Manufacturer', download_beta_cores=True))
         sut.full_run()
-        self.assertEqual(Path('test/fixtures/changed_downloader.ini').read_text(), fs.files[DOWNLOADER_INI_STANDARD_PATH]['content'])
+        self.assertEqual(Path('test/fixtures/changed_downloader.ini').read_text(), fs.files[downloader_ini]['content'])

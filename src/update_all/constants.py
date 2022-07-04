@@ -21,7 +21,7 @@ from enum import unique, Enum
 
 DEFAULT_CACERT_FILE = '/etc/ssl/certs/cacert.pem'
 DEFAULT_CURL_SSL_OPTIONS = '--cacert %s' % DEFAULT_CACERT_FILE
-DEFAULT_INI_PATH = '/media/fat/Scripts/update_all.ini'
+DEFAULT_INI_PATH = 'Scripts/update_all.ini'
 DEFAULT_COMMIT = 'unknown'
 
 # Downloader files
@@ -32,27 +32,7 @@ FILE_update_all_log = 'Scripts/.config/update_all/update_all.log'
 FILE_downloader_needs_reboot_after_linux_update = '/tmp/downloader_needs_reboot_after_linux_update'
 FILE_mister_downloader_needs_reboot = '/tmp/MiSTer_downloader_needs_reboot'
 
-# Standard Drives
-MEDIA_USB0 = '/media/usb0'
-MEDIA_USB1 = '/media/usb1'
-MEDIA_USB2 = '/media/usb2'
-MEDIA_USB3 = '/media/usb3'
-MEDIA_USB4 = '/media/usb4'
-MEDIA_USB5 = '/media/usb5'
-MEDIA_FAT_CIFS = '/media/fat/cifs'
 MEDIA_FAT = '/media/fat'
-
-# Storage Priority Resolution Sequence
-STORAGE_PATHS_PRIORITY_SEQUENCE = [
-    MEDIA_USB0,
-    MEDIA_USB1,
-    MEDIA_USB2,
-    MEDIA_USB3,
-    MEDIA_USB4,
-    MEDIA_USB5,
-    MEDIA_FAT_CIFS,
-    MEDIA_FAT
-]
 
 # Dictionary Keys:
 
@@ -134,23 +114,20 @@ UPDATE_ALL_VERSION = "2.0"
 UPDATE_ALL_PC_UPDATER = "false"
 UPDATE_ALL_OS = "MiSTer_Linux"
 UPDATE_ALL_LAUNCHER_MD5 = "ac10fbada40e3e5f133bc0eee0dd53d5"
-UPDATE_ALL_PATREON_KEY_PATH = "/media/fat/Scripts/update_all.patreonkey"
+UPDATE_ALL_PATREON_KEY_PATH = "Scripts/update_all.patreonkey"
 UPDATE_ALL_PATREON_KEY_SIZE = "16384"
 UPDATE_ALL_PATREON_KEY_MD5Q0 = "00e9f6acaec74650ddd38a14334ebaef"
 SETTINGS_ON_FILENAME = "settings-on"
-WORK_PATH = "/media/fat/Scripts/.config/update_all"
-MISTER_DOWNLOADER_WORK_FOLDER = "/media/fat/Scripts/.config/downloader"
-ARCADE_ORGANIZER_INSTALLED_NAMES_TXT = "/media/fat/Scripts/.config/arcade-organizer/installed_names.txt"
-ARCADE_ORGANIZER_FOLDER_OPTION_1 = "/media/fat/_Arcade/_Organized"
-ARCADE_ORGANIZER_FOLDER_OPTION_2 = "/media/fat/_Arcade"
-ARCADE_ORGANIZER_FOLDER_OPTION_3 = "/media/fat/_Arcade Organized"
-MISTER_INI_PATH = "/media/fat/MiSTer.ini"
-NAMES_TXT_PATH = "/media/fat/names.txt"
-USBMOUNT_CONF_PATH = "/etc/usbmount/usbmount.conf"
-USBMOUNT_CONF_TMP = "/tmp/ua_usbmount.conf"
+WORK_PATH = "Scripts/.config/update_all"
+MISTER_DOWNLOADER_WORK_FOLDER = "Scripts/.config/downloader"
+ARCADE_ORGANIZER_INSTALLED_NAMES_TXT = "Scripts/.config/arcade-organizer/installed_names.txt"
+ARCADE_ORGANIZER_FOLDER_OPTION_1 = "_Arcade/_Organized"
+ARCADE_ORGANIZER_FOLDER_OPTION_2 = "_Arcade"
+ARCADE_ORGANIZER_FOLDER_OPTION_3 = "_Arcade Organized"
+MISTER_INI_PATH = "MiSTer.ini"
+NAMES_TXT_PATH = "names.txt"
 UPDATE_ALL_URL = "https://raw.githubusercontent.com/theypsilon/Update_All_MiSTer/master/update_all.sh"
 DOWNLOADER_URL = "https://github.com/MiSTer-devel/Downloader_MiSTer/releases/download/latest/dont_download.zip"
 ARCADE_ORGANIZER_URL = "https://raw.githubusercontent.com/theypsilon/_arcade-organizer/master/_arcade-organizer.sh"
-DOWNLOADER_INI_STANDARD_PATH = "/media/fat/downloader.ini"
-DOWNLOADER_INI_TEMP_PATH = "/tmp/downloader.ini"
+DOWNLOADER_INI_STANDARD_PATH = "downloader.ini"
 TEST_UNSTABLE_SPINNER_FIRMWARE_MD5 = "cc0518143d90f5662d27f140f3f3d697"

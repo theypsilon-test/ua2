@@ -20,7 +20,7 @@ import re
 from pathlib import Path
 
 from test.file_system_tester_state import FileSystemState
-from update_all.constants import K_BASE_PATH, K_ALLOW_DELETE, STORAGE_PATHS_PRIORITY_SEQUENCE
+from update_all.constants import K_BASE_PATH, K_ALLOW_DELETE
 from update_all.file_system import FileSystemFactory as ProductionFileSystemFactory, FileSystem as ProductionFileSystem, \
     absolute_parent_folder
 from update_all.other import ClosableValue, UnreachableException
@@ -140,7 +140,7 @@ class _FileSystem(ProductionFileSystem):
 
         entries = tuple(self._state.files) + tuple(self._state.folders)
 
-        return path in STORAGE_PATHS_PRIORITY_SEQUENCE and any(entry.lower().startswith(path) for entry in entries)
+        return any(entry.lower().startswith(path) for entry in entries)
 
     def read_file_contents(self, path):
         return self._state.files[self._path(path)]['content']
@@ -323,7 +323,7 @@ class _FileSystem(ProductionFileSystem):
         return ('%s/%s' % (self._base_path(path), path))
 
     def _base_path(self, path):
-        return self._config[K_BASE_PATH]
+        return self._config.base_path
 
 
 class _Record:
