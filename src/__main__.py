@@ -26,7 +26,7 @@ if __name__ == '__main__':
     exit_code = main({
         KENV_INI_PATH: os.getenv(KENV_INI_PATH, DEFAULT_INI_PATH),
         KENV_CURL_SSL: os.getenv(KENV_CURL_SSL, DEFAULT_CURL_SSL_OPTIONS),
-        KENV_COMMIT: os.getenv(KENV_COMMIT, DEFAULT_COMMIT)
+        KENV_COMMIT: os.getenv(KENV_COMMIT, DEFAULT_COMMIT),
     })
 
     exit(exit_code)

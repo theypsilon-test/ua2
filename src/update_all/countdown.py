@@ -38,20 +38,23 @@ class Countdown(ABC):
 
 class CountdownImpl(Countdown):
     def execute_count(self, count) -> CountdownOutcome:
-        print()
-        print(" *Press <UP>, To enter the SETTINGS screen.")
-        print(" *Press <DOWN>, To continue now.")
-        print()
+        try:
+            os_specifics = make_os_specifics()
+            os_specifics.initialize()
+
+            char = Value('i', 0)
+            ends = Value('i', 0)
+
+            child_process = Process(target=read_characters, args=(char, ends, os_specifics.context()), daemon=True)
+
+            print()
+            print(" *Press <UP>, To enter the SETTINGS screen.")
+            print(" *Press <DOWN>, To continue now.")
+            print()
+        except:
+            return CountdownOutcome.CONTINUE
 
         result = CountdownOutcome.CONTINUE
-
-        os_specifics = make_os_specifics()
-        os_specifics.initialize()
-
-        char = Value('i', 0)
-        ends = Value('i', 0)
-
-        child_process = Process(target=read_characters, args=(char, ends, os_specifics.context()), daemon=True)
 
         try:
             child_process.start()

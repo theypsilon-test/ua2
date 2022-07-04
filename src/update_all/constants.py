@@ -21,7 +21,7 @@ from enum import unique, Enum
 
 DEFAULT_CACERT_FILE = '/etc/ssl/certs/cacert.pem'
 DEFAULT_CURL_SSL_OPTIONS = '--cacert %s' % DEFAULT_CACERT_FILE
-DEFAULT_INI_PATH = 'Scripts/update_all.ini'
+DEFAULT_INI_PATH = '/media/fat/Scripts/update_all.ini'
 DEFAULT_COMMIT = 'unknown'
 
 # Downloader files
