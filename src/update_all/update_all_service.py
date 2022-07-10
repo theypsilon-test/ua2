@@ -26,10 +26,11 @@ import time
 from functools import cached_property
 from typing import List, Tuple
 
+from update_all.cli_output_formatting import CLEAR_SCREEN
 from update_all.constants import K_MAIN_UPDATER, K_JOTEGO_UPDATER, K_UNOFFICIAL_UPDATER, K_LLAPI_UPDATER, \
     K_ARCADE_OFFSET_DOWNLOADER, K_ARCADE_ROMS_DB_DOWNLOADER, K_TTY2OLED_FILES_DOWNLOADER, K_I2C2OLED_FILES_DOWNLOADER, \
     K_MISTERSAM_FILES_DOWNLOADER, K_BIOS_GETTER, K_NAMES_TXT_UPDATER, UPDATE_ALL_VERSION, DOWNLOADER_INI_STANDARD_PATH, \
-    DOWNLOADER_URL, ARCADE_ORGANIZER_URL, FILE_update_all_log, FILE_mister_downloader_needs_reboot
+    DOWNLOADER_URL, ARCADE_ORGANIZER_URL, FILE_update_all_log, FILE_mister_downloader_needs_reboot, MEDIA_FAT
 from update_all.countdown import Countdown, CountdownImpl, CountdownOutcome
 from update_all.databases import db_distribution_mister_by_encc_forks, db_jtcores_by_download_beta_cores, \
     DB_THEYPSILON_UNOFFICIAL_DISTRIBUTION, DB_LLAPI_FOLDER, DB_ARCADE_OFFSET_FOLDER, DB_ARCADE_ROMS, DB_TTY2OLED_FILES, \
@@ -37,6 +38,7 @@ from update_all.databases import db_distribution_mister_by_encc_forks, db_jtcore
 from update_all.local_store import LocalStoreProvider
 from update_all.logger import Logger
 from update_all.os_utils import OsUtils, LinuxOsUtils
+from update_all.settings_screen import SettingsScreen
 from update_all.store_migrator import StoreMigrator
 from update_all.migrations import migrations
 from update_all.local_repository import LocalRepository, LocalRepositoryProvider
@@ -58,11 +60,11 @@ class UpdateAllServiceFactory:
         self._local_repository_provider.initialize(local_repository)
         local_store_provider = LocalStoreProvider()
         os_utils = LinuxOsUtils(config_provider=config_provider, logger=self._logger)
-        return UpdateAllService(config_reader, config_provider, local_store_provider, self._logger, local_repository, store_migrator, file_system, os_utils, CountdownImpl())
+        return UpdateAllService(config_reader, config_provider, local_store_provider, self._logger, local_repository, store_migrator, file_system, os_utils, CountdownImpl(), SettingsScreen())
 
 
 class UpdateAllService:
-    def __init__(self, config_reader: ConfigReader, config_provider: ConfigProvider, local_store_provider: LocalStoreProvider, logger: Logger, local_repository: LocalRepository, store_migrator: StoreMigrator, file_system: FileSystem, os_utils: OsUtils, countdown: Countdown):
+    def __init__(self, config_reader: ConfigReader, config_provider: ConfigProvider, local_store_provider: LocalStoreProvider, logger: Logger, local_repository: LocalRepository, store_migrator: StoreMigrator, file_system: FileSystem, os_utils: OsUtils, countdown: Countdown, settings_screen: SettingsScreen):
         self._config_reader = config_reader
         self._config_provider = config_provider
         self._local_store_provider = local_store_provider
@@ -72,6 +74,7 @@ class UpdateAllService:
         self._file_system = file_system
         self._os_utils = os_utils
         self._countdown = countdown
+        self._settings_screen = settings_screen
         self._exit_code = 0
         self._error_reports: List[str] = []
 
@@ -115,6 +118,8 @@ class UpdateAllService:
         self._logger.print("The All-in-One Updater for MiSTer")
         self._logger.print(f"Version {UPDATE_ALL_VERSION}")
         self._logger.print()
+        self._logger.print("By theypsilon  --  follow me on Twitter: @josembarroso")
+        self._logger.print()
 
     def _read_config(self) -> None:
         self._logger.print(f"Reading INI file '{self._config_reader.ini_path}'")
@@ -134,7 +139,8 @@ class UpdateAllService:
         self._print_sequence()
         outcome = self._countdown.execute_count(15)
         if outcome == CountdownOutcome.SETTINGS_SCREEN:
-            self._load_settings_screen()
+            self._settings_screen.load_main_menu()
+            self._logger.print(CLEAR_SCREEN, end='')
             self._print_sequence()
         elif outcome == CountdownOutcome.CONTINUE:
             pass
@@ -155,13 +161,25 @@ class UpdateAllService:
 
         self._logger.print()
 
-        return_code = self._os_utils.execute_process(temp_file.name, {
+        update_linux = self._config_provider.get().update_linux
+        arcade_organizer = self._config_provider.get().arcade_organizer
+
+        if update_linux and arcade_organizer:
+            update_linux = False
+
+        env = {
             'DOWNLOADER_INI_PATH': DOWNLOADER_INI_STANDARD_PATH,
             'ALLOW_REBOOT': '0',
             'CURL_SSL': self._config_provider.get().curl_ssl,
-            'UPDATE_LINUX': 'false' if self._config_provider.get().arcade_organizer else 'true',
+            'UPDATE_LINUX': 'true' if update_linux else 'false',
             'LOGFILE': f'{self._config_provider.get().base_path}/Scripts/.config/downloader/downloader1.log'
-        })
+        }
+
+        base_path = self._config_provider.get().base_path
+        if base_path != MEDIA_FAT:
+            env['DEFAULT_BASE_PATH'] = base_path
+
+        return_code = self._os_utils.execute_process(temp_file.name, env)
 
         if return_code != 0:
             self._exit_code = 1
@@ -192,6 +210,9 @@ class UpdateAllService:
         self._logger.print("FINISHED: Arcade Organizer")
 
     def _run_linux_update(self) -> None:
+        if not self._config_provider.get().update_linux:
+            return
+
         if len(self._active_databases) == 0 or not self._config_provider.get().arcade_organizer:
             return
 
@@ -230,7 +251,7 @@ class UpdateAllService:
             self._logger.print("Maybe a network problem?")
             self._logger.print("Check your connection and then run this script again.")
         else:
-            self._logger.print(f"Update All {UPDATE_ALL_VERSION} finished. Your MiSTer has been updated successfully!")
+            self._logger.print(f"Update All {UPDATE_ALL_VERSION} by theypsilon. Your MiSTer has been updated successfully!")
 
         run_time = str(datetime.timedelta(seconds=time.time() - self._config_provider.get().start_time))[0:-4]
 
@@ -241,6 +262,9 @@ class UpdateAllService:
         self._logger.print()
 
     def _reboot_if_needed(self) -> None:
+        if self._config_provider.get().not_mister:
+            return
+
         if not self._file_system.is_file(FILE_mister_downloader_needs_reboot):
             return
 
@@ -269,9 +293,6 @@ class UpdateAllService:
         if self._config_provider.get().arcade_organizer:
             self._logger.print('- Arcade Organizer')
         self._logger.print()
-
-    def _load_settings_screen(self) -> None:
-        pass
 
     def _write_downloader_ini(self) -> None:
         ini_path = DOWNLOADER_INI_STANDARD_PATH

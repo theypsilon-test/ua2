@@ -23,12 +23,13 @@ from test.logger_tester import NoLogger
 from test.spy_os_utils import SpyOsUtils
 from update_all.config import ConfigReader, ConfigProvider, Config
 from update_all.constants import KENV_COMMIT, KENV_CURL_SSL, KENV_INI_PATH, DEFAULT_INI_PATH, DEFAULT_CURL_SSL_OPTIONS, \
-    DEFAULT_COMMIT
+    DEFAULT_COMMIT, KENV_NOT_MISTER
 from update_all.countdown import Countdown
 from update_all.file_system import FileSystem
 from update_all.local_repository import LocalRepositoryProvider, LocalRepository
 from update_all.local_store import LocalStoreProvider
 from update_all.os_utils import OsUtils
+from update_all.settings_screen import SettingsScreen
 from update_all.store_migrator import StoreMigrator
 from update_all.update_all_service import UpdateAllServiceFactory, UpdateAllService
 
@@ -37,7 +38,8 @@ def default_env():
     return {
         KENV_INI_PATH: DEFAULT_INI_PATH,
         KENV_CURL_SSL: DEFAULT_CURL_SSL_OPTIONS,
-        KENV_COMMIT: DEFAULT_COMMIT
+        KENV_COMMIT: DEFAULT_COMMIT,
+        KENV_NOT_MISTER: None
     }
 
 
@@ -81,7 +83,8 @@ class UpdateAllServiceTester(UpdateAllService):
                  store_migrator: StoreMigrator = None,
                  file_system: FileSystem = None,
                  os_utils: OsUtils = None,
-                 countdown: Countdown = None):
+                 countdown: Countdown = None,
+                 settings_screen: SettingsScreen = None):
 
         config_provider = config_provider or ConfigProvider()
         config_reader = config_reader or ConfigReaderTester()
@@ -99,5 +102,6 @@ class UpdateAllServiceTester(UpdateAllService):
             store_migrator=store_migrator,
             file_system=file_system,
             os_utils=os_utils or SpyOsUtils(),
-            countdown=countdown or CountdownStub()
+            countdown=countdown or CountdownStub(),
+            settings_screen=settings_screen or SettingsScreen()
         )

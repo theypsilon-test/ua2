@@ -96,7 +96,7 @@ download_file() {
     exit 1
 }
 
-echo "Running MiSTer Downloader"
+echo "Launching Update All"
 echo
 
 SCRIPT_PATH="/tmp/update_all.sh"
@@ -107,10 +107,8 @@ download_file "${SCRIPT_PATH}" "https://raw.githubusercontent.com/theypsilon-tes
 
 chmod +x "${SCRIPT_PATH}"
 
-export DOWNLOADER_LAUNCHER_PATH="${BASH_SOURCE[0]}"
-
 if ! "${SCRIPT_PATH}" ; then
-    echo -e "Downloader failed!\n"
+    echo -e "Update All failed!\n"
     exit 1
 fi
 

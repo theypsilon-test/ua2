@@ -32,6 +32,9 @@ def main(env):
             UpdateAllServiceFactory(logger, local_repository_provider=local_repository_provider),
             env
         )
+    except KeyboardInterrupt as _:
+        logger.print('\nExecution aborted by the user.')
+        return 1
     except Exception as _:
         logger.print(traceback.format_exc())
         exit_code = 1

@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Tuple
 
 from update_all.constants import KENV_INI_PATH, MEDIA_FAT, KENV_CURL_SSL, KENV_COMMIT, DEFAULT_CURL_SSL_OPTIONS, \
-    DEFAULT_COMMIT, DEFAULT_INI_PATH
+    DEFAULT_COMMIT, DEFAULT_INI_PATH, KENV_NOT_MISTER
 from update_all.logger import Logger
 
 
@@ -48,6 +48,7 @@ class Config:
     base_path: str = MEDIA_FAT
     allow_reboot: bool = True
     update_linux: bool = True
+    not_mister: bool = False
     verbose: bool = False
     debug: bool = False
 
@@ -112,6 +113,16 @@ class ConfigReader:
         result.start_time = time.time()
 
         self._logger.configure(result)
+
+        if result.base_path != MEDIA_FAT:
+            result.arcade_organizer = False
+
+        if self._env[KENV_NOT_MISTER] is not None and self._env[KENV_NOT_MISTER].lower() == 'true':
+            self._logger.debug('Not MiSTer environment!')
+            result.arcade_organizer = False
+            result.update_linux = False
+            result.allow_reboot = False
+            result.not_mister = True
 
         self._logger.debug('env: ' + json.dumps(self._env, indent=4))
         self._logger.debug('config: ' + json.dumps(result, default=lambda o: str(o) if isinstance(o, Path) else o.__dict__, indent=4))

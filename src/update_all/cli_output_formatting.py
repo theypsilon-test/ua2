@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright (c) 2022 José Manuel Barroso Galindo <theypsilon@gmail.com>
 
 # This program is free software: you can redistribute it and/or modify
@@ -17,17 +16,12 @@
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
 
-import os
-from update_all.main import main
-from update_all.constants import DEFAULT_CURL_SSL_OPTIONS, DEFAULT_INI_PATH, \
-    DEFAULT_COMMIT, KENV_INI_PATH, KENV_CURL_SSL, KENV_COMMIT, KENV_NOT_MISTER
+BOLD_IN = '\033[1m'
+BOLD_OUT = '\033[0m'
 
-if __name__ == '__main__':
-    exit_code = main({
-        KENV_INI_PATH: os.getenv(KENV_INI_PATH, DEFAULT_INI_PATH),
-        KENV_CURL_SSL: os.getenv(KENV_CURL_SSL, DEFAULT_CURL_SSL_OPTIONS),
-        KENV_COMMIT: os.getenv(KENV_COMMIT, DEFAULT_COMMIT),
-        KENV_NOT_MISTER: os.getenv(KENV_NOT_MISTER, None)
-    })
 
-    exit(exit_code)
+def bold(text):
+    return f'{BOLD_IN}{text}{BOLD_OUT}'
+
+
+CLEAR_SCREEN = "\033[H\033[J"

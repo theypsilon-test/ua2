@@ -23,6 +23,8 @@ from abc import ABC, abstractmethod
 from enum import unique, IntEnum, auto
 from multiprocessing import Process, Value
 
+from update_all.cli_output_formatting import bold
+
 
 @unique
 class CountdownOutcome(IntEnum):
@@ -48,8 +50,8 @@ class CountdownImpl(Countdown):
             child_process = Process(target=read_characters, args=(char, ends, os_specifics.context()), daemon=True)
 
             print()
-            print(" *Press <UP>, To enter the SETTINGS screen.")
-            print(" *Press <DOWN>, To continue now.")
+            print(f" {bold('*')}Press <{bold('UP')}>, To enter the SETTINGS screen.")
+            print(f" {bold('*')}Press <{bold('DOWN')}>, To continue now.")
             print()
         except:
             return CountdownOutcome.CONTINUE
@@ -160,19 +162,20 @@ class _OsSpecificsLinux:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self._oldtty)
 
     def context(self):
-        class _LinuxContext(object):
-            def __init__(self, fdstdin):
-                self.fdstdin = fdstdin
-
-            def __enter__(self):
-                self.fin = os.fdopen(self.fdstdin)
-                sys.stdin = self.fin
-                return self
-
-            def __exit__(self, type, value, traceback):
-                self.fin.close()
-
         return _LinuxContext(self._fdstdin)
+
+
+class _LinuxContext(object):
+    def __init__(self, fdstdin):
+        self.fdstdin = fdstdin
+
+    def __enter__(self):
+        self.fin = os.fdopen(self.fdstdin)
+        sys.stdin = self.fin
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.fin.close()
 
 
 class _OsSpecificsWindows:
@@ -186,14 +189,15 @@ class _OsSpecificsWindows:
         pass
 
     def context(self):
-        class _WindowsContext(object):
-            def __init__(self):
-                pass
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, type, value, traceback):
-                pass
-
         return _WindowsContext()
+
+
+class _WindowsContext(object):
+    def __init__(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass

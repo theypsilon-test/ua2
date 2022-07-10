@@ -101,7 +101,7 @@ K_NAMES_SORT_CODE = "names_sort_code"
 KENV_INI_PATH = 'INI_PATH'
 KENV_CURL_SSL = 'CURL_SSL'
 KENV_COMMIT = 'COMMIT'
-
+KENV_NOT_MISTER = 'NOT_MISTER'
 
 @unique
 class PathType(Enum):

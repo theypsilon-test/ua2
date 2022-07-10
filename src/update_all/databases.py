@@ -33,8 +33,8 @@ def db_distribution_mister_by_encc_forks(encc_forks: bool) -> Database:
 
 
 DB_ID_JTCORES = 'jtcores'
-DB_JTBIN_JTCORES = Database(db_id=DB_ID_JTCORES, db_url='https://raw.githubusercontent.com/jotego/jtpremium/main/jtbindb.json.zip', title='JTCORES for MiSTer (jtcores)')
-DB_JTSTABLE_JTCORES = Database(db_id=DB_ID_JTCORES, db_url='https://raw.githubusercontent.com/jotego/jtcores_mister/main/jtbindb.json.zip', title='JTCORES for MiSTer (jtpremium)')
+DB_JTBIN_JTCORES = Database(db_id=DB_ID_JTCORES, db_url='https://raw.githubusercontent.com/jotego/jtpremium/main/jtbindb.json.zip', title='JTCORES for MiSTer (jtpremium)')
+DB_JTSTABLE_JTCORES = Database(db_id=DB_ID_JTCORES, db_url='https://raw.githubusercontent.com/jotego/jtcores_mister/main/jtbindb.json.zip', title='JTCORES for MiSTer')
 
 
 def db_jtcores_by_download_beta_cores(download_beta_cores: bool) -> Database:
