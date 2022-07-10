@@ -119,7 +119,7 @@ _settings_screen_model = {
                                     {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
                                 ],
                             }],
-                            "false": [{"type": "message", "text": ["Pressed ESC/Abort", "Closing Update All..."], "action": {"title": "Ok", "type": "fixed", "fixed": [{"type": "navigate", "target": "abort"}]}}]
+                            "false": [{"type": "message", "text": ["Pressed ESC/Abort", "Closing Update All..."], "effects": [{"type": "navigate", "target": "abort"}]}]
                         }
                     ]
                 },
@@ -152,7 +152,7 @@ _settings_screen_model = {
                                     {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
                                 ],
                             }],
-                            "false": [{"type": "message", "text": ["Pressed ESC/Abort", "Closing Update All..."], "action": {"title": "Ok", "type": "fixed", "fixed": [{"type": "navigate", "target": "abort"}]}}]
+                            "false": [{"type": "message", "text": ["Pressed ESC/Abort", "Closing Update All..."], "effects": [{"type": "navigate", "target": "abort"}]}]
                         }
                     ]
                 }
@@ -250,7 +250,7 @@ _settings_screen_model = {
                                         "",
                                         "Thank you so much for your support!",
                                     ],
-                                    "action": {"title": "Ok", "type": "fixed", "fixed": [{
+                                    "effects": [{
                                         "type": "message",
                                         "header": "Support MiSTer",
                                         "text": [
@@ -271,7 +271,7 @@ _settings_screen_model = {
                                             "",
                                             "Your favorite open-source projects require your support to keep evolving!"
                                         ]
-                                    }]},
+                                    }],
                                 }]
                             }
                         ],
@@ -451,7 +451,7 @@ _settings_screen_model = {
                                 "type": "message",
                                 "text": ["WARNING! Your current names.txt file will be overwritten after updating"],
                                 "alert_level": "black",
-                                "action": {"title": "Ok", "type": "fixed", "fixed": [{"type": "rotate_variable", "target": "names_txt_updater"}]},
+                                "effects": [{"type": "rotate_variable", "target": "names_txt_updater"}],
                             }],
                             "false": [{"type": "rotate_variable", "target": "names_txt_updater"}]
                         }
@@ -1048,7 +1048,7 @@ class _SettingsScreenEffects:
             self._ui.set_value('test_unstable_spinner_option', "Test Unstable Spinner Firmware" if self._ui.get_value('test_unstable_spinner_option') == "Revert Unstable Spinner Firmware" else "Revert Unstable Spinner Firmware")
             self._ui.set_value('test_unstable_spinner_desc', "For the Taito EGRET II Mini" if self._ui.get_value('test_unstable_spinner_desc') == "Restore the original MiSTer binary" else "Restore the original MiSTer binary")
             self._ui.set_value('spinner_needs_reboot', 'true')
-            self._ui.clear_screen()
+            self._ui.refresh_screen()
         elif effect['type'] == 'play_bad_apple':
             raise NotImplementedError('Bad Apple is not implemented!')
         elif effect['type'] == 'save':

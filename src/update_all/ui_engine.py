@@ -75,7 +75,7 @@ class _UiSystem(object):
     def set_value(self, key, value):
         self._values[key] = value
 
-    def clear_screen(self):
+    def refresh_screen(self):
         self._window.clear()
 
     def display(self):
@@ -283,10 +283,10 @@ class _Message:
         for index, text_line in enumerate(self._data['text']):
             self._window.addstr(header_offset + index, 1, self._interpolator.interpolate(text_line), curses.A_NORMAL)
 
-        self._window.addstr(header_offset + len(self._data['text']), 1, self._interpolator.interpolate(self._data['action']['title']), curses.A_REVERSE)
+        self._window.addstr(header_offset + len(self._data['text']), 1, self._interpolator.interpolate(self._data.get('action_name', 'Ok')), curses.A_REVERSE)
 
         if self._window.getch() in [curses.KEY_ENTER, ord("\n")]:
-            return self._effect_resolver.resolve_action(self._data['action'])
+            return self._effect_resolver.resolve_effect_chain(self._data['effects'])
 
     def reset(self):
         pass
@@ -412,8 +412,8 @@ def _make_section_state(window, data, values, model, custom_effects):
     elif data['type'] == 'confirm':
         return _Confirm(window, data, values, state, interpolator, effect_resolver, hotkeys)
     elif data['type'] == 'message':
-        if 'action' not in data:
-            data['action'] = {"title": "Ok", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
+        if 'effects' not in data:
+            data['effects'] = [{"type": "navigate", "target": "back"}]
         return _Message(window, data, values, state, interpolator, effect_resolver, hotkeys)
     else:
         raise ValueError(f'Not implemented item type "{data["type"]}"')
