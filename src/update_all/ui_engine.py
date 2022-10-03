@@ -15,7 +15,152 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
+import abc
 import curses
+from typing import Dict, Callable, List, Any
+
+
+class Ui(abc.ABC):
+    def get_value(self, key: str) -> str:
+        """Gets value for variable on the given key"""
+
+    def set_value(self, key: str, value: Any) -> None:
+        """Sets value as string for variable on the given key"""
+
+    def refresh_screen(self) -> None:
+        """Refreshes UI Screen"""
+
+
+class UiComponent(abc.ABC):
+    def initialize_ui(self, ui: Ui):
+        """Initializes the UI object"""
+
+    def initialize_effects(self, ui: Ui, effects: Dict[str, Callable[[], None]]):
+        """Initializes the effects dictionary if necessary"""
+
+
+class _UiSystem(Ui):
+    def __init__(self, window, entrypoint, model, ui_components):
+        self._window = window
+        self._section = entrypoint
+        self._model = model
+        self._ui_components = ui_components
+        self._items = self._model['items']
+        self._values = {k: v['default'] for k, v in self._model.get('variables', {}).items()}
+        for item in self._model['items'].values():
+            self._values.update({k: v['default'] for k, v in item.get('variables', {}).items()})
+        self._section_states = {}
+        self._history = []
+
+    def get_value(self, key: str) -> str:
+        return self._values[key]
+
+    def set_value(self, key: str, value: Any) -> None:
+        self._values[key] = str(value).lower()
+
+    def refresh_screen(self) -> None:
+        self._window.clear()
+
+    def display(self):
+        self._window.bkgd(' ', curses.color_pair(1) | curses.A_BOLD)
+        self._window.keypad(1)
+        self._window.clear()
+        curses.start_color()
+        curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
+
+        for component in self._ui_components:
+            component.initialize_ui(self)
+
+        self._current_section_state().reset()
+
+        while True:
+            new_section = self._current_section_state().tick()
+
+            self._window.refresh()
+            curses.doupdate()
+
+            if new_section is None:
+                continue
+
+            self._window.clear()
+
+            if new_section == 'exit_and_run':
+                break
+            elif new_section == 'abort':
+                exit(0)
+            elif new_section == 'back':
+                if len(self._history) == 0:
+                    break
+                self._section = self._history.pop()
+
+            elif new_section == 'clear_window':
+                continue
+            elif isinstance(new_section, dict):
+                self._push_history()
+                self._section = '@temporary'
+                self._section_states['@temporary'] = self._make_section_state(self._window, new_section, self._values, self._model, self._ui_components)
+                self._section_states['@temporary'].reset()
+            else:
+                self._push_history()
+                self._section = new_section
+                self._current_section_state().reset()
+
+    def _push_history(self):
+        if self._section == '@temporary':
+            return
+        self._history.append(self._section)
+
+    def _current_section_state(self):
+        if self._section not in self._section_states:
+            self._section_states[self._section] = self._make_section_state(self._window, self._items[self._section], self._values, self._model, self._ui_components)
+        return self._section_states[self._section]
+
+    def _make_section_state(self, window, data, values, model, ui_components):
+        expand_type(data, model)
+
+        data['formatters'] = {**data.get('formatters', {}), **model.get('formatters', {})}
+        data['variables'] = {**data.get('variables', {}), **model.get('variables', {})}
+
+        state = _State(len(data.get('entries', {})), len(data.get('actions', {})))
+        interpolator = _Interpolator(data, values)
+        effect_resolver = _EffectResolver(self, state, data, values)
+        for component in ui_components:
+            effect_resolver.add_ui_component(component)
+
+        hotkeys = {}
+        for hk in data.get('hotkeys', []):
+            for key in hk['keys']:
+                hotkeys[key] = hk['action']
+
+        if data['type'] == 'menu':
+            return _Menu(window, data, values, state, interpolator, effect_resolver, hotkeys)
+        elif data['type'] == 'confirm':
+            return _Confirm(window, data, values, state, interpolator, effect_resolver, hotkeys)
+        elif data['type'] == 'message':
+            if 'effects' not in data:
+                data['effects'] = [{"type": "navigate", "target": "back"}]
+            return _Message(window, data, values, state, interpolator, effect_resolver, hotkeys)
+        else:
+            raise ValueError(f'Not implemented item type "{data["type"]}"')
+
+
+def expand_type(data, model):
+    while data['type'] in model['base_types']:
+        base_type = model['base_types'][data['type']]
+        if 'type' not in base_type:
+            raise ValueError('There must always be a type property within the base_types.')
+
+        for key, content in base_type.items():
+            if type(content) in (str, int, float, bool):
+                data[key] = base_type[key]
+            elif isinstance(content, list):
+                data[key] = [*data.get(key, []), *base_type.get(key, [])]
+            elif isinstance(content, dict):
+                data[key] = {**data.get(key, []), **base_type.get(key, [])}
+            else:
+                raise ValueError(f'Can not inherit field {key} with content of type: {str(type(content))}')
 
 
 class _State:
@@ -50,83 +195,6 @@ class _State:
 
     def reset_position(self):
         self.position = 0
-
-
-class _UiSystem(object):
-    def __init__(self, stdscreen, entrypoint, ui_model, custom_effects_factory):
-        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
-        self._window = stdscreen.subwin(0, 0)
-        self._window.bkgd(' ', curses.color_pair(1) | curses.A_BOLD)
-        self._window.keypad(1)
-
-        self._section = entrypoint
-        self._section_states = {}
-        self._items = ui_model['items']
-        self._history = []
-        self._model = ui_model
-        self._values = {k: v['default'] for k, v in ui_model['variables'].items()}
-        for item in ui_model['items'].values():
-            self._values.update({k: v['default'] for k, v in item.get('variables', {}).items()})
-        self._custom_effects = custom_effects_factory(self)
-
-    def get_value(self, key):
-        return self._values[key]
-
-    def set_value(self, key, value):
-        self._values[key] = value
-
-    def refresh_screen(self):
-        self._window.clear()
-
-    def display(self):
-        self._window.clear()
-        curses.start_color()
-        curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
-        curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
-        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
-
-        self._current_section_state().reset()
-
-        while True:
-            new_section = self._current_section_state().tick()
-
-            self._window.refresh()
-            curses.doupdate()
-
-            if new_section is None:
-                continue
-
-            self._window.clear()
-
-            if new_section == 'exit_and_run':
-                break
-            elif new_section == 'abort':
-                exit(0)
-            elif new_section == 'back':
-                if len(self._history) == 0:
-                    break
-                self._section = self._history.pop()
-
-            elif new_section == 'clear_window':
-                continue
-            elif isinstance(new_section, dict):
-                self._push_history()
-                self._section = '@temporary'
-                self._section_states['@temporary'] = _make_section_state(self._window, new_section, self._values, self._model, self._custom_effects)
-                self._section_states['@temporary'].reset()
-            else:
-                self._push_history()
-                self._section = new_section
-                self._current_section_state().reset()
-
-    def _push_history(self):
-        if self._section != '@temporary':
-            self._history.append(self._section)
-
-    def _current_section_state(self):
-        if self._section not in self._section_states:
-            self._section_states[self._section] = _make_section_state(self._window, self._items[self._section], self._values, self._model, self._custom_effects)
-        return self._section_states[self._section]
 
 
 class _Interpolator:
@@ -209,11 +277,15 @@ class _Interpolator:
 
 
 class _EffectResolver:
-    def __init__(self, state, data, values, custom_effects):
+    def __init__(self, ui, state, data, values):
+        self._ui = ui
         self._state = state
         self._data = data
         self._values = values
-        self._custom_effects = custom_effects
+        self._additional_effects = {}
+
+    def add_ui_component(self, ui_component):
+        ui_component.initialize_effects(self._ui, self._additional_effects)
 
     def resolve_effect_chain(self, chain):
         result = None
@@ -249,8 +321,10 @@ class _EffectResolver:
                     result = 'clear_window'
             elif effect['type'] in ('menu', 'message', 'confirm'):
                 return effect
+            elif effect['type'] in self._additional_effects:
+                self._additional_effects[effect['type']](effect)
             else:
-                self._custom_effects.resolve_custom_effect(effect)
+                raise NotImplementedError(f'Wrong effect type :"{effect["type"]}"')
 
         return result
 
@@ -379,49 +453,12 @@ class _Menu:
         self._state.reset_lateral_position()
 
 
-def _make_section_state(window, data, values, model, custom_effects):
-    while data['type'] in model['base_types']:
-        base_type = model['base_types'][data['type']]
-        if 'type' not in base_type:
-            raise ValueError('There must always be a type property within the base_types.')
-
-        for key, content in base_type.items():
-            if type(content) in (str, int, float, bool):
-                data[key] = base_type[key]
-            elif isinstance(content, list):
-                data[key] = [*data.get(key, []), *base_type.get(key, [])]
-            elif isinstance(content, dict):
-                data[key] = {**data.get(key, []), **base_type.get(key, [])}
-            else:
-                raise ValueError(f'Can not inherit field {key} with content of type: {str(type(content))}')
-
-    data['formatters'] = {**data.get('formatters', {}), **model.get('formatters', {})}
-    data['variables'] = {**data.get('variables', {}), **model.get('variables', {})}
-
-    state = _State(len(data.get('entries', {})), len(data.get('actions', {})))
-    interpolator = _Interpolator(data, values)
-    effect_resolver = _EffectResolver(state, data, values, custom_effects)
-
-    hotkeys = {}
-    for hk in data.get('hotkeys', []):
-        for key in hk['keys']:
-            hotkeys[key] = hk['action']
-
-    if data['type'] == 'menu':
-        return _Menu(window, data, values, state, interpolator, effect_resolver, hotkeys)
-    elif data['type'] == 'confirm':
-        return _Confirm(window, data, values, state, interpolator, effect_resolver, hotkeys)
-    elif data['type'] == 'message':
-        if 'effects' not in data:
-            data['effects'] = [{"type": "navigate", "target": "back"}]
-        return _Message(window, data, values, state, interpolator, effect_resolver, hotkeys)
-    else:
-        raise ValueError(f'Not implemented item type "{data["type"]}"')
-
-
-def run_ui_engine(entrypoint, model, custom_effects_factory):
+def run_ui_engine(entrypoint: str, model: Dict[str, Any], ui_components: List[UiComponent]):
     def loader(screen):
-        menu = _UiSystem(screen, entrypoint, model, custom_effects_factory)
-        menu.display()
+        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
+        window = screen.subwin(0, 0)
+        ui = _UiSystem(window, entrypoint, model, ui_components)
+        ui.display()
 
     curses.wrapper(loader)
+

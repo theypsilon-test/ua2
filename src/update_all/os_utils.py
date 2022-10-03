@@ -34,7 +34,10 @@ class OsUtils(ABC):
         """send reboot signal to the OS"""
 
     def execute_process(self, launcher, env) -> int:
-        """execute launcher process with subprocess and the given env"""
+        """execute launcher process with subprocess and the given env. output gets redirected to stdout"""
+
+    def read_command_output(self, cmd, env) -> [int, str]:
+        """executes command with the given env and returns output and success code"""
 
     def sleep(self, seconds) -> None:
         """waits given seconds"""
@@ -79,6 +82,10 @@ class LinuxOsUtils(OsUtils):
         time.sleep(self._config_provider.get().wait_time_for_reading)
 
         return return_code
+
+    def read_command_output(self, cmd, env) -> [int, str]:
+        proc = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        return proc.returncode, proc.stdout.decode()
 
     def sleep(self, seconds) -> None:
         time.sleep(seconds)

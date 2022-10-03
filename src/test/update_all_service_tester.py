@@ -15,28 +15,31 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from typing import Tuple
+from logging import Logger
+from typing import Tuple, Any
 
 from test.countdown_stub import CountdownStub
 from test.fake_filesystem import FileSystemFactory
 from test.logger_tester import NoLogger
 from test.spy_os_utils import SpyOsUtils
 from update_all.config import ConfigReader, ConfigProvider, Config
-from update_all.constants import KENV_COMMIT, KENV_CURL_SSL, KENV_INI_PATH, DEFAULT_INI_PATH, DEFAULT_CURL_SSL_OPTIONS, \
-    DEFAULT_COMMIT, KENV_NOT_MISTER
+from update_all.constants import KENV_COMMIT, KENV_CURL_SSL, DEFAULT_CURL_SSL_OPTIONS, DEFAULT_COMMIT, KENV_NOT_MISTER, \
+    KENV_CURRENT_PATH, MEDIA_FAT, FOLDER_scripts
 from update_all.countdown import Countdown
+from update_all.downloader_ini_repository import DownloaderIniRepository
 from update_all.file_system import FileSystem
 from update_all.local_repository import LocalRepositoryProvider, LocalRepository
 from update_all.local_store import LocalStoreProvider
 from update_all.os_utils import OsUtils
 from update_all.settings_screen import SettingsScreen
 from update_all.store_migrator import StoreMigrator
+from update_all.ui_engine import Ui
 from update_all.update_all_service import UpdateAllServiceFactory, UpdateAllService
 
 
 def default_env():
     return {
-        KENV_INI_PATH: DEFAULT_INI_PATH,
+        KENV_CURRENT_PATH: MEDIA_FAT + '/' + FOLDER_scripts,
         KENV_CURL_SSL: DEFAULT_CURL_SSL_OPTIONS,
         KENV_COMMIT: DEFAULT_COMMIT,
         KENV_NOT_MISTER: None
@@ -75,6 +78,40 @@ class LocalRepositoryTester(LocalRepository):
         )
 
 
+class DownloaderIniRepositoryTester(DownloaderIniRepository):
+    def __init__(self, file_system: FileSystem = None):
+        super().__init__(
+            logger=NoLogger(),
+            file_system=file_system or FileSystemFactory().create_for_system_scope()
+        )
+
+
+class SettingsScreenTester(SettingsScreen):
+    def __init__(self, config_provider: ConfigProvider = None, file_system: FileSystem = None, downloader_ini_repository: DownloaderIniRepository = None, os_utils: OsUtils = None):
+        config_provider = config_provider or ConfigProvider()
+        file_system = file_system or FileSystemFactory(config_provider=config_provider).create_for_system_scope()
+        super().__init__(
+            logger=NoLogger(),
+            config_provider=config_provider,
+            file_system=file_system,
+            downloader_ini_repository=downloader_ini_repository or DownloaderIniRepositoryTester(file_system=file_system),
+            os_utils=os_utils or SpyOsUtils())
+
+
+class UiStub(Ui):
+    def __init__(self):
+        self._props = {}
+
+    def get_value(self, key: str) -> str:
+        return self._props[key]
+
+    def set_value(self, key: str, value: Any) -> None:
+        self._props[key] = value
+
+    def refresh_screen(self) -> None:
+        pass
+
+
 class UpdateAllServiceTester(UpdateAllService):
     def __init__(self, config_reader: ConfigReader = None,
                  config_provider: ConfigProvider = None,
@@ -84,6 +121,7 @@ class UpdateAllServiceTester(UpdateAllService):
                  file_system: FileSystem = None,
                  os_utils: OsUtils = None,
                  countdown: Countdown = None,
+                 downloader_ini_repository: DownloaderIniRepository = None,
                  settings_screen: SettingsScreen = None):
 
         config_provider = config_provider or ConfigProvider()
@@ -92,6 +130,8 @@ class UpdateAllServiceTester(UpdateAllService):
         store_migrator = store_migrator or StoreMigratorTester()
         file_system = file_system or FileSystemFactory().create_for_system_scope()
         local_repository = local_repository or LocalRepositoryTester(config_provider=config_provider, file_system=file_system, store_migrator=store_migrator)
+        downloader_ini_repository = downloader_ini_repository or DownloaderIniRepositoryTester(file_system=file_system)
+        settings_screen = settings_screen or SettingsScreen(logger=NoLogger(), config_provider=config_provider, file_system=file_system, downloader_ini_repository=downloader_ini_repository, os_utils=os_utils)
 
         super().__init__(
             config_reader=config_reader,
@@ -103,5 +143,6 @@ class UpdateAllServiceTester(UpdateAllService):
             file_system=file_system,
             os_utils=os_utils or SpyOsUtils(),
             countdown=countdown or CountdownStub(),
-            settings_screen=settings_screen or SettingsScreen()
+            settings_screen=settings_screen,
+            downloader_ini_repository=downloader_ini_repository
         )

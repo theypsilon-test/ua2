@@ -41,9 +41,10 @@ def db_jtcores_by_download_beta_cores(download_beta_cores: bool) -> Database:
     return DB_JTBIN_JTCORES if download_beta_cores else DB_JTSTABLE_JTCORES
 
 
-DB_LLAPI_FOLDER = Database(db_id='llapi_folder', db_url='https://raw.githubusercontent.com/MiSTer-LLAPI/LLAPI_folder_MiSTer/main/llapidb.json.zip', title='LLAPI Folder')
 DB_THEYPSILON_UNOFFICIAL_DISTRIBUTION = Database(db_id='theypsilon_unofficial_distribution', db_url='https://raw.githubusercontent.com/theypsilon/Distribution_Unofficial_MiSTer/main/unofficialdb.json.zip', title='theypsilon Unofficial Distribution')
+DB_LLAPI_FOLDER = Database(db_id='llapi_folder', db_url='https://raw.githubusercontent.com/MiSTer-LLAPI/LLAPI_folder_MiSTer/main/llapidb.json.zip', title='LLAPI Folder')
 DB_ARCADE_OFFSET_FOLDER = Database(db_id='arcade_offset_folder', db_url='https://raw.githubusercontent.com/atrac17/Arcade_Offset/db/arcadeoffsetdb.json.zip', title='Arcade Offset folder')
+DB_COIN_OP_COLLECTION = Database(db_id='atrac17/Coin-Op_Collection', db_url='https://raw.githubusercontent.com/atrac17/Coin-Op_Collection/db/db.json.zip', title='Coin-Op Collection')
 
 DB_ID_NAMES_TXT = 'names_txt'
 DB_NAMES_CHAR54_MANUFACTURER_EU_TXT = Database(db_id=DB_ID_NAMES_TXT, db_url='https://raw.githubusercontent.com/ThreepwoodLeBrush/Names_MiSTer/dbs/names_CHAR54_Manufacturer_EU.json', title='Names TXT: CHAR54 Manufacturer EU')
@@ -61,43 +62,58 @@ DB_NAMES_CHAR18_COMMON_US_TXT = Database(db_id=DB_ID_NAMES_TXT, db_url='https://
 DB_NAMES_CHAR18_COMMON_JP_TXT = Database(db_id=DB_ID_NAMES_TXT, db_url='https://raw.githubusercontent.com/ThreepwoodLeBrush/Names_MiSTer/dbs/names_CHAR18_Common_JP.json', title='Names TXT: CHAR18 Common JP')
 
 
-def db_names_txt_by_locale(region: str, char_code: str, sort_code: str) -> Database:
-    names_dict = {
-        'JP': {
-            'CHAR18': {
-                'Common': DB_NAMES_CHAR18_COMMON_JP_TXT,
-                'Manufacturer': DB_NAMES_CHAR18_MANUFACTURER_JP_TXT
-            },
-            'CHAR28': {
-                'Common': DB_NAMES_CHAR28_COMMON_JP_TXT,
-                'Manufacturer': DB_NAMES_CHAR28_MANUFACTURER_JP_TXT
-            }
+_names_dict = {
+    'JP': {
+        'CHAR18': {
+            'Common': DB_NAMES_CHAR18_COMMON_JP_TXT,
+            'Manufacturer': DB_NAMES_CHAR18_MANUFACTURER_JP_TXT
         },
-        'US': {
-            'CHAR18': {
-                'Common': DB_NAMES_CHAR18_COMMON_US_TXT,
-                'Manufacturer': DB_NAMES_CHAR18_MANUFACTURER_US_TXT
-            },
-            'CHAR28': {
-                'Common': DB_NAMES_CHAR28_COMMON_US_TXT,
-                'Manufacturer': DB_NAMES_CHAR28_MANUFACTURER_US_TXT
-            }
+        'CHAR28': {
+            'Common': DB_NAMES_CHAR28_COMMON_JP_TXT,
+            'Manufacturer': DB_NAMES_CHAR28_MANUFACTURER_JP_TXT
+        }
+    },
+    'US': {
+        'CHAR18': {
+            'Common': DB_NAMES_CHAR18_COMMON_US_TXT,
+            'Manufacturer': DB_NAMES_CHAR18_MANUFACTURER_US_TXT
         },
-        'EU': {
-            'CHAR18': {
-                'Common': DB_NAMES_CHAR18_COMMON_EU_TXT,
-                'Manufacturer': DB_NAMES_CHAR18_MANUFACTURER_EU_TXT
-            },
-            'CHAR28': {
-                'Common': DB_NAMES_CHAR28_COMMON_EU_TXT,
-                'Manufacturer': DB_NAMES_CHAR28_MANUFACTURER_EU_TXT
-            },
-            'CHAR54': {
-                'Manufacturer': DB_NAMES_CHAR54_MANUFACTURER_EU_TXT
-            }
+        'CHAR28': {
+            'Common': DB_NAMES_CHAR28_COMMON_US_TXT,
+            'Manufacturer': DB_NAMES_CHAR28_MANUFACTURER_US_TXT
+        }
+    },
+    'EU': {
+        'CHAR18': {
+            'Common': DB_NAMES_CHAR18_COMMON_EU_TXT,
+            'Manufacturer': DB_NAMES_CHAR18_MANUFACTURER_EU_TXT
+        },
+        'CHAR28': {
+            'Common': DB_NAMES_CHAR28_COMMON_EU_TXT,
+            'Manufacturer': DB_NAMES_CHAR28_MANUFACTURER_EU_TXT
+        },
+        'CHAR54': {
+            'Manufacturer': DB_NAMES_CHAR54_MANUFACTURER_EU_TXT
         }
     }
-    return names_dict.get(region, {}).get(char_code, {}).get(sort_code, DB_NAMES_CHAR18_COMMON_JP_TXT)
+}
+
+
+def db_names_txt_by_locale(region: str, char_code: str, sort_code: str) -> Database:
+    return _names_dict.get(region, {}).get(char_code, {}).get(sort_code, DB_NAMES_CHAR18_COMMON_JP_TXT)
+
+
+def names_locale_by_db_url(db_url) -> (str, str, str):
+    for region in _names_dict:
+        for char_code in _names_dict[region]:
+            for sort_code, db in _names_dict[region][char_code].items():
+                if db_url == db.db_url:
+                    return region, char_code, sort_code
+
+    if db_url == DB_NAMES_CHAR18_COMMON_JP_TXT.db_url:
+        raise ValueError('Could not find a value for DB_NAMES_CHAR18_COMMON_JP_TXT')
+
+    return names_locale_by_db_url(DB_NAMES_CHAR18_COMMON_JP_TXT.db_url)
 
 
 DB_TTY2OLED_FILES = Database(db_id='tty2oled_files', db_url='https://raw.githubusercontent.com/venice1200/MiSTer_tty2oled/main/tty2oleddb.json', title='tty2oled files')

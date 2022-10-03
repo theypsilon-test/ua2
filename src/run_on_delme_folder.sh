@@ -9,9 +9,7 @@ TMP_FILE="$(mktemp)"
 
 chmod +x "${TMP_FILE}"
 
-mkdir -p delme/Scripts
 export CURL_SSL=""
-export INI_PATH="delme/Scripts/update_all.ini"
 export NOT_MISTER="true"
 
 "${TMP_FILE}"

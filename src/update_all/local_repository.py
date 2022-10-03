@@ -17,7 +17,7 @@
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
 from update_all.config import ConfigProvider
-from update_all.constants import FILE_update_all_storage, FILE_update_all_log
+from update_all.constants import FILE_update_all_storage, FILE_update_all_log, FILE_update_all_ini
 from update_all.local_store import LocalStore
 from update_all.store_migrator import make_new_local_store
 
@@ -44,12 +44,19 @@ class LocalRepository:
         self._store_migrator = store_migrator
         self._storage_path_value = None
         self._logfile_path_value = None
+        self._update_all_ini_path_value = None
 
     @property
     def _storage_path(self):
         if self._storage_path_value is None:
             self._storage_path_value = f'{self._config_provider.get().base_path}/{FILE_update_all_storage}'
         return self._storage_path_value
+
+    @property
+    def _update_all_ini_path(self):
+        if self._update_all_ini_path_value is None:
+            self._update_all_ini_path_value = f'{self._config_provider.get().base_path}/{FILE_update_all_ini}'
+        return self._update_all_ini_path_value
 
     @property
     def logfile_path(self):

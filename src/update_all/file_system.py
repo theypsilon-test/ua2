@@ -79,6 +79,10 @@ class FileSystem(ABC):
         """interface"""
 
     @abstractmethod
+    def read_file_binary(self, path):
+        """interface"""
+
+    @abstractmethod
     def write_file_contents(self, path, content):
         """interface"""
 
@@ -200,6 +204,10 @@ class _FileSystem(FileSystem):
         with open(self._path(path), 'r') as f:
             return f.read()
 
+    def read_file_binary(self, path):
+        with open(self._path(path), 'rb') as f:
+            return f.read()
+
     def write_file_contents(self, path, content):
         with open(self._path(path), 'w') as f:
             return f.write(content)
@@ -259,8 +267,8 @@ class _FileSystem(FileSystem):
         raise Exception('folders Not implemented')
 
     def remove_folder(self, path):
-        if self._config.get()[K_ALLOW_DELETE] != AllowDelete.ALL:
-            return
+#        if self._config.get()[K_ALLOW_DELETE] != AllowDelete.ALL:
+#            return
 
         self._logger.print('Deleting empty folder %s' % path)
         try:
@@ -275,8 +283,8 @@ class _FileSystem(FileSystem):
         self._logger.debug('Ignoring error.')
 
     def remove_non_empty_folder(self, path):
-        if self._config.get()[K_ALLOW_DELETE] != AllowDelete.ALL:
-            return
+#        if self._config.get()[K_ALLOW_DELETE] != AllowDelete.ALL:
+#            return
 
         try:
             shutil.rmtree(self._path(path))
@@ -289,11 +297,11 @@ class _FileSystem(FileSystem):
 
     def unlink(self, path, verbose=True):
         verbose = verbose and not path.startswith('/tmp/')
-        if self._config.get()[K_ALLOW_DELETE] != AllowDelete.ALL:
-            if self._config.get()[K_ALLOW_DELETE] == AllowDelete.OLD_RBF and path[-4:].lower() == ".rbf":
-                return self._unlink(path, verbose)
-
-            return True
+#        if self._config.get()[K_ALLOW_DELETE] != AllowDelete.ALL:
+#            if self._config.get()[K_ALLOW_DELETE] == AllowDelete.OLD_RBF and path[-4:].lower() == ".rbf":
+#                return self._unlink(path, verbose)
+#
+#            return True
 
         return self._unlink(path, verbose)
 

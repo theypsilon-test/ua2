@@ -62,9 +62,7 @@ class StoreMigrator:
 
 def make_new_local_store(store_migrator):
     return {
-        'dbs': {},
-        'migration_version': store_migrator.latest_migration_version(),
-        'internal': True
+        'migration_version': store_migrator.latest_migration_version()
     }
 
 

@@ -41,6 +41,10 @@ class SpyOsUtils(OsUtils):
         self.calls_to_execute_process.append((launcher, env))
         return 0
 
+    def read_command_output(self, cmd, env):
+        self.calls_to_execute_process.append((cmd, env))
+        return 0, ''
+
     def download(self, url) -> bytes:
         self.calls_to_download.append(url)
         return bytes()

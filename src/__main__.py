@@ -19,12 +19,12 @@
 
 import os
 from update_all.main import main
-from update_all.constants import DEFAULT_CURL_SSL_OPTIONS, DEFAULT_INI_PATH, \
-    DEFAULT_COMMIT, KENV_INI_PATH, KENV_CURL_SSL, KENV_COMMIT, KENV_NOT_MISTER
+from update_all.constants import DEFAULT_CURL_SSL_OPTIONS, \
+    DEFAULT_COMMIT, KENV_CURL_SSL, KENV_COMMIT, KENV_NOT_MISTER, KENV_CURRENT_PATH
 
 if __name__ == '__main__':
     exit_code = main({
-        KENV_INI_PATH: os.getenv(KENV_INI_PATH, DEFAULT_INI_PATH),
+        KENV_CURRENT_PATH: os.getcwd(),
         KENV_CURL_SSL: os.getenv(KENV_CURL_SSL, DEFAULT_CURL_SSL_OPTIONS),
         KENV_COMMIT: os.getenv(KENV_COMMIT, DEFAULT_COMMIT),
         KENV_NOT_MISTER: os.getenv(KENV_NOT_MISTER, None)

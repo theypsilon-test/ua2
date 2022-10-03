@@ -21,12 +21,15 @@ from enum import unique, Enum
 
 DEFAULT_CACERT_FILE = '/etc/ssl/certs/cacert.pem'
 DEFAULT_CURL_SSL_OPTIONS = '--cacert %s' % DEFAULT_CACERT_FILE
-DEFAULT_INI_PATH = '/media/fat/Scripts/update_all.ini'
 DEFAULT_COMMIT = 'unknown'
 
 # Downloader files
 FILE_update_all_storage = 'Scripts/.config/update_all/update_all.json.zip'
 FILE_update_all_log = 'Scripts/.config/update_all/update_all.log'
+FILE_update_all_ini = 'Scripts/update_all.ini'
+FILE_MiSTer = 'MiSTer'
+FILE_MiSTer_ini = 'MiSTer.ini'
+FOLDER_scripts = 'Scripts'
 
 # Reboot files
 FILE_downloader_needs_reboot_after_linux_update = '/tmp/downloader_needs_reboot_after_linux_update'
@@ -73,6 +76,7 @@ K_JOTEGO_UPDATER = "jotego_updater"
 K_UNOFFICIAL_UPDATER = "unofficial_updater"
 K_LLAPI_UPDATER = "llapi_updater"
 K_ARCADE_OFFSET_DOWNLOADER = "arcade_offset_downloader"
+K_COIN_OP_COLLECTION_DOWNLOADER = "coin_op_collection_downloader"
 K_ARCADE_ROMS_DB_DOWNLOADER = "arcade_roms_db_downloader"
 K_TTY2OLED_FILES_DOWNLOADER = "tty2oled_files_downloader"
 K_I2C2OLED_FILES_DOWNLOADER = "i2c2oled_files_downloader"
@@ -98,7 +102,7 @@ K_NAMES_SORT_CODE = "names_sort_code"
 
 
 # Env
-KENV_INI_PATH = 'INI_PATH'
+KENV_CURRENT_PATH = 'CURRENT_PATH'
 KENV_CURL_SSL = 'CURL_SSL'
 KENV_COMMIT = 'COMMIT'
 KENV_NOT_MISTER = 'NOT_MISTER'
@@ -115,7 +119,7 @@ UPDATE_ALL_PC_UPDATER = "false"
 UPDATE_ALL_OS = "MiSTer_Linux"
 UPDATE_ALL_LAUNCHER_MD5 = "ac10fbada40e3e5f133bc0eee0dd53d5"
 UPDATE_ALL_PATREON_KEY_PATH = "Scripts/update_all.patreonkey"
-UPDATE_ALL_PATREON_KEY_SIZE = "16384"
+UPDATE_ALL_PATREON_KEY_SIZE = 16384
 UPDATE_ALL_PATREON_KEY_MD5Q0 = "00e9f6acaec74650ddd38a14334ebaef"
 SETTINGS_ON_FILENAME = "settings-on"
 WORK_PATH = "Scripts/.config/update_all"
@@ -127,7 +131,9 @@ ARCADE_ORGANIZER_FOLDER_OPTION_3 = "_Arcade Organized"
 MISTER_INI_PATH = "MiSTer.ini"
 NAMES_TXT_PATH = "names.txt"
 UPDATE_ALL_URL = "https://raw.githubusercontent.com/theypsilon/Update_All_MiSTer/master/update_all.sh"
+ARCADE_ORGANIZER_INI = "Scripts/update_arcade-organizer.ini"
 DOWNLOADER_URL = "https://github.com/MiSTer-devel/Downloader_MiSTer/releases/download/latest/dont_download.zip"
 ARCADE_ORGANIZER_URL = "https://raw.githubusercontent.com/theypsilon/_arcade-organizer/master/_arcade-organizer.sh"
 DOWNLOADER_INI_STANDARD_PATH = "downloader.ini"
 TEST_UNSTABLE_SPINNER_FIRMWARE_MD5 = "cc0518143d90f5662d27f140f3f3d697"
+FILE_MiSTer_version = '/MiSTer.version'

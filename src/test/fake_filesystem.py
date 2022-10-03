@@ -43,8 +43,8 @@ def fs_records(records):
 
 
 class FileSystemFactory:
-    def __init__(self, state=None, write_records=None):
-        self._state = state if state is not None else FileSystemState()
+    def __init__(self, state=None, write_records=None, config_provider=None):
+        self._state = state if state is not None else FileSystemState(config=config_provider.get())
         self._fake_failures = {}
         self._write_records = write_records if write_records is not None else []
 
@@ -144,6 +144,9 @@ class _FileSystem(ProductionFileSystem):
 
     def read_file_contents(self, path):
         return self._state.files[self._path(path)]['content']
+
+    def read_file_binary(self, path):
+        return self._state.files[self._path(path)]['binary']
 
     def write_file_contents(self, path, content):
         if self._path(path) not in self._state.files:
