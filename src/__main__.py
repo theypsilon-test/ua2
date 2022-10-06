@@ -20,14 +20,14 @@
 import os
 from update_all.main import main
 from update_all.constants import DEFAULT_CURL_SSL_OPTIONS, \
-    DEFAULT_COMMIT, KENV_CURL_SSL, KENV_COMMIT, KENV_NOT_MISTER, KENV_CURRENT_PATH
+    DEFAULT_COMMIT, KENV_CURL_SSL, KENV_COMMIT, KENV_LOCATION_STR, DEFAULT_LOCATION_STR, KENV_DEBUG, DEFAULT_DEBUG
 
 if __name__ == '__main__':
     exit_code = main({
-        KENV_CURRENT_PATH: os.getcwd(),
         KENV_CURL_SSL: os.getenv(KENV_CURL_SSL, DEFAULT_CURL_SSL_OPTIONS),
         KENV_COMMIT: os.getenv(KENV_COMMIT, DEFAULT_COMMIT),
-        KENV_NOT_MISTER: os.getenv(KENV_NOT_MISTER, None)
+        KENV_LOCATION_STR: os.getenv(KENV_LOCATION_STR, DEFAULT_LOCATION_STR),
+        KENV_DEBUG: os.getenv(KENV_DEBUG, DEFAULT_DEBUG)
     })
 
     exit(exit_code)

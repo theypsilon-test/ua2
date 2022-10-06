@@ -40,7 +40,7 @@ def test_model(): return {
     },
     "items": {
         "names_txt_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Names TXT Settings",
             "variables": {
                 "names_region": {"default": "US", "values": ["US", "EU", "JP"]},
@@ -48,7 +48,7 @@ def test_model(): return {
             "entries": []
         },
         "misc_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Misc | Other Settings",
             "variables": {
                 "arcade_offset_downloader": {"default": "false", "rename": "aod", "group": "x", "values": ["false", "true"]},

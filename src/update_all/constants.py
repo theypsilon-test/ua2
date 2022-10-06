@@ -19,9 +19,12 @@
 # Default SSL option
 from enum import unique, Enum
 
-DEFAULT_CACERT_FILE = '/etc/ssl/certs/cacert.pem'
-DEFAULT_CURL_SSL_OPTIONS = '--cacert %s' % DEFAULT_CACERT_FILE
+DEFAULT_CURL_SSL_OPTIONS = '--cacert /etc/ssl/certs/cacert.pem'
 DEFAULT_COMMIT = 'unknown'
+DEFAULT_LOCATION_STR = 'MiSTer'
+DEFAULT_DEBUG = 'false'
+
+MISTER_ENVIRONMENT = 'mister'
 
 # Downloader files
 FILE_update_all_storage = 'Scripts/.config/update_all/update_all.json.zip'
@@ -102,10 +105,11 @@ K_NAMES_SORT_CODE = "names_sort_code"
 
 
 # Env
-KENV_CURRENT_PATH = 'CURRENT_PATH'
 KENV_CURL_SSL = 'CURL_SSL'
 KENV_COMMIT = 'COMMIT'
-KENV_NOT_MISTER = 'NOT_MISTER'
+KENV_LOCATION_STR = 'LOCATION_STR'
+KENV_DEBUG = 'DEBUG'
+
 
 @unique
 class PathType(Enum):

@@ -17,7 +17,7 @@
 # https://github.com/theypsilon-test/ua2
 import abc
 import curses
-from typing import Dict, Callable, List, Any
+from typing import Dict, Callable, List, Any, Union, Optional
 
 
 class Ui(abc.ABC):
@@ -39,12 +39,42 @@ class UiComponent(abc.ABC):
         """Initializes the effects dictionary if necessary"""
 
 
+class Interpolator(abc.ABC):
+    def interpolate(self, text: str) -> str:
+        """Interpolates any value inside a string into another string according to the formatters"""
+
+
+class Action:
+    def __init__(self, props, selection):
+        self.props = props
+        self.selection = selection
+
+
+class EffectChain:
+    def __init__(self, chain):
+        self.chain = chain
+
+
+class UiSection(abc.ABC):
+    def process_key(self) -> Optional[Union[int, EffectChain, Action]]:
+        """Writes text on window, reads char and returns it"""
+
+    def reset(self) -> None:
+        """Resets the UI Section"""
+
+
+class UiSectionFactory(abc.ABC):
+    def create_ui_section(self, ui_type: str, window: curses.window, data: Dict[str, Any], interpolator: Interpolator) -> UiSection:
+        """Creates an instance of a UiSection"""
+
+
 class _UiSystem(Ui):
-    def __init__(self, window, entrypoint, model, ui_components):
+    def __init__(self, window, entrypoint, model, ui_components, ui_section_factory: UiSectionFactory):
         self._window = window
         self._section = entrypoint
         self._model = model
         self._ui_components = ui_components
+        self._ui_section_factory = ui_section_factory
         self._items = self._model['items']
         self._values = {k: v['default'] for k, v in self._model.get('variables', {}).items()}
         for item in self._model['items'].values():
@@ -76,7 +106,7 @@ class _UiSystem(Ui):
         self._current_section_state().reset()
 
         while True:
-            new_section = self._current_section_state().tick()
+            new_section = self._current_section_state().process()
 
             self._window.refresh()
             curses.doupdate()
@@ -118,14 +148,13 @@ class _UiSystem(Ui):
         return self._section_states[self._section]
 
     def _make_section_state(self, window, data, values, model, ui_components):
-        expand_type(data, model)
+        expand_ui_type(data, model)
 
         data['formatters'] = {**data.get('formatters', {}), **model.get('formatters', {})}
         data['variables'] = {**data.get('variables', {}), **model.get('variables', {})}
 
-        state = _State(len(data.get('entries', {})), len(data.get('actions', {})))
         interpolator = _Interpolator(data, values)
-        effect_resolver = _EffectResolver(self, state, data, values)
+        effect_resolver = _EffectResolver(self, data, values)
         for component in ui_components:
             effect_resolver.add_ui_component(component)
 
@@ -134,22 +163,42 @@ class _UiSystem(Ui):
             for key in hk['keys']:
                 hotkeys[key] = hk['action']
 
-        if data['type'] == 'menu':
-            return _Menu(window, data, values, state, interpolator, effect_resolver, hotkeys)
-        elif data['type'] == 'confirm':
-            return _Confirm(window, data, values, state, interpolator, effect_resolver, hotkeys)
-        elif data['type'] == 'message':
-            if 'effects' not in data:
-                data['effects'] = [{"type": "navigate", "target": "back"}]
-            return _Message(window, data, values, state, interpolator, effect_resolver, hotkeys)
-        else:
-            raise ValueError(f'Not implemented item type "{data["type"]}"')
+        ui_type = data['ui'] if 'ui' in data else None
+        if ui_type is None:
+            raise ValueError(f'Wrong ui_type: "{data["ui"] if "ui" in data else "`ui` field not found"}"')
+
+        ui_section = self._ui_section_factory.create_ui_section(ui_type, window, data, interpolator)
+        return _UiSectionProcessor(ui_section, effect_resolver, hotkeys)
 
 
-def expand_type(data, model):
-    while data['type'] in model['base_types']:
-        base_type = model['base_types'][data['type']]
-        if 'type' not in base_type:
+class _UiSectionProcessor:
+    def __init__(self, ui_section: UiSection, effect_resolver, hotkeys):
+        self._ui_section = ui_section
+        self._effect_resolver = effect_resolver
+        self._hotkeys = hotkeys
+
+    def process(self):
+        key_result = self._ui_section.process_key()
+
+        if isinstance(key_result, Action):
+            return self._effect_resolver.resolve_action(key_result)
+        elif isinstance(key_result, EffectChain):
+            return self._effect_resolver.resolve_effect_chain(key_result.chain)
+        elif key_result in self._hotkeys:
+            return self._effect_resolver.resolve_effect_chain(self._hotkeys[key_result])
+        elif chr(key_result) in self._hotkeys:
+            return self._effect_resolver.resolve_effect_chain(self._hotkeys[chr(key_result)])
+        elif not isinstance(key_result, int):
+            raise TypeError(f'Result with type {str(type(key_result))} can not be processed by the effect resolver')
+
+    def reset(self):
+        self._ui_section.reset()
+
+
+def expand_ui_type(data, model):
+    while data['ui'] in model['base_types']:
+        base_type = model['base_types'][data['ui']]
+        if 'ui' not in base_type:
             raise ValueError('There must always be a type property within the base_types.')
 
         for key, content in base_type.items():
@@ -163,41 +212,7 @@ def expand_type(data, model):
                 raise ValueError(f'Can not inherit field {key} with content of type: {str(type(content))}')
 
 
-class _State:
-    def __init__(self, vertical_limit, horizontal_limit):
-        self.position = 0
-        self.lateral_position = 0
-        self._vertical_limit = vertical_limit
-        self._horizontal_limit = horizontal_limit
-
-    def navigate_up(self):
-        self.position -= 1
-        if self.position < 0:
-            self.position = 0
-
-    def navigate_down(self):
-        self.position += 1
-        if self.position >= self._vertical_limit:
-            self.position = self._vertical_limit - 1
-
-    def navigate_left(self):
-        self.lateral_position -= 1
-        if self.lateral_position < 0:
-            self.lateral_position = 0
-
-    def navigate_right(self):
-        self.lateral_position += 1
-        if self.lateral_position >= self._horizontal_limit:
-            self.lateral_position = self._horizontal_limit - 1
-
-    def reset_lateral_position(self):
-        self.lateral_position = 0
-
-    def reset_position(self):
-        self.position = 0
-
-
-class _Interpolator:
+class _Interpolator(Interpolator):
     def __init__(self, data, values):
         self._data = data
         self._values = values
@@ -277,9 +292,8 @@ class _Interpolator:
 
 
 class _EffectResolver:
-    def __init__(self, ui, state, data, values):
+    def __init__(self, ui, data, values):
         self._ui = ui
-        self._state = state
         self._data = data
         self._values = values
         self._additional_effects = {}
@@ -290,18 +304,15 @@ class _EffectResolver:
     def resolve_effect_chain(self, chain):
         result = None
         for effect in chain:
-            if effect['type'] == 'condition':
+            if 'ui' in effect:
+                return effect
+            elif 'type' not in effect:
+                raise ValueError('Effects should either have property `ui` or property `type`.')
+            elif effect['type'] == 'condition':
                 variable = effect['variable']
                 return self.resolve_effect_chain(effect[self._values[variable]])
             elif effect['type'] == 'navigate':
                 return effect['target']
-            elif effect['type'] == 'select':
-                for index, entry in enumerate(self._data['entries']):
-                    if 'id' not in entry or entry['id'] != effect['target']:
-                        continue
-
-                    self._state.position = index
-                    break
             elif effect['type'] == 'rotate_variable':
                 target_variable = effect['target']
                 possible_values = self._data['variables'][target_variable]['values']
@@ -319,8 +330,6 @@ class _EffectResolver:
                 if possible_values[cur_index] != self._values[target_variable]:
                     self._values[target_variable] = possible_values[cur_index]
                     result = 'clear_window'
-            elif effect['type'] in ('menu', 'message', 'confirm'):
-                return effect
             elif effect['type'] in self._additional_effects:
                 self._additional_effects[effect['type']](effect)
             else:
@@ -328,136 +337,22 @@ class _EffectResolver:
 
         return result
 
-    def resolve_action(self, action):
-        if action['type'] == 'symbol':
-            current_selection = self._data['entries'][self._state.position]
-            return self.resolve_effect_chain(current_selection['actions'][action['symbol']])
-        elif action['type'] == 'fixed':
-            return self.resolve_effect_chain(action['fixed'])
+    def resolve_action(self, action: Action):
+        if action.props['type'] == 'symbol':
+            if 'actions' not in action.selection:
+                raise ValueError('Selection does not contain nested actions that can be linked to symbol.')
+            return self.resolve_effect_chain(action.selection['actions'][action.props['symbol']])
+        elif action.props['type'] == 'fixed':
+            return self.resolve_effect_chain(action.props['fixed'])
         else:
-            raise NotImplementedError(f'Wrong action type :"{action["type"]}"')
+            raise NotImplementedError(f'Wrong action type :"{action.props["type"]}"')
 
 
-class _Message:
-    def __init__(self, window, data, values, state, interpolator, effect_resolver, hotkeys):
-        self._window = window
-        self._data = data
-        self._state = state
-        self._hotkeys = hotkeys
-        self._values = values
-        self._interpolator = interpolator
-        self._effect_resolver = effect_resolver
-
-    def tick(self):
-        header_offset = 0
-        if 'header' in self._data:
-            self._window.addstr(0, 1, self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
-            header_offset = 1
-
-        for index, text_line in enumerate(self._data['text']):
-            self._window.addstr(header_offset + index, 1, self._interpolator.interpolate(text_line), curses.A_NORMAL)
-
-        self._window.addstr(header_offset + len(self._data['text']), 1, self._interpolator.interpolate(self._data.get('action_name', 'Ok')), curses.A_REVERSE)
-
-        if self._window.getch() in [curses.KEY_ENTER, ord("\n")]:
-            return self._effect_resolver.resolve_effect_chain(self._data['effects'])
-
-    def reset(self):
-        pass
-
-
-class _Confirm:
-    def __init__(self, window, data, values, state, interpolator, effect_resolver, hotkeys):
-        self._window = window
-        self._data = data
-        self._state = state
-        self._hotkeys = hotkeys
-        self._values = values
-        self._interpolator = interpolator
-        self._effect_resolver = effect_resolver
-
-    def tick(self):
-        self._window.addstr(0, 1,  self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
-
-        for index, text_line in enumerate(self._data['text']):
-            self._window.addstr(1 + index, 1, self._interpolator.interpolate(text_line), curses.A_NORMAL)
-
-        for index, action in enumerate(self._data['actions']):
-            mode = curses.A_REVERSE if index == self._state.lateral_position else curses.A_NORMAL
-            self._window.addstr(1 + len(self._data['text']), 1 + 14 * index, self._interpolator.interpolate(action['title']), mode)
-
-        key = self._window.getch()
-
-        if key == curses.KEY_LEFT:
-            self._state.navigate_left()
-        elif key == curses.KEY_RIGHT:
-            self._state.navigate_right()
-        elif key in self._hotkeys:
-            return self._effect_resolver.resolve_effect_chain(self._hotkeys[key])
-        elif chr(key) in self._hotkeys:
-            return self._effect_resolver.resolve_effect_chain(self._hotkeys[chr(key)])
-        elif key in [curses.KEY_ENTER, ord("\n")]:
-            return self._effect_resolver.resolve_action(self._data['actions'][self._state.lateral_position])
-
-    def reset(self):
-        self._state.reset_lateral_position()
-        if 'preselected_action' not in self._data:
-            return
-
-        preselected_action = self._data['preselected_action']
-        for index, action in enumerate(self._data['actions']):
-            if action['title'] == preselected_action:
-                self._state.lateral_position = index
-
-
-class _Menu:
-    def __init__(self, window, data, values, state, interpolator, effect_resolver, hotkeys):
-        self._window = window
-        self._data = data
-        self._state = state
-        self._hotkeys = hotkeys
-        self._values = values
-        self._interpolator = interpolator
-        self._effect_resolver = effect_resolver
-
-    def tick(self):
-        self._window.addstr(0, 1,  self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
-
-        for index, entry in enumerate(self._data['entries']):
-            mode = curses.A_REVERSE if index == self._state.position else curses.A_NORMAL
-            self._window.addstr(1 + index, 1,  self._interpolator.interpolate(entry['title']), mode)
-            self._window.addstr(1 + index, 30,  self._interpolator.interpolate(entry.get('description', '')), mode)
-
-        for index, action in enumerate(self._data['actions']):
-            mode = curses.A_REVERSE if index == self._state.lateral_position else curses.A_NORMAL
-            self._window.addstr(1 + len(self._data['entries']), 1 + 14 * index,  self._interpolator.interpolate(action['title']), mode)
-
-        key = self._window.getch()
-
-        if key == curses.KEY_UP:
-            self._state.navigate_up()
-        elif key == curses.KEY_DOWN:
-            self._state.navigate_down()
-        elif key == curses.KEY_LEFT:
-            self._state.navigate_left()
-        elif key == curses.KEY_RIGHT:
-            self._state.navigate_right()
-        elif key in self._hotkeys:
-            return self._effect_resolver.resolve_effect_chain(self._hotkeys[key])
-        elif chr(key) in self._hotkeys:
-            return self._effect_resolver.resolve_effect_chain(self._hotkeys[chr(key)])
-        elif key in [curses.KEY_ENTER, ord("\n")]:
-            return self._effect_resolver.resolve_action(self._data['actions'][self._state.lateral_position])
-
-    def reset(self):
-        self._state.reset_lateral_position()
-
-
-def run_ui_engine(entrypoint: str, model: Dict[str, Any], ui_components: List[UiComponent]):
+def run_ui_engine(entrypoint: str, model: Dict[str, Any], ui_components: List[UiComponent], ui_section_factory: UiSectionFactory):
     def loader(screen):
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
         window = screen.subwin(0, 0)
-        ui = _UiSystem(window, entrypoint, model, ui_components)
+        ui = _UiSystem(window, entrypoint, model, ui_components, ui_section_factory)
         ui.display()
 
     curses.wrapper(loader)

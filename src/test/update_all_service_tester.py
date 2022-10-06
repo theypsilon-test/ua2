@@ -15,7 +15,6 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from logging import Logger
 from typing import Tuple, Any
 
 from test.countdown_stub import CountdownStub
@@ -23,8 +22,8 @@ from test.fake_filesystem import FileSystemFactory
 from test.logger_tester import NoLogger
 from test.spy_os_utils import SpyOsUtils
 from update_all.config import ConfigReader, ConfigProvider, Config
-from update_all.constants import KENV_COMMIT, KENV_CURL_SSL, DEFAULT_CURL_SSL_OPTIONS, DEFAULT_COMMIT, KENV_NOT_MISTER, \
-    KENV_CURRENT_PATH, MEDIA_FAT, FOLDER_scripts
+from update_all.constants import KENV_COMMIT, KENV_CURL_SSL, DEFAULT_CURL_SSL_OPTIONS, DEFAULT_COMMIT, \
+    KENV_LOCATION_STR, DEFAULT_LOCATION_STR
 from update_all.countdown import Countdown
 from update_all.downloader_ini_repository import DownloaderIniRepository
 from update_all.file_system import FileSystem
@@ -39,10 +38,9 @@ from update_all.update_all_service import UpdateAllServiceFactory, UpdateAllServ
 
 def default_env():
     return {
-        KENV_CURRENT_PATH: MEDIA_FAT + '/' + FOLDER_scripts,
         KENV_CURL_SSL: DEFAULT_CURL_SSL_OPTIONS,
         KENV_COMMIT: DEFAULT_COMMIT,
-        KENV_NOT_MISTER: None
+        KENV_LOCATION_STR: DEFAULT_LOCATION_STR
     }
 
 

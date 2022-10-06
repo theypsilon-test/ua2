@@ -63,7 +63,7 @@ def settings_screen_model(): return {
     },
     "base_types": {
         "dialog_sub_menu": {
-            "type": "menu",
+            "ui": "menu",
             "hotkeys": [
                 {
                     "keys": [27],
@@ -99,7 +99,7 @@ def settings_screen_model(): return {
     },
     "items": {
         "main_menu": {
-            "type": "menu",
+            "ui": "menu",
             "header": "Update All {update_all_version} Settings",
             "hotkeys": [
                 {
@@ -110,7 +110,7 @@ def settings_screen_model(): return {
                             "type": "condition",
                             "variable": "needs_save",
                             "true": [{
-                                "type": "confirm",
+                                "ui": "confirm",
                                 "header": "INI file/s were not saved",
                                 "text": ["Do you really want to abort Update All without saving your changes?"],
                                 "actions": [
@@ -118,7 +118,7 @@ def settings_screen_model(): return {
                                     {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
                                 ],
                             }],
-                            "false": [{"type": "message", "text": ["Pressed ESC/Abort", "Closing Update All..."], "effects": [{"type": "navigate", "target": "abort"}]}]
+                            "false": [{"ui": "message", "text": ["Pressed ESC/Abort", "Closing Update All..."], "effects": [{"type": "navigate", "target": "abort"}]}]
                         }
                     ]
                 },
@@ -143,7 +143,7 @@ def settings_screen_model(): return {
                             "type": "condition",
                             "variable": "needs_save",
                             "true": [{
-                                "type": "confirm",
+                                "ui": "confirm",
                                 "header": "INI file/s were not saved",
                                 "text": ["Do you really want to abort Update All without saving your changes?"],
                                 "actions": [
@@ -151,7 +151,7 @@ def settings_screen_model(): return {
                                     {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
                                 ],
                             }],
-                            "false": [{"type": "message", "text": ["Pressed ESC/Abort", "Closing Update All..."], "effects": [{"type": "navigate", "target": "abort"}]}]
+                            "false": [{"ui": "message", "text": ["Pressed ESC/Abort", "Closing Update All..."], "effects": [{"type": "navigate", "target": "abort"}]}]
                         }
                     ]
                 }
@@ -240,7 +240,7 @@ def settings_screen_model(): return {
                                 "variable": "can_access_patron_menu",
                                 "true": [{"type": "navigate", "target": "patrons_menu"}],
                                 "false": [{
-                                    "type": "message",
+                                    "ui": "message",
                                     "header": "Patreon Key not found!",
                                     "text": [
                                         "This menu contains exclusive content for patrons only.",
@@ -250,7 +250,7 @@ def settings_screen_model(): return {
                                         "Thank you so much for your support!",
                                     ],
                                     "effects": [{
-                                        "type": "message",
+                                        "ui": "message",
                                         "header": "Support MiSTer",
                                         "text": [
                                             "Consider supporting Alexey Melnikov 'Sorgelig' for his invaluable work as the main maintainer of the MiSTer Project: \Zu\Z4patreon.com/FPGAMiSTer\Z7\Zn",
@@ -287,7 +287,7 @@ def settings_screen_model(): return {
                                 "type": "condition",
                                 "variable": "needs_save",
                                 "true": [{
-                                    "type": "confirm",
+                                    "ui": "confirm",
                                     "header": "Are you sure?",
                                     "text": [
                                         "Following files may be overwritten with your changes:",
@@ -307,7 +307,7 @@ def settings_screen_model(): return {
                                         }
                                     ],
                                 }],
-                                "false": [{"type": "message", "text": ["No changes to save"]}]
+                                "false": [{"ui": "message", "text": ["No changes to save"]}]
                             }
                         ],
                         "toggle": [],
@@ -323,7 +323,7 @@ def settings_screen_model(): return {
                                 "type": "condition",
                                 "variable": "needs_save",
                                 "true": [{
-                                    "type": "confirm",
+                                    "ui": "confirm",
                                     "header": "INI file/s were not saved",
                                     "text": [
                                         "Do you really want to run Update All without saving your changes?",
@@ -355,7 +355,7 @@ def settings_screen_model(): return {
             ]
         },
         "main_distribution_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Main Distribution Settings",
             "entries": [
                 {
@@ -371,7 +371,7 @@ def settings_screen_model(): return {
             ]
         },
         "jtcores_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "JTCORES Settings",
             "entries": [
                 {
@@ -387,7 +387,7 @@ def settings_screen_model(): return {
             ]
         },
         "theypsilon_unofficial_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "theypsilon Unofficial Distribution Settings",
             "entries": [
                 {
@@ -398,7 +398,7 @@ def settings_screen_model(): return {
             ]
         },
         "llapi_folder_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "LLAPI Folder Settings",
             "entries": [
                 {
@@ -409,7 +409,7 @@ def settings_screen_model(): return {
             ]
         },
         "bios_database_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "BIOS Database Settings",
             "entries": [
                 {
@@ -420,7 +420,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_roms_database_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Arcade ROMs Database Settings",
             "entries": [
                 {
@@ -431,7 +431,7 @@ def settings_screen_model(): return {
             ]
         },
         "names_txt_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Names TXT Settings",
             "variables": {
                 "names_region": {"group": "downloader_only", "default": "US", "values": ["US", "EU", "JP"]},
@@ -453,7 +453,7 @@ def settings_screen_model(): return {
                                     "type": "condition",
                                     "variable": "file_exists",
                                     "true": [{
-                                        "type": "message",
+                                        "ui": "message",
                                         "text": ["WARNING! Your current names.txt file will be overwritten after updating"],
                                         "alert_level": "black",
                                         "effects": [{"type": "rotate_variable", "target": "names_txt_updater"}, {"type": "navigate", "target": "back"}],
@@ -479,7 +479,7 @@ def settings_screen_model(): return {
                             "type": "condition",
                             "variable": "names_char_code_warning",
                             "true": [{
-                                "type": "message",
+                                "ui": "message",
                                 "text": ["It's recommended to set rbf_hide_datecode=1 on MiSTer.ini when using CHAR28"],
                             }],
                             "false": []
@@ -500,28 +500,28 @@ def settings_screen_model(): return {
                             "type": "condition",
                             "variable": "file_exists",
                             "true": [{
-                                "type": "confirm",
+                                "ui": "confirm",
                                 "header": "Are you sure?",
                                 "text": ["If you have done changes to names.txt, they will be lost"],
                                 "preselected_action": "No",
                                 "actions": [
                                     {"title": "Yes", "type": "fixed", "fixed": [
                                         {"type": "remove_file", "target": "names.txt"},
-                                        {"type": "message", "text": ["names.txt Removed"]}
+                                        {"ui": "message", "text": ["names.txt Removed"]}
                                     ]},
                                     {"title": "No", "type": "fixed", "fixed": [
-                                        {"type": "message", "text": ["Operation Canceled"]}
+                                        {"ui": "message", "text": ["Operation Canceled"]}
                                     ]}
                                 ],
                             }],
-                            "false": [{"type": "message", "text": ["names.txt doesn't exist"]}]
+                            "false": [{"ui": "message", "text": ["names.txt doesn't exist"]}]
                         }
                     ]}
                 },
             ]
         },
         "misc_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Misc | Other Settings",
             "variables": {
                 "arcade_offset_downloader": {"group": "main_ini", "default": "false", "values": ["false", "true"]},
@@ -578,7 +578,7 @@ def settings_screen_model(): return {
             ]
         },
         "patrons_menu": {
-            "type": "menu",
+            "ui": "menu",
             "header": "Patrons Menu",
             "hotkeys": [
                 {
@@ -587,7 +587,7 @@ def settings_screen_model(): return {
                         "type": "condition",
                         "variable": "spinner_needs_reboot",
                         "true": [{
-                            "type": "message",
+                            "ui": "message",
                             "header": "The Firmware has been changed",
                             "text": ["Please reboot NOW to execute it!"]
                         }],
@@ -608,7 +608,7 @@ def settings_screen_model(): return {
                         "type": "condition",
                         "variable": "spinner_needs_reboot",
                         "true": [{
-                            "type": "message",
+                            "ui": "message",
                             "header": "The Firmware has been changed",
                             "text": ["Please reboot NOW to execute it!"]
                         }],
@@ -641,7 +641,7 @@ def settings_screen_model(): return {
                             "type": "condition",
                             "variable": "spinner_needs_reboot",
                             "true": [{
-                                "type": "message",
+                                "ui": "message",
                                 "header": "The Firmware has been changed",
                                 "text": ["Please reboot NOW to execute it!"]
                             }],
@@ -652,7 +652,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Settings",
             "variables": {
                 "arcade_organizer_orgdir": {"rename": "orgdir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -731,7 +731,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_alphabetic_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Alphabetic Options",
             "variables": {
                 "arcade_organizer_az_dir": {"rename": "az_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -745,7 +745,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_region_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Region Options",
             "variables": {
                 "arcade_organizer_region_dir": {"rename": "region_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -771,7 +771,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_collections_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Collections Options",
             "variables": {
                 "arcade_organizer_platform_dir": {"rename": "platform_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -820,7 +820,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_year_options_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Year Options",
             "variables": {
                 "arcade_organizer_year_dir": {"rename": "year_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -840,7 +840,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_video_input_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Video & Inputs Options",
             "variables": {
                 "arcade_organizer_move_inputs": {"rename": "move_inputs", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -894,7 +894,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_resolution_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Resolution Options",
             "variables": {
                 "arcade_organizer_resolution_dir": {"rename": "resolution_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -926,7 +926,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_rotation_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Rotation Options",
             "variables": {
                 "arcade_organizer_rotation_dir": {"rename": "rotation_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -970,7 +970,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_extra_software_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Extra Software Options",
             "variables": {
                 "arcade_organizer_homebrew": {"rename": "homebrew", "group": "ao_ini", "default": "1", "values": ["1", "0", "2"]},
@@ -1002,7 +1002,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_advanced_menu": {
-            "type": "dialog_sub_menu",
+            "ui": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Advanced Options",
             "entries": [
                 {
@@ -1015,7 +1015,7 @@ def settings_screen_model(): return {
                             "variable": "has_arcade_organizer_folders",
                             "true": [
                                 {
-                                    "type": "confirm",
+                                    "ui": "confirm",
                                     "header": "ARE YOU SURE?",
                                     "text": [
                                         "WARNING! You will lose ALL the data contained in the folders:",
@@ -1026,13 +1026,13 @@ def settings_screen_model(): return {
                                     "actions": [
                                         {"title": "Yes", "type": "fixed", "fixed": [
                                             {"type": "clean_arcade_organizer_folders"},
-                                            {"type": "message", "text": ["Organized folder Cleared"]}
+                                            {"ui": "message", "text": ["Organized folder Cleared"]}
                                         ]},
-                                        {"title": "No", "type": "fixed", "fixed": [{"type": "message", "text": ["Operation Canceled"]}]}
+                                        {"title": "No", "type": "fixed", "fixed": [{"ui": "message", "text": ["Operation Canceled"]}]}
                                     ],
                                 }
                             ],
-                            "false": [{"type": "message", "text": ["Operation Canceled"]}]
+                            "false": [{"ui": "message", "text": ["Operation Canceled"]}]
                         },
                     ]}
                 },

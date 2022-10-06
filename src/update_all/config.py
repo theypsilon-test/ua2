@@ -19,13 +19,14 @@ import configparser
 import json
 import time
 from dataclasses import dataclass
+from distutils.util import strtobool
 from enum import unique, IntEnum
 from pathlib import Path
 from typing import Tuple
 
 from update_all.constants import MEDIA_FAT, KENV_CURL_SSL, KENV_COMMIT, DEFAULT_CURL_SSL_OPTIONS, \
-    DEFAULT_COMMIT, KENV_NOT_MISTER, DOWNLOADER_INI_STANDARD_PATH, KENV_CURRENT_PATH, \
-    FILE_update_all_ini, ARCADE_ORGANIZER_INI
+    DEFAULT_COMMIT, KENV_LOCATION_STR, DOWNLOADER_INI_STANDARD_PATH, FILE_update_all_ini, ARCADE_ORGANIZER_INI, \
+    MISTER_ENVIRONMENT, KENV_DEBUG
 from update_all.databases import DB_ID_JTCORES, DB_ID_NAMES_TXT, names_locale_by_db_url
 from update_all.ini_parser import IniParser
 from update_all.logger import Logger
@@ -55,7 +56,6 @@ class Config:
     update_linux: bool = True
     not_mister: bool = False
     verbose: bool = False
-    debug: bool = False
 
     # Global Updating Toggles
     main_updater: bool = True
@@ -109,7 +109,10 @@ class ConfigReader:
 
     def read_config(self) -> Tuple[Config, bool]:
         result = Config()
-        result.base_path = self._calculate_base_path()
+        result.base_path = str(calculate_base_path(self._env))
+
+        if is_debug_enabled(self._env):
+            result.verbose = True
 
         downloader_ini_path = Path(f'{result.base_path}/{DOWNLOADER_INI_STANDARD_PATH}')
         update_all_ini_path = Path(f'{result.base_path}/{FILE_update_all_ini}')
@@ -144,27 +147,13 @@ class ConfigReader:
 
         self._logger.configure(result)
 
-        if self._not_mister_environment():
+        if not is_mister_environment(self._env):
             result.not_mister = True
 
         self._logger.debug('env: ' + json.dumps(self._env, indent=4))
         self._logger.debug('config: ' + json.dumps(result, default=lambda o: str(o) if isinstance(o, Path) else o.__dict__, indent=4))
 
         return result, is_file_read
-
-    def _calculate_base_path(self):
-        current_path = Path(self._env[KENV_CURRENT_PATH]).resolve()
-
-        if current_path.name.lower() == 'scripts':
-            current_path = current_path.parent
-
-        if not self._not_mister_environment() and not current_path.joinpath(DOWNLOADER_INI_STANDARD_PATH).exists():
-            current_path = Path(MEDIA_FAT)
-
-        return str(current_path)
-
-    def _not_mister_environment(self):
-        return self._env[KENV_NOT_MISTER] is not None and self._env[KENV_NOT_MISTER].lower() == 'true'
 
     def _load_ini_config_from_file(self, config_path):
         ini_config = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
@@ -197,6 +186,21 @@ def load_ini_config_with_no_section(logger: Logger, config_path: Path):
         return IniParser({})
 
     return IniParser(ini_config['default'])
+
+
+def calculate_base_path(env):
+    if is_mister_environment(env):
+        return Path(MEDIA_FAT)
+    else:
+        return Path(env[KENV_LOCATION_STR]).resolve()
+
+
+def is_mister_environment(env):
+    return env[KENV_LOCATION_STR].strip().lower() == MISTER_ENVIRONMENT
+
+
+def is_debug_enabled(env):
+    return strtobool(env[KENV_DEBUG].strip().lower())
 
 
 class InvalidConfigParameter(Exception):

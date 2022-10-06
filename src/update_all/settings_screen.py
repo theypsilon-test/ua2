@@ -31,6 +31,7 @@ from update_all.file_system import FileSystem
 from update_all.logger import Logger
 from update_all.os_utils import OsUtils
 from update_all.settings_screen_model import settings_screen_model
+from update_all.settings_screen_basic_theme import SettingsScreenBasicTheme
 from update_all.ui_engine import run_ui_engine, Ui, UiComponent
 from update_all.ui_model_utilities import gather_default_values, list_variables_with_group, dynamic_convert_string
 
@@ -46,7 +47,7 @@ class SettingsScreen(UiComponent):
         self._original_firmware = None
 
     def load_main_menu(self) -> None:
-        run_ui_engine('main_menu', settings_screen_model(), [self])
+        run_ui_engine('main_menu', settings_screen_model(), [self], SettingsScreenBasicTheme())
 
     def initialize_ui(self, ui: Ui) -> None:
         ui.set_value('needs_save', 'false')
