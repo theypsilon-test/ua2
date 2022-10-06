@@ -193,6 +193,7 @@ class _UiSectionProcessor:
 
 
 def expand_ui_type(data, model):
+    data['type'] = 'ui'
     while data['ui'] in model['base_types']:
         base_type = model['base_types'][data['ui']]
         if 'ui' not in base_type:

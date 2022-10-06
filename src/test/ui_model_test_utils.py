@@ -18,7 +18,7 @@
 import copy
 from typing import Dict, Any, List, Tuple
 
-from update_all.ui_engine import expand_type
+from update_all.ui_engine import expand_ui_type
 
 
 def basic_types(): return 'menu', 'confirm', 'message'
@@ -32,7 +32,10 @@ def all_nodes(model: Dict[str, Any]) -> List[Tuple[str, Dict[str, Any]]]:
 def expand_model_types(model: Dict[str, Any]) -> Dict[str, Any]:
     model = copy.deepcopy(model)
     for _, node in list_nodes_in_model(model):
-        expand_type(node, model)
+        if 'ui' not in node:
+            continue
+        node['type'] = 'ui'
+        expand_ui_type(node, model)
     return model
 
 
@@ -94,9 +97,9 @@ def list_effects_nodes(key, node):
 def list_actions(key, actions) -> List[Tuple[str, Dict[str, Any]]]:
     result = []
     for i_a, action in enumerate(actions):
-        if action['type'] in basic_types():
-            result.extend(list_nodes(f'{key}.action[{i_a}]', action))
-        elif action['type'] == 'condition':
+        if 'ui' in action:
+            action['type'] = 'ui'
+        if action['type'] == 'condition':
             result.extend(list_actions(f'{key}.action[{i_a}].true', action['true']))
             result.extend(list_actions(f'{key}.action[{i_a}].false', action['false']))
         else:
