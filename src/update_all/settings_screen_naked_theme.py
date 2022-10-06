@@ -18,11 +18,20 @@
 import curses
 from typing import Union, Optional, Dict, Any
 
-from update_all.ui_engine import UiSectionFactory, UiSection, EffectChain, Action, Interpolator
+from update_all.ui_engine import UiTheme, UiSection, EffectChain, Action, Interpolator
 from update_all.ui_engine_client_helpers import NavigationState, make_action
 
 
-class SettingsScreenBasicTheme(UiSectionFactory):
+class SettingsScreenNakedTheme(UiTheme):
+    def initialize_theme(self, window: curses.window):
+        window.bkgd(' ', curses.color_pair(1) | curses.A_BOLD)
+        window.keypad(True)
+        window.clear()
+        curses.start_color()
+        curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
+
     def create_ui_section(self, ui_type: str, window: curses.window, data: Dict[str, Any], interpolator: Interpolator) -> UiSection:
         state = NavigationState(len(data.get('entries', {})), len(data.get('actions', {})))
         if ui_type == 'menu':

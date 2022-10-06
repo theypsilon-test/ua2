@@ -63,13 +63,16 @@ class UiSection(abc.ABC):
         """Resets the UI Section"""
 
 
-class UiSectionFactory(abc.ABC):
+class UiTheme(abc.ABC):
+    def initialize_theme(self, window: curses.window):
+        """Initializes the theme at the start"""
+
     def create_ui_section(self, ui_type: str, window: curses.window, data: Dict[str, Any], interpolator: Interpolator) -> UiSection:
         """Creates an instance of a UiSection"""
 
 
 class _UiSystem(Ui):
-    def __init__(self, window, entrypoint, model, ui_components, ui_section_factory: UiSectionFactory):
+    def __init__(self, window, entrypoint, model, ui_components, ui_section_factory: UiTheme):
         self._window = window
         self._section = entrypoint
         self._model = model
@@ -92,13 +95,7 @@ class _UiSystem(Ui):
         self._window.clear()
 
     def display(self):
-        self._window.bkgd(' ', curses.color_pair(1) | curses.A_BOLD)
-        self._window.keypad(1)
-        self._window.clear()
-        curses.start_color()
-        curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
-        curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
-        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        self._ui_section_factory.initialize_theme(self._window)
 
         for component in self._ui_components:
             component.initialize_ui(self)
@@ -348,7 +345,7 @@ class _EffectResolver:
             raise NotImplementedError(f'Wrong action type :"{action.props["type"]}"')
 
 
-def run_ui_engine(entrypoint: str, model: Dict[str, Any], ui_components: List[UiComponent], ui_section_factory: UiSectionFactory):
+def run_ui_engine(entrypoint: str, model: Dict[str, Any], ui_components: List[UiComponent], ui_section_factory: UiTheme):
     def loader(screen):
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
         window = screen.subwin(0, 0)
