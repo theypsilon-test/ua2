@@ -44,19 +44,16 @@ class Interpolator(abc.ABC):
         """Interpolates any value inside a string into another string according to the formatters"""
 
 
-class Action:
-    def __init__(self, props, selection):
-        self.props = props
-        self.selection = selection
-
-
 class EffectChain:
     def __init__(self, chain):
         self.chain = chain
 
 
+ProcessKeyResult = Union[int, EffectChain]
+
+
 class UiSection(abc.ABC):
-    def process_key(self) -> Optional[Union[int, EffectChain, Action]]:
+    def process_key(self) -> Optional[ProcessKeyResult]:
         """Writes text on window, reads char and returns it"""
 
     def reset(self) -> None:
@@ -177,9 +174,7 @@ class _UiSectionProcessor:
     def process(self):
         key_result = self._ui_section.process_key()
 
-        if isinstance(key_result, Action):
-            return self._effect_resolver.resolve_action(key_result)
-        elif isinstance(key_result, EffectChain):
+        if isinstance(key_result, EffectChain):
             return self._effect_resolver.resolve_effect_chain(key_result.chain)
         elif key_result in self._hotkeys:
             return self._effect_resolver.resolve_effect_chain(self._hotkeys[key_result])
@@ -334,16 +329,6 @@ class _EffectResolver:
                 raise NotImplementedError(f'Wrong effect type :"{effect["type"]}"')
 
         return result
-
-    def resolve_action(self, action: Action):
-        if action.props['type'] == 'symbol':
-            if 'actions' not in action.selection:
-                raise ValueError('Selection does not contain nested actions that can be linked to symbol.')
-            return self.resolve_effect_chain(action.selection['actions'][action.props['symbol']])
-        elif action.props['type'] == 'fixed':
-            return self.resolve_effect_chain(action.props['fixed'])
-        else:
-            raise NotImplementedError(f'Wrong action type :"{action.props["type"]}"')
 
 
 def run_ui_engine(entrypoint: str, model: Dict[str, Any], ui_components: List[UiComponent], ui_section_factory: UiTheme):

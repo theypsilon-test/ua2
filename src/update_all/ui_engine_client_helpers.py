@@ -17,7 +17,7 @@
 # https://github.com/theypsilon-test/ua2
 from typing import Dict, Any
 
-from update_all.ui_engine import Action
+from update_all.ui_engine import EffectChain
 
 
 class NavigationState:
@@ -60,5 +60,14 @@ class NavigationState:
         self._position = value or 0
 
 
-def make_action(data: Dict[str, Any], state: NavigationState):
-    return Action(props=data['actions'][state.lateral_position()], selection=data['entries'][state.position()])
+def make_action_effect_chain(data: Dict[str, Any], state: NavigationState) -> EffectChain:
+    props = data['actions'][state.lateral_position()]
+    if props['type'] == 'symbol':
+        selection = data['entries'][state.position()]
+        if 'actions' not in selection:
+            raise ValueError('Selection does not contain nested actions that can be linked to symbol.')
+        return EffectChain(selection['actions'][props['symbol']])
+    elif props['type'] == 'fixed':
+        return EffectChain(props['fixed'])
+    else:
+        raise Exception(f"Action type '{props['type']}' not valid.")

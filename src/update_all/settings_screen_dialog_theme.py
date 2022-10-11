@@ -15,11 +15,12 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
+import abc
 import curses
-from typing import Union, Optional, Dict, Any
+from typing import Optional, Dict, Any
 
-from update_all.ui_engine import UiTheme, UiSection, EffectChain, Action, Interpolator
-from update_all.ui_engine_client_helpers import NavigationState, make_action
+from update_all.ui_engine import UiTheme, UiSection, EffectChain, Interpolator, ProcessKeyResult
+from update_all.ui_engine_client_helpers import NavigationState, make_action_effect_chain
 
 
 class SettingsScreenDialogTheme(UiTheme):
@@ -32,38 +33,176 @@ class SettingsScreenDialogTheme(UiTheme):
         curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
+
     def create_ui_section(self, ui_type: str, window: curses.window, data: Dict[str, Any], interpolator: Interpolator) -> UiSection:
         state = NavigationState(len(data.get('entries', {})), len(data.get('actions', {})))
+        drawer = _UiNakedPostDrawer(window, interpolator)
         if ui_type == 'menu':
-            return _Menu(window, data, state, interpolator)
+            return _Menu(drawer, data, state)
         elif ui_type == 'confirm':
-            return _Confirm(window, data, state, interpolator)
+            return _Confirm(drawer, data, state)
         elif ui_type == 'message':
             if 'effects' not in data:
                 data['effects'] = [{"type": "navigate", "target": "back"}]
-            return _Message(window, data, interpolator)
+            return _Message(drawer, data)
         else:
             raise ValueError(f'Not implemented ui_type: {ui_type}')
 
 
-class _Message(UiSection):
-    def __init__(self, window: curses.window, data: Dict[str, Any], interpolator: Interpolator):
-        self._window = window
-        self._data = data
-        self._interpolator = interpolator
+class UiDrawer(abc.ABC):
+    def start(self):
+        """"Start of screen"""
 
-    def process_key(self) -> Optional[Union[int, EffectChain, Action]]:
-        header_offset = 0
+    def write_line(self, text, is_selected=False):
+        """"Write line (row)"""
+
+    def next_line(self):
+        """"Jumps one line (row)"""
+
+    def end_columns_in_line(self):
+        """"Finalizes column entries for current line"""
+
+    def write_column(self, text, is_selected=False):
+        """"Write column on current line"""
+
+    def flush(self) -> int:
+        """"Flushes all screen UI and returns char"""
+
+
+class _UiNakedJitDrawer(UiDrawer):
+    def __init__(self, window, interpolator: Interpolator):
+        self._window = window
+        self._interpolator = interpolator
+        self._line_cursor = 0
+        self._column_cursor = 0
+
+    def start(self):
+        self._line_cursor = 0
+        self._column_cursor = 0
+
+    def write_line(self, text, is_selected=False):
+        self._window.addstr(self._line_cursor, 1, self._interpolator.interpolate(text), curses.A_REVERSE if is_selected else curses.A_NORMAL)
+        self.next_line()
+
+    def next_line(self):
+        self._line_cursor += 1
+        self._column_cursor = 0
+
+    def end_columns_in_line(self):
+        if self._column_cursor > 0:
+            self._line_cursor += 1
+            self._column_cursor = 0
+
+    def write_column(self, text, is_selected=False):
+        self._window.addstr(self._line_cursor, 1 + 30 * self._column_cursor, self._interpolator.interpolate(text), curses.A_REVERSE if is_selected else curses.A_NORMAL)
+        self._column_cursor += 1
+
+    def flush(self):
+        return self._window.getch()
+
+
+class _UiNakedPostDrawer(UiDrawer):
+    def __init__(self, window, interpolator: Interpolator):
+        self._window = window
+        self._interpolator = interpolator
+        self._lines = []
+        self._rows = []
+
+    def start(self):
+        self._lines = []
+        self._rows = []
+
+    def write_line(self, text, is_selected=False):
+        self.end_columns_in_line()
+        interpolated_text = self._interpolator.interpolate(text)
+        for line in interpolated_text.split('\n'):
+            self._lines.append([(line, is_selected)])
+
+    def next_line(self):
+        self._lines.append([])
+
+    def end_columns_in_line(self):
+        if len(self._rows) > 0:
+            self._lines.append(self._rows)
+            self._rows = []
+
+    def write_column(self, text, is_selected=False):
+        self._rows.append((self._interpolator.interpolate(text), is_selected))
+
+    def flush(self):
+        self.end_columns_in_line()
+
+        total_lines = len(self._lines)
+        row_start = int(curses.COLS / 2 - calculate_wider_line(self._lines) / 2)
+
+        line_index = int(curses.LINES / 2 - total_lines / 2)
+        for line in self._lines:
+            row_index = 0
+            for row in line:
+                text, is_selected = row
+                width = calculate_column_width(self._lines, row_index - 1)
+
+                self._window.addstr(line_index, row_start + width * row_index, text, curses.A_REVERSE if is_selected else curses.A_NORMAL)
+
+                row_index += 1
+
+            line_index += 1
+
+        return self._window.getch()
+
+
+def calculate_wider_line(lines):
+
+    max_wide = 0
+
+    for i in range(calculate_column_amounts(lines) + 1):
+        max_wide += calculate_column_width(lines, i)
+
+    return max_wide
+
+
+def calculate_column_amounts(lines):
+    amount = 0
+
+    for line in lines:
+        if len(line) > amount:
+            amount = len(line)
+
+    return amount
+
+
+def calculate_column_width(lines, row_check):
+    width = 0
+
+    for line in lines:
+        for row_index, row in enumerate(line):
+            if row_index != row_check:
+                continue
+
+            text, _ = row
+            if len(text) > width:
+                width = len(text)
+
+    return width + 2
+
+
+class _Message(UiSection):
+    def __init__(self, drawer: UiDrawer, data: Dict[str, Any]):
+        self._drawer = drawer
+        self._data = data
+
+    def process_key(self) -> Optional[ProcessKeyResult]:
+        self._drawer.start()
+
         if 'header' in self._data:
-            self._window.addstr(0, 1, self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
-            header_offset = 1
+            self._drawer.write_line(self._data['header'])
 
         for index, text_line in enumerate(self._data['text']):
-            self._window.addstr(header_offset + index, 1, self._interpolator.interpolate(text_line), curses.A_NORMAL)
+            self._drawer.write_line(text_line)
 
-        self._window.addstr(header_offset + len(self._data['text']), 1, self._interpolator.interpolate(self._data.get('action_name', 'Ok')), curses.A_REVERSE)
+        self._drawer.write_line(self._data.get('action_name', 'Ok'), is_selected=True)
 
-        key = self._window.getch()
+        key = self._drawer.flush()
         if key in [curses.KEY_ENTER, ord("\n")]:
             return EffectChain(self._data['effects'])
 
@@ -74,29 +213,28 @@ class _Message(UiSection):
 
 
 class _Confirm(UiSection):
-    def __init__(self, window: curses.window, data: Dict[str, Any], state: NavigationState, interpolator: Interpolator):
-        self._window = window
+    def __init__(self, drawer: UiDrawer, data: Dict[str, Any], state: NavigationState):
+        self._drawer = drawer
         self._data = data
         self._state = state
-        self._interpolator = interpolator
 
-    def process_key(self) -> Optional[Union[int, EffectChain, Action]]:
-        self._window.addstr(0, 1,  self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
+    def process_key(self) -> Optional[ProcessKeyResult]:
+        self._drawer.start()
+        self._drawer.write_line(self._data['header'])
 
         for index, text_line in enumerate(self._data['text']):
-            self._window.addstr(1 + index, 1, self._interpolator.interpolate(text_line), curses.A_NORMAL)
+            self._drawer.write_line(text_line)
 
         for index, action in enumerate(self._data['actions']):
-            mode = curses.A_REVERSE if index == self._state.lateral_position() else curses.A_NORMAL
-            self._window.addstr(1 + len(self._data['text']), 1 + 14 * index, self._interpolator.interpolate(action['title']), mode)
+            self._drawer.write_column(action['title'], index == self._state.lateral_position())
 
-        key = self._window.getch()
+        key = self._drawer.flush()
         if key == curses.KEY_LEFT:
             self._state.navigate_left()
         elif key == curses.KEY_RIGHT:
             self._state.navigate_right()
         elif key in [curses.KEY_ENTER, ord("\n")]:
-            return make_action(self._data, self._state)
+            return make_action_effect_chain(self._data, self._state)
 
         return key
 
@@ -112,25 +250,24 @@ class _Confirm(UiSection):
 
 
 class _Menu(UiSection):
-    def __init__(self, window: curses.window, data: Dict[str, Any], state: NavigationState, interpolator: Interpolator):
-        self._window = window
+    def __init__(self, drawer: UiDrawer, data: Dict[str, Any], state: NavigationState):
+        self._drawer = drawer
         self._data = data
         self._state = state
-        self._interpolator = interpolator
 
-    def process_key(self) -> Optional[Union[int, EffectChain, Action]]:
-        self._window.addstr(0, 1,  self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
+    def process_key(self) -> Optional[ProcessKeyResult]:
+        self._drawer.start()
+        self._drawer.write_line(self._data['header'])
 
         for index, entry in enumerate(self._data['entries']):
-            mode = curses.A_REVERSE if index == self._state.position() else curses.A_NORMAL
-            self._window.addstr(1 + index, 1,  self._interpolator.interpolate(entry['title']), mode)
-            self._window.addstr(1 + index, 30,  self._interpolator.interpolate(entry.get('description', '')), mode)
+            self._drawer.write_column(entry['title'], index == self._state.position())
+            self._drawer.write_column(entry.get('description', ''), index == self._state.position())
+            self._drawer.end_columns_in_line()
 
         for index, action in enumerate(self._data['actions']):
-            mode = curses.A_REVERSE if index == self._state.lateral_position() else curses.A_NORMAL
-            self._window.addstr(1 + len(self._data['entries']), 1 + 14 * index,  self._interpolator.interpolate(action['title']), mode)
+            self._drawer.write_column(action['title'], index == self._state.lateral_position())
 
-        key = self._window.getch()
+        key = self._drawer.flush()
         if key == curses.KEY_UP:
             self._state.navigate_up()
         elif key == curses.KEY_DOWN:
@@ -140,7 +277,7 @@ class _Menu(UiSection):
         elif key == curses.KEY_RIGHT:
             self._state.navigate_right()
         elif key in [curses.KEY_ENTER, ord("\n")]:
-            return make_action(self._data, self._state)
+            return make_action_effect_chain(self._data, self._state)
 
         return key
 

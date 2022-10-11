@@ -16,10 +16,10 @@
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
 import curses
-from typing import Union, Optional, Dict, Any
+from typing import Optional, Dict, Any
 
-from update_all.ui_engine import UiTheme, UiSection, EffectChain, Action, Interpolator
-from update_all.ui_engine_client_helpers import NavigationState, make_action
+from update_all.ui_engine import UiTheme, UiSection, EffectChain, Interpolator, ProcessKeyResult
+from update_all.ui_engine_client_helpers import NavigationState, make_action_effect_chain
 
 
 class SettingsScreenNakedTheme(UiTheme):
@@ -52,7 +52,7 @@ class _Message(UiSection):
         self._data = data
         self._interpolator = interpolator
 
-    def process_key(self) -> Optional[Union[int, EffectChain, Action]]:
+    def process_key(self) -> Optional[ProcessKeyResult]:
         header_offset = 0
         if 'header' in self._data:
             self._window.addstr(0, 1, self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
@@ -80,7 +80,7 @@ class _Confirm(UiSection):
         self._state = state
         self._interpolator = interpolator
 
-    def process_key(self) -> Optional[Union[int, EffectChain, Action]]:
+    def process_key(self) -> Optional[ProcessKeyResult]:
         self._window.addstr(0, 1,  self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
 
         for index, text_line in enumerate(self._data['text']):
@@ -96,7 +96,7 @@ class _Confirm(UiSection):
         elif key == curses.KEY_RIGHT:
             self._state.navigate_right()
         elif key in [curses.KEY_ENTER, ord("\n")]:
-            return make_action(self._data, self._state)
+            return make_action_effect_chain(self._data, self._state)
 
         return key
 
@@ -118,7 +118,7 @@ class _Menu(UiSection):
         self._state = state
         self._interpolator = interpolator
 
-    def process_key(self) -> Optional[Union[int, EffectChain, Action]]:
+    def process_key(self) -> Optional[ProcessKeyResult]:
         self._window.addstr(0, 1,  self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
 
         for index, entry in enumerate(self._data['entries']):
@@ -140,7 +140,7 @@ class _Menu(UiSection):
         elif key == curses.KEY_RIGHT:
             self._state.navigate_right()
         elif key in [curses.KEY_ENTER, ord("\n")]:
-            return make_action(self._data, self._state)
+            return make_action_effect_chain(self._data, self._state)
 
         return key
 
