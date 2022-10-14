@@ -64,11 +64,11 @@ def settings_screen_model(): return {
         "main_menu": {
             "ui": "menu",
             "header": "Update All {update_all_version} Settings",
-            "hotkeys": [{"keys": [27], "action": try_abort()}],
+            "hotkeys": [{"keys": [27], "action": _try_abort()}],
             "actions": [
                 {"title": "Select", "type": "symbol", "symbol": "ok"},
                 {"title": "Toggle",  "type": "symbol", "symbol": "toggle"},
-                {"title": "Abort", "type": "fixed", "fixed": try_abort()}
+                {"title": "Abort", "type": "fixed", "fixed": _try_abort()}
             ],
             "entries": [
                 {
@@ -146,17 +146,17 @@ def settings_screen_model(): return {
                 {
                     "title": "0 Patrons Menu",
                     "description": "Last updated: 2022.10.14",
-                    "actions": {"ok": try_access_patrons_menu(), "toggle": try_access_patrons_menu()}
+                    "actions": {"ok": _try_access_patrons_menu(), "toggle": _try_access_patrons_menu()}
                 },
                 {
                     "title": "SAVE",
                     "description": "Writes all changes to the INI file/s",
-                    "actions": {"ok": try_save(), "toggle": try_save()}
+                    "actions": {"ok": _try_save(), "toggle": _try_save()}
                 },
                 {
                     "title": "EXIT and RUN UPDATE ALL",
                     "description": "",
-                    "actions": {"ok": try_exit(),  "toggle": try_exit()}
+                    "actions": {"ok": _try_exit(),  "toggle": _try_exit()}
                 }
             ]
         },
@@ -901,7 +901,8 @@ def settings_screen_model(): return {
     }
 }
 
-def try_access_patrons_menu(): return [
+
+def _try_access_patrons_menu(): return [
     {"type": "calculate_can_access_patron_menu"},
     {
         "type": "condition",
@@ -944,7 +945,7 @@ def try_access_patrons_menu(): return [
 ]
 
 
-def try_save(): return [
+def _try_save(): return [
     {"type": "calculate_needs_save"},
     {
         "type": "condition",
@@ -975,7 +976,7 @@ def try_save(): return [
 ]
 
 
-def try_abort(): return [
+def _try_abort(): return [
     {"type": "calculate_needs_save"},
     {
         "type": "condition",
@@ -994,7 +995,7 @@ def try_abort(): return [
 ]
 
 
-def try_exit(): return [
+def _try_exit(): return [
     {"type": "calculate_needs_save"},
     {
         "type": "condition",
