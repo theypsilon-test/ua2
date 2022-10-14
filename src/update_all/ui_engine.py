@@ -17,7 +17,7 @@
 # https://github.com/theypsilon-test/ua2
 import abc
 import curses
-from typing import Dict, Callable, List, Any, Union, Optional
+from typing import Dict, Callable, List, Any, Union, Optional, Tuple
 
 
 class Ui(abc.ABC):
@@ -56,28 +56,31 @@ class UiSection(abc.ABC):
     def clear(self) -> None:
         """Clears the UI Section"""
 
-
-class UiTheme(abc.ABC):
-    def initialize_ui(self, ui: Ui, screen: curses.window) -> List[UiComponent]:
-        """Initializes the theme at the start"""
-
+class UiSectionFactory(abc.ABC):
     def create_ui_section(self, ui_type: str, data: Dict[str, Any], interpolator: Interpolator) -> UiSection:
         """Creates an instance of a UiSection"""
 
 
+class UiApplication(abc.ABC):
+    def initialize_ui(self, ui: Ui, screen: curses.window) -> Tuple[List[UiComponent], UiSectionFactory]:
+        """Initializes the theme at the start"""
+
+
+def run_ui_engine(entrypoint: str, model: Dict[str, Any], ui_application: UiApplication):
+    def loader(screen):
+        ui = _UiSystem(screen, entrypoint, model, ui_application)
+        ui.execute()
+
+    curses.wrapper(loader)
+
+
 class _UiSystem(Ui):
-    def __init__(self, screen, entrypoint, model, ui_theme: UiTheme):
+    def __init__(self, screen, entrypoint, model, ui_application: UiApplication):
         self._screen = screen
-        self._section = entrypoint
+        self._entrypoint = entrypoint
         self._model = model
-        self._ui_theme = ui_theme
-        self._items = self._model['items']
-        self._values = {k: v['default'] for k, v in self._model.get('variables', {}).items()}
-        for item in self._model['items'].values():
-            self._values.update({k: v['default'] for k, v in item.get('variables', {}).items()})
-        self._section_states = {}
-        self._history = []
-        self._ui_components = None
+        self._ui_application = ui_application
+        self._values = {}
 
     def get_value(self, key: str) -> str:
         return self._values[key]
@@ -85,12 +88,30 @@ class _UiSystem(Ui):
     def set_value(self, key: str, value: Any) -> None:
         self._values[key] = value
 
-    def display(self):
-        self._ui_components = self._ui_theme.initialize_ui(self, self._screen)
+    def execute(self):
+        self._values.update({k: v['default'] for k, v in self._model.get('variables', {}).items()})
 
-        for component in self._ui_components:
-            component.initialize_ui(self)
+        for item in self._model['items'].values():
+            self._values.update({k: v['default'] for k, v in item.get('variables', {}).items()})
 
+        ui_components, ui_section_factory = self._ui_application.initialize_ui(self, self._screen)
+
+        runtime = _UiRuntime(self._model, self._entrypoint, self, ui_components, ui_section_factory)
+        runtime.run()
+
+
+class _UiRuntime:
+    def __init__(self, model, entrypoint, ui: Ui, ui_components: List[UiComponent], ui_section_factory: UiSectionFactory):
+        self._model = model
+        self._section = entrypoint
+        self._items = self._model['items']
+        self._section_states = {}
+        self._history = []
+        self._ui = ui
+        self._ui_components = ui_components
+        self._ui_section_factory = ui_section_factory
+
+    def run(self):
         self._current_section_state().reset()
 
         while True:
@@ -116,7 +137,7 @@ class _UiSystem(Ui):
             elif isinstance(new_section, dict):
                 self._push_history()
                 self._section = '@temporary'
-                self._section_states['@temporary'] = self._make_section_state(new_section, self._values, self._model, self._ui_components)
+                self._section_states['@temporary'] = self._make_section_state(new_section)
                 self._section_states['@temporary'].reset()
             else:
                 self._push_history()
@@ -130,30 +151,30 @@ class _UiSystem(Ui):
 
     def _current_section_state(self):
         if self._section not in self._section_states:
-            self._section_states[self._section] = self._make_section_state(self._items[self._section], self._values, self._model, self._ui_components)
+            self._section_states[self._section] = self._make_section_state(self._items[self._section])
         return self._section_states[self._section]
 
-    def _make_section_state(self,data, values, model, ui_components):
-        expand_ui_type(data, model)
+    def _make_section_state(self, data):
+        expand_ui_type(data, self._model)
 
-        data['formatters'] = {**data.get('formatters', {}), **model.get('formatters', {})}
-        data['variables'] = {**data.get('variables', {}), **model.get('variables', {})}
+        data['formatters'] = {**data.get('formatters', {}), **self._model.get('formatters', {})}
+        data['variables'] = {**data.get('variables', {}), **self._model.get('variables', {})}
 
         hotkeys = {}
         for hk in data.get('hotkeys', []):
             for key in hk['keys']:
                 hotkeys[key] = hk['action']
 
-        interpolator = _Interpolator(data, values)
-        effect_resolver = _EffectResolver(self, data, values)
-        for component in ui_components:
+        interpolator = _Interpolator(data, self._ui)
+        effect_resolver = _EffectResolver(self._ui, data)
+        for component in self._ui_components:
             effect_resolver.add_ui_component(component)
 
         ui_type = data['ui'] if 'ui' in data else None
         if ui_type is None:
             raise ValueError(f'Wrong ui_type: "{data["ui"] if "ui" in data else "`ui` field not found"}"')
 
-        ui_section = self._ui_theme.create_ui_section(ui_type, data, interpolator)
+        ui_section = self._ui_section_factory.create_ui_section(ui_type, data, interpolator)
         return _UiSectionProcessor(ui_section, effect_resolver, hotkeys)
 
 
@@ -201,9 +222,9 @@ def expand_ui_type(data, model):
 
 
 class _Interpolator(Interpolator):
-    def __init__(self, data, values):
+    def __init__(self, data, ui: Ui):
         self._data = data
-        self._values = values
+        self._ui = ui
 
     def interpolate(self, text):
         reading_state = 0
@@ -224,9 +245,9 @@ class _Interpolator(Interpolator):
                     reading_state = 0
                     if reading_value in self._data['formatters']:
                         variable_type = self._data['formatters'][reading_value]
-                        values[reading_value] = variable_type[self._values[reading_value]]
+                        values[reading_value] = variable_type[self._ui.get_value(reading_value)]
                     else:
-                        values[reading_value] = self._values[reading_value]
+                        values[reading_value] = self._ui.get_value(reading_value)
                 elif character == ':':
                     reading_state = 2
                     reading_modifier = ''
@@ -244,11 +265,11 @@ class _Interpolator(Interpolator):
                 elif character == '}':
                     reading_state = 0
                     if reading_modifier == 'bool':
-                        values[reading_value + ':bool'] = 'true' if bool(self._values[reading_value]) else 'false'
+                        values[reading_value + ':bool'] = 'true' if bool(self._ui.get_value(reading_value)) else 'false'
                     elif reading_modifier in self._data['formatters']:
                         variable_type = self._data['formatters'][reading_modifier]
                         try:
-                            values[reading_value + ':' + reading_modifier] = variable_type[self._values[reading_value]]
+                            values[reading_value + ':' + reading_modifier] = variable_type[self._ui.get_value(reading_value)]
                         except Exception as e:
                             raise ValueError(reading_value, reading_modifier, variable_type, e)
                     else:
@@ -262,7 +283,7 @@ class _Interpolator(Interpolator):
                     reading_state = 0
                     variable_type = self._data['formatters'][reading_modifier]
                     try:
-                        values[reading_value + ':' + reading_modifier + '=' + ','.join(reading_arguments)] = variable_type[self._values[reading_value]].format(*reading_arguments)
+                        values[reading_value + ':' + reading_modifier + '=' + ','.join(reading_arguments)] = variable_type[self._ui.get_value(reading_value)].format(*reading_arguments)
                     except Exception as e:
                         raise ValueError(reading_value, reading_modifier, variable_type, reading_arguments, e)
                 elif character == ',':
@@ -280,10 +301,9 @@ class _Interpolator(Interpolator):
 
 
 class _EffectResolver:
-    def __init__(self, ui, data, values):
+    def __init__(self, ui, data):
         self._ui = ui
         self._data = data
-        self._values = values
         self._additional_effects = {}
 
     def add_ui_component(self, ui_component):
@@ -298,7 +318,7 @@ class _EffectResolver:
                 raise ValueError('Effects should either have property `ui` or property `type`.')
             elif effect['type'] == 'condition':
                 variable = effect['variable']
-                return self.resolve_effect_chain(effect[self._values[variable]])
+                return self.resolve_effect_chain(effect[self._ui.get_value(variable)])
             elif effect['type'] == 'navigate':
                 return effect['target']
             elif effect['type'] == 'rotate_variable':
@@ -307,7 +327,7 @@ class _EffectResolver:
 
                 cur_index = 0
                 for index, var_value in enumerate(possible_values):
-                    if var_value == self._values[target_variable]:
+                    if var_value == self._ui.get_value(target_variable):
                         cur_index = index
                         break
 
@@ -315,8 +335,8 @@ class _EffectResolver:
                 if cur_index >= len(possible_values):
                     cur_index = 0
 
-                if possible_values[cur_index] != self._values[target_variable]:
-                    self._values[target_variable] = possible_values[cur_index]
+                if possible_values[cur_index] != self._ui.get_value(target_variable):
+                    self._ui.set_value(target_variable, possible_values[cur_index])
                     result = 'clear_window'
             elif effect['type'] in self._additional_effects:
                 self._additional_effects[effect['type']](effect)
@@ -324,12 +344,3 @@ class _EffectResolver:
                 raise NotImplementedError(f'Wrong effect type :"{effect["type"]}"')
 
         return result
-
-
-def run_ui_engine(entrypoint: str, model: Dict[str, Any], ui_theme: UiTheme):
-    def loader(screen):
-        ui = _UiSystem(screen, entrypoint, model, ui_theme)
-        ui.display()
-
-    curses.wrapper(loader)
-

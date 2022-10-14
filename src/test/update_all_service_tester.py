@@ -16,6 +16,7 @@
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
 from typing import Tuple, Any
+from unittest.mock import MagicMock
 
 from test.countdown_stub import CountdownStub
 from test.fake_filesystem import FileSystemFactory
@@ -31,8 +32,10 @@ from update_all.local_repository import LocalRepositoryProvider, LocalRepository
 from update_all.local_store import LocalStoreProvider
 from update_all.os_utils import OsUtils
 from update_all.settings_screen import SettingsScreen
+from update_all.settings_screen_printer import SettingsScreenPrinter, SettingsScreenThemeManager
 from update_all.store_migrator import StoreMigrator
 from update_all.ui_engine import Ui
+from update_all.ui_engine_dialog_application import UiDialogDrawerFactory
 from update_all.update_all_service import UpdateAllServiceFactory, UpdateAllService
 
 
@@ -84,8 +87,17 @@ class DownloaderIniRepositoryTester(DownloaderIniRepository):
         )
 
 
+class SettingsScreenPrinterStub(SettingsScreenPrinter):
+    def __init__(self, factory: UiDialogDrawerFactory = None, theme_manager: SettingsScreenThemeManager = None):
+        self._factory = factory or MagicMock()
+        self._theme_manager = theme_manager or MagicMock()
+
+    def initialize_screen(self, screen) -> Tuple[UiDialogDrawerFactory, SettingsScreenThemeManager]:
+        return self._factory, self._theme_manager
+
+
 class SettingsScreenTester(SettingsScreen):
-    def __init__(self, config_provider: ConfigProvider = None, file_system: FileSystem = None, downloader_ini_repository: DownloaderIniRepository = None, os_utils: OsUtils = None):
+    def __init__(self, config_provider: ConfigProvider = None, file_system: FileSystem = None, downloader_ini_repository: DownloaderIniRepository = None, os_utils: OsUtils = None, settings_screen_printer: SettingsScreenPrinter = None):
         config_provider = config_provider or ConfigProvider()
         file_system = file_system or FileSystemFactory(config_provider=config_provider).create_for_system_scope()
         super().__init__(
@@ -93,7 +105,9 @@ class SettingsScreenTester(SettingsScreen):
             config_provider=config_provider,
             file_system=file_system,
             downloader_ini_repository=downloader_ini_repository or DownloaderIniRepositoryTester(file_system=file_system),
-            os_utils=os_utils or SpyOsUtils())
+            os_utils=os_utils or SpyOsUtils(),
+            settings_screen_printer=settings_screen_printer or SettingsScreenPrinterStub()
+        )
 
 
 class UiStub(Ui):
@@ -126,7 +140,8 @@ class UpdateAllServiceTester(UpdateAllService):
         file_system = file_system or FileSystemFactory().create_for_system_scope()
         local_repository = local_repository or LocalRepositoryTester(config_provider=config_provider, file_system=file_system, store_migrator=store_migrator)
         downloader_ini_repository = downloader_ini_repository or DownloaderIniRepositoryTester(file_system=file_system)
-        settings_screen = settings_screen or SettingsScreen(logger=NoLogger(), config_provider=config_provider, file_system=file_system, downloader_ini_repository=downloader_ini_repository, os_utils=os_utils)
+        os_utils = os_utils or SpyOsUtils()
+        settings_screen = settings_screen or SettingsScreenTester(config_provider=config_provider, file_system=file_system, downloader_ini_repository=downloader_ini_repository, os_utils=os_utils)
 
         super().__init__(
             config_reader=config_reader,
@@ -136,7 +151,7 @@ class UpdateAllServiceTester(UpdateAllService):
             local_repository=local_repository,
             store_migrator=store_migrator,
             file_system=file_system,
-            os_utils=os_utils or SpyOsUtils(),
+            os_utils=os_utils,
             countdown=countdown or CountdownStub(),
             settings_screen=settings_screen,
             downloader_ini_repository=downloader_ini_repository

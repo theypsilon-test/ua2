@@ -30,6 +30,8 @@ from update_all.local_store import LocalStoreProvider
 from update_all.logger import Logger
 from update_all.os_utils import OsUtils, LinuxOsUtils
 from update_all.settings_screen import SettingsScreen
+from update_all.settings_screen_standard_printer import SettingsScreenStandardPrinter
+from update_all.settings_screen_trivial_printer import SettingsScreenTrivialPrinter
 from update_all.store_migrator import StoreMigrator
 from update_all.migrations import migrations
 from update_all.local_repository import LocalRepository, LocalRepositoryProvider
@@ -52,8 +54,26 @@ class UpdateAllServiceFactory:
         local_store_provider = LocalStoreProvider()
         os_utils = LinuxOsUtils(config_provider=config_provider, logger=self._logger)
         downloader_ini_repository = DownloaderIniRepository(self._logger, file_system=file_system)
-        settings_screen = SettingsScreen(logger=self._logger, config_provider=config_provider, file_system=file_system, downloader_ini_repository=downloader_ini_repository, os_utils=os_utils)
-        return UpdateAllService(config_reader, config_provider, local_store_provider, downloader_ini_repository, self._logger, local_repository, store_migrator, file_system, os_utils, CountdownImpl(), settings_screen)
+        return UpdateAllService(
+            config_reader,
+            config_provider,
+            local_store_provider,
+            downloader_ini_repository,
+            self._logger,
+            local_repository,
+            store_migrator,
+            file_system,
+            os_utils,
+            CountdownImpl(),
+            SettingsScreen(
+                logger=self._logger,
+                config_provider=config_provider,
+                file_system=file_system,
+                downloader_ini_repository=downloader_ini_repository,
+                os_utils=os_utils,
+                settings_screen_printer=SettingsScreenStandardPrinter()
+            )
+        )
 
 
 class UpdateAllService:

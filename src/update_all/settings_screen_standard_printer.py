@@ -15,12 +15,12 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-import abc
 import curses
-from typing import Optional, Dict, Any
+from typing import Tuple
 
-from update_all.ui_engine import UiTheme, UiSection, EffectChain, Interpolator, ProcessKeyResult
-from update_all.ui_engine_client_helpers import NavigationState, make_action_effect_chain
+from update_all.settings_screen_printer import SettingsScreenPrinter, SettingsScreenThemeManager
+from update_all.ui_engine import Interpolator
+from update_all.ui_engine_dialog_application import UiDialogDrawer, UiDialogDrawerFactory
 
 COLOR_RED_OVER_BLUE = 1
 COLOR_WHITE_OVER_BLUE = 2
@@ -57,12 +57,9 @@ BOX_BACKGROUND_COLOR = 0
 COMMON_TEXT_COLOR = 0
 UNSELECTED_ACTION_COLOR = 0
 
-class SettingsScreenDialogTheme:
-    def __init__(self):
-        self._layout = None
-        self._window = None
 
-    def initialize_theme(self, screen: curses.window):
+class SettingsScreenStandardPrinter(SettingsScreenPrinter):
+    def initialize_screen(self, screen: curses.window) -> Tuple[UiDialogDrawerFactory, SettingsScreenThemeManager]:
         curses.start_color()
 
         color_white = curses.COLOR_WHITE
@@ -73,11 +70,6 @@ class SettingsScreenDialogTheme:
         color_yellow = curses.COLOR_YELLOW
         color_green = curses.COLOR_GREEN
         color_magenta = curses.COLOR_MAGENTA
-
-        #if curses.COLORS != 8:
-            #curses.use_default_colors()
-            #color_white = 247
-            #color_cyan = 63
 
         curses.init_pair(COLOR_RED_OVER_WHITE, color_red, color_white)
         curses.init_pair(COLOR_RED_OVER_BLUE, color_red, color_blue)
@@ -99,26 +91,10 @@ class SettingsScreenDialogTheme:
         curses.init_pair(COLOR_BLACK_OVER_RED, color_black, color_red)
         curses.init_pair(COLOR_WHITE_OVER_RED, color_white, color_red)
 
-        self._window = screen.subwin(0, 0)
-        self._window.keypad(True)
-        self._layout = Layout(self._window)
-
-    def create_ui_section(self, ui_type: str, data: Dict[str, Any], interpolator: Interpolator) -> UiSection:
-        state = NavigationState(len(data.get('entries', {})), len(data.get('actions', {})))
-        drawer = _UiDrawer(self._window, self._layout, interpolator)
-        if ui_type == 'menu':
-            return _Menu(drawer, data, state)
-        elif ui_type == 'confirm':
-            return _Confirm(drawer, data, state)
-        elif ui_type == 'message':
-            if 'effects' not in data:
-                data['effects'] = [{"type": "navigate", "target": "back"}]
-            return _Message(drawer, data)
-        else:
-            raise ValueError(f'Not implemented ui_type: {ui_type}')
-
-    def set_theme(self, theme):
-        self._layout.set_theme(theme)
+        window = screen.subwin(0, 0)
+        window.keypad(True)
+        layout = _Layout(window)
+        return _DrawerFactory(window, layout), layout
 
 
 def blue_and_grey_color_theme():
@@ -328,7 +304,7 @@ def red_in_black_color_theme():
     COMMON_TEXT_COLOR = COLOR_RED_OVER_BLACK
 
 
-class Layout:
+class _Layout(SettingsScreenThemeManager):
     def __init__(self, window: curses.window):
         self._window = window
         self._painted = False
@@ -361,7 +337,7 @@ class Layout:
             else:
                 cyan_in_black_color_theme()
 
-        elif self._current_theme == 'Blue Dialog':
+        elif self._current_theme == 'Blue Installer':
             if self._current_subtheme == 'black':
                 black_and_grey_color_theme()
             elif self._current_subtheme == 'red':
@@ -404,28 +380,17 @@ class Layout:
         self._painted = False
 
 
-class UiDrawer(abc.ABC):
-    def start(self, data):
-        """"Start of screen"""
+class _DrawerFactory(UiDialogDrawerFactory):
+    def __init__(self, window: curses.window, layout: _Layout):
+        self._window = window
+        self._layout = layout
 
-    def add_text_line(self, text):
-        """"Adds text line"""
-
-    def add_menu_entry(self, option, info, is_selected=False):
-        """"Adds menu entry"""
-
-    def add_action(self, action, is_selected=False):
-        """"Adds action"""
-
-    def paint(self) -> int:
-        """"Paints all screen UI and returns char"""
-
-    def clear(self) -> None:
-        """Clears all the screen"""
+    def create_ui_dialog_drawer(self, interpolator: Interpolator) -> UiDialogDrawer:
+        return _Drawer(self._window, self._layout, interpolator)
 
 
-class _UiDrawer(UiDrawer):
-    def __init__(self, window, layout: Layout, interpolator: Interpolator):
+class _Drawer(UiDialogDrawer):
+    def __init__(self, window, layout: _Layout, interpolator: Interpolator):
         self._window = window
         self._layout = layout
         self._interpolator = interpolator
@@ -636,117 +601,3 @@ def calculate_max_length_text_line(lines):
         if length > max_length:
             max_length = length
     return max_length
-
-
-class _Message(UiSection):
-    def __init__(self, drawer: UiDrawer, data: Dict[str, Any]):
-        self._drawer = drawer
-        self._data = data
-
-    def process_key(self) -> Optional[ProcessKeyResult]:
-        self._drawer.start(self._data)
-
-        for index, text_line in enumerate(self._data['text']):
-            self._drawer.add_text_line(text_line)
-
-        self._drawer.add_action(self._data.get('action_name', 'Ok'), is_selected=True)
-
-        key = self._drawer.paint()
-        if key in [curses.KEY_ENTER, ord("\n")]:
-            return EffectChain(self._data['effects'])
-
-        return key
-
-    def reset(self) -> None:
-        pass
-
-    def clear(self) -> None:
-        self._drawer.clear()
-
-class _Confirm(UiSection):
-    def __init__(self, drawer: UiDrawer, data: Dict[str, Any], state: NavigationState):
-        self._drawer = drawer
-        self._data = data
-        self._state = state
-
-    def process_key(self) -> Optional[ProcessKeyResult]:
-        self._drawer.start(self._data)
-
-        for index, text_line in enumerate(self._data['text']):
-            self._drawer.add_text_line(text_line)
-
-        for index, action in enumerate(self._data['actions']):
-            self._drawer.add_action(action['title'], index == self._state.lateral_position())
-
-        key = self._drawer.paint()
-        if key == curses.KEY_LEFT:
-            self._state.navigate_left()
-        elif key == curses.KEY_RIGHT:
-            self._state.navigate_right()
-        elif key in [curses.KEY_ENTER, ord("\n")]:
-            return make_action_effect_chain(self._data, self._state)
-
-        return key
-
-    def reset(self) -> None:
-        self._state.reset_lateral_position()
-        if 'preselected_action' not in self._data:
-            return
-
-        preselected_action = self._data['preselected_action']
-        for index, action in enumerate(self._data['actions']):
-            if action['title'] == preselected_action:
-                self._state.reset_lateral_position(index)
-
-    def clear(self) -> None:
-        self._drawer.clear()
-
-
-class _Menu(UiSection):
-    def __init__(self, drawer: UiDrawer, data: Dict[str, Any], state: NavigationState):
-        self._drawer = drawer
-        self._data = data
-        self._state = state
-        self._hotkeys = {}
-        for index, entry in enumerate(self._data['entries']):
-            first_letter = ord(entry['title'][0:1].lower())
-            self._hotkeys[first_letter] = index
-
-    def process_key(self) -> Optional[ProcessKeyResult]:
-        self._drawer.start(self._data)
-
-        any_text = False
-        for index, text_line in enumerate(self._data.get('text', [])):
-            self._drawer.add_text_line(text_line)
-            any_text = True
-
-        if any_text:
-            self._drawer.add_text_line(' ')
-
-        for index, entry in enumerate(self._data['entries']):
-            self._drawer.add_menu_entry(entry['title'], entry.get('description', ''), index == self._state.position())
-
-        for index, action in enumerate(self._data['actions']):
-            self._drawer.add_action(action['title'], index == self._state.lateral_position())
-
-        key = self._drawer.paint()
-        if key == curses.KEY_UP:
-            self._state.navigate_up()
-        elif key == curses.KEY_DOWN:
-            self._state.navigate_down()
-        elif key == curses.KEY_LEFT:
-            self._state.navigate_left()
-        elif key == curses.KEY_RIGHT:
-            self._state.navigate_right()
-        elif key in [curses.KEY_ENTER, ord("\n")]:
-            return make_action_effect_chain(self._data, self._state)
-        elif key in self._hotkeys:
-            self._state.reset_position(self._hotkeys[key])
-
-        return key
-
-    def reset(self) -> None:
-        self._state.reset_lateral_position()
-
-    def clear(self) -> None:
-        self._drawer.clear()

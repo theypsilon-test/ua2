@@ -20,7 +20,7 @@ import hashlib
 import os
 from functools import cached_property
 from pathlib import Path
-from typing import Dict, Callable, List
+from typing import Dict, Callable, List, Tuple
 
 from update_all.config import ConfigProvider, load_ini_config_with_no_section, Config
 from update_all.constants import ARCADE_ORGANIZER_INI, FILE_update_all_ini, \
@@ -31,28 +31,29 @@ from update_all.downloader_ini_repository import DownloaderIniRepository
 from update_all.file_system import FileSystem
 from update_all.logger import Logger
 from update_all.os_utils import OsUtils
-from update_all.settings_screen_dialog_theme import SettingsScreenDialogTheme
 from update_all.settings_screen_model import settings_screen_model
-from update_all.ui_engine import run_ui_engine, Ui, UiComponent, UiTheme
+from update_all.settings_screen_printer import SettingsScreenPrinter
+from update_all.ui_engine import run_ui_engine, Ui, UiComponent, UiApplication, UiSectionFactory
+from update_all.ui_engine_dialog_application import DialogSectionFactory
 from update_all.ui_model_utilities import gather_default_values, list_variables_with_group, dynamic_convert_string
 
 
-class SettingsScreen(UiTheme, UiComponent):
+class SettingsScreen(UiApplication, UiComponent):
     def __init__(self, logger: Logger, config_provider: ConfigProvider, file_system: FileSystem,
-                 downloader_ini_repository: DownloaderIniRepository, os_utils: OsUtils):
+                 downloader_ini_repository: DownloaderIniRepository, os_utils: OsUtils, settings_screen_printer: SettingsScreenPrinter):
         self._logger = logger
         self._config_provider = config_provider
         self._file_system = file_system
         self._downloader_ini_repository = downloader_ini_repository
         self._os_utils = os_utils
+        self._settings_screen_printer = settings_screen_printer
         self._original_firmware = None
-        self._dialog_theme = SettingsScreenDialogTheme()
+        self._theme_manager = None
 
     def load_main_menu(self) -> None:
         run_ui_engine('main_menu', settings_screen_model(), self)
 
-    def initialize_ui(self, ui: Ui, screen: curses.window) -> List[UiComponent]:
-        self._dialog_theme.initialize_theme(screen)
+    def initialize_ui(self, ui: Ui, screen: curses.window) -> Tuple[List[UiComponent], UiSectionFactory]:
 
         ui.set_value('needs_save', 'false')
 
@@ -70,11 +71,13 @@ class SettingsScreen(UiTheme, UiComponent):
             value = arcade_organizer_ini.get_string(rename, str(variable_defaults[variable]).lower())
             ui.set_value(variable, value)
 
-        ui_theme = 'Blue Dialog'
+        ui_theme = 'Blue Installer'
         ui.set_value('ui_theme', ui_theme)
-        self._dialog_theme.set_theme(ui_theme)
 
-        return [self]
+        drawer_factory, self._theme_manager = self._settings_screen_printer.initialize_screen(screen)
+        self._theme_manager.set_theme(ui_theme)
+
+        return [self], DialogSectionFactory(drawer_factory)
 
     def initialize_effects(self, ui: Ui, effects: Dict[str, Callable[[], None]]) -> None:
         effects['calculate_needs_save'] = lambda effect: self.calculate_needs_save(ui)
@@ -311,4 +314,4 @@ class SettingsScreen(UiTheme, UiComponent):
         ui.set_value('arcade_organizer_folders_list', '')
 
     def apply_theme(self, ui):
-        self._dialog_theme.set_theme(ui.get_value('ui_theme'))
+        self._theme_manager.set_theme(ui.get_value('ui_theme'))

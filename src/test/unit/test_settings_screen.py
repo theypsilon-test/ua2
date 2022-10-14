@@ -18,6 +18,7 @@
 import unittest
 from pathlib import Path
 from typing import Tuple
+from unittest.mock import MagicMock
 
 from test.file_system_tester_state import FileSystemState
 from test.unit.test_update_all_service import downloader_ini
@@ -70,7 +71,7 @@ def tester(files=None, config=None) -> Tuple[SettingsScreen, Ui, FileSystemState
     config_provider = ConfigProvider()
     config_provider.initialize(config or Config())
     settings_screen = SettingsScreenTester(config_provider=config_provider, file_system=FileSystemFactory(state=state).create_for_system_scope())
-    settings_screen.initialize_ui(ui)
+    settings_screen.initialize_ui(ui, screen=MagicMock())
 
     return settings_screen, ui, state
 

@@ -624,7 +624,7 @@ def settings_screen_model(): return {
             "variables": {
                 "test_unstable_spinner_option": {"default": "Test Unstable Spinner Firmware", "values": ["Test Unstable Spinner Firmware", "Revert Unstable Spinner Firmware"]},
                 "test_unstable_spinner_desc": {"default": "For the Taito EGRET II Mini", "values": ["For the Taito EGRET II Mini", "Restore the original MiSTer binary"]},
-                "ui_theme": {"default": "Blue Dialog", "values": ["Blue Dialog", "Cyan Night"]},
+                "ui_theme": {"default": "Blue Installer", "values": ["Blue Installer", "Cyan Night"]},
             },
             "entries": [
                 {
