@@ -590,7 +590,7 @@ def settings_screen_model(): return {
                     "keys": [27],
                     "action": [{
                         "type": "condition",
-                        "variable": "spinner_needs_reboot",
+                        "variable": "firmware_needs_reboot",
                         "true": [{
                             "ui": "message",
                             "header": "The Firmware has been changed",
@@ -611,7 +611,7 @@ def settings_screen_model(): return {
                     "type": "fixed",
                     "fixed": [{
                         "type": "condition",
-                        "variable": "spinner_needs_reboot",
+                        "variable": "firmware_needs_reboot",
                         "true": [{
                             "ui": "message",
                             "header": "The Firmware has been changed",
@@ -621,10 +621,14 @@ def settings_screen_model(): return {
                     }]
                 }
             ],
+            "formatters": {
+                "spinner_option": {"true": "Revert Unstable Spinner Firmware", "false": "Test Unstable Spinner Firmware"},
+                "spinner_desc": {"true": "Restore the original MiSTer binary", "false": "For the Taito EGRET II Mini"}
+            },
             "variables": {
-                "test_unstable_spinner_option": {"default": "Test Unstable Spinner Firmware", "values": ["Test Unstable Spinner Firmware", "Revert Unstable Spinner Firmware"]},
-                "test_unstable_spinner_desc": {"default": "For the Taito EGRET II Mini", "values": ["For the Taito EGRET II Mini", "Restore the original MiSTer binary"]},
+                "spinner_firmware_installed": {"default": "false", "values": ["false", "true"]},
                 "ui_theme": {"default": "Blue Installer", "values": ["Blue Installer", "Cyan Night"]},
+                "firmware_needs_reboot": {"default": "false", "values": ["false", "true"]},
             },
             "entries": [
                 {
@@ -636,22 +640,22 @@ def settings_screen_model(): return {
                             "header": "This will take time",
                             "preselected_action": "No",
                             "text": [
-                                "The Bad Apple Database is an animation that takes around 3 minutes to finish.",
+                                "The Bad Apple Database is an animation that takes around 4 minutes to finish.",
                                 " ",
-                                "You can't interrupt it by pressing any button. You'd have to reboot your MiSTer if you don't want to wait for the animation to finish.",
+                                "You can't interrupt it by pressing any button. You'd have to reboot your MiSTer if you don't want to wait for the animation to end.",
                                 " ",
                                 "Do you really want to play it now?"
                             ],
                             "actions": [
-                                {"title": "Yes", "type": "fixed", "fixed": [{"type": "play_bad_apple"}]},
+                                {"title": "Yes", "type": "fixed", "fixed": [{"type": "play_bad_apple"}, {"type": "navigate", "target": "back"}]},
                                 {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
                             ],
                         }],
                     }
                 },
                 {
-                    "title": "2 {test_unstable_spinner_option}",
-                    "description": "{test_unstable_spinner_desc}",
+                    "title": "2 {spinner_firmware_installed:spinner_option}",
+                    "description": "{spinner_firmware_installed:spinner_desc}",
                     "actions": {"ok": [
                         {"type": "calculate_test_unstable_spinner_warning"},
                         {
@@ -670,7 +674,7 @@ def settings_screen_model(): return {
                                     "DON'T REPORT ISSUES IN ANY CORE WHILE USING THIS FIRMWARE!"
                                 ],
                                 "actions": [
-                                    {"title": "Yes", "type": "fixed", "fixed": [{"type": "test_unstable_spinner"}]},
+                                    {"title": "Yes", "type": "fixed", "fixed": [{"type": "test_unstable_spinner"}, {"type": "navigate", "target": "back"}]},
                                     {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
                                 ],
                             }],
@@ -689,7 +693,7 @@ def settings_screen_model(): return {
                     "actions": {"ok": [
                         {
                             "type": "condition",
-                            "variable": "spinner_needs_reboot",
+                            "variable": "firmware_needs_reboot",
                             "true": [{
                                 "ui": "message",
                                 "header": "The Firmware has been changed",

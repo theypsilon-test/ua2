@@ -140,12 +140,10 @@ class SettingsScreen(UiApplication, UiComponent):
     def test_unstable_spinner(self, ui: Ui) -> None:
         is_test_firmware, firmware_md5 = self._is_test_firmware()
         if is_test_firmware:
-            content = self._os_utils.download(
-                "https://raw.githubusercontent.com/MiSTer-devel/Distribution_MiSTer/main/MiSTer")
+            content = self._os_utils.download("https://raw.githubusercontent.com/MiSTer-devel/Distribution_MiSTer/main/MiSTer")
             self._file_system.write_file_bytes(FILE_MiSTer, content)
         else:
-            content = self._os_utils.download(
-                "https://raw.githubusercontent.com/theypsilon/Main_MiSTer/test-unstable-taito-spinner-firmware/bin")
+            content = self._os_utils.download("https://raw.githubusercontent.com/theypsilon/Main_MiSTer/test-unstable-taito-spinner-firmware/bin")
             self._file_system.write_file_bytes(FILE_MiSTer, content)
 
         self._set_spinner_options(ui)
@@ -153,11 +151,8 @@ class SettingsScreen(UiApplication, UiComponent):
     def _set_spinner_options(self, ui: Ui):
         is_test_firmware, firmware_md5 = self._is_test_firmware()
 
-        ui.set_value('test_unstable_spinner_option',
-                     "Test Unstable Spinner Firmware" if not is_test_firmware else "Revert Unstable Spinner Firmware")
-        ui.set_value('test_unstable_spinner_desc',
-                     "For the Taito EGRET II Mini" if not is_test_firmware else "Restore the original MiSTer binary")
-        ui.set_value('spinner_needs_reboot', 'true' if self._original_firmware != firmware_md5 else 'false')
+        ui.set_value('spinner_firmware_installed', 'true' if is_test_firmware else 'false')
+        ui.set_value('firmware_needs_reboot', 'true' if self._original_firmware != firmware_md5 else 'false')
 
     def play_bad_apple(self, _ui) -> None:
         content = self._os_utils.download(DOWNLOADER_URL)
@@ -279,8 +274,7 @@ class SettingsScreen(UiApplication, UiComponent):
         if 'rbf_hide_datecode=1' in mister_ini:
             has_date_code_1 = True
 
-        ui.set_value('names_char_code_warning',
-                     'true' if names_char_code == 'char28' and not has_date_code_1 else 'false')
+        ui.set_value('names_char_code_warning', 'true' if names_char_code == 'char28' and not has_date_code_1 else 'false')
 
     def calculate_names_txt_warning(self, ui: Ui):
         if not self._file_system.is_file('names.txt'):
@@ -307,8 +301,7 @@ class SettingsScreen(UiApplication, UiComponent):
                                                                      'INI_FILE': f'{self._config_provider.get().base_path}/{ARCADE_ORGANIZER_INI}'
                                                                  })
 
-        ui.set_value('has_arcade_organizer_folders',
-                     'true' if return_code == 0 and len(output.strip()) > 0 else 'false')
+        ui.set_value('has_arcade_organizer_folders', 'true' if return_code == 0 and len(output.strip()) > 0 else 'false')
         ui.set_value('arcade_organizer_folders_list', output if return_code == 0 else '')
 
     def clean_arcade_organizer_folders(self, ui: Ui) -> None:
