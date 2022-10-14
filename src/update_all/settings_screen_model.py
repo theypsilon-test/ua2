@@ -630,13 +630,52 @@ def settings_screen_model(): return {
                 {
                     "title": "1 Play Bad Apple Database",
                     "description": "",
-                    "actions": {"ok": [{"type": "play_bad_apple"}]}
+                    "actions": {
+                        "ok": [{
+                            "ui": "confirm",
+                            "header": "This will take time",
+                            "preselected_action": "No",
+                            "text": [
+                                "The Bad Apple Database is an animation that takes around 3 minutes to finish.",
+                                " ",
+                                "You can't interrupt it by pressing any button. You'd have to reboot your MiSTer if you don't want to wait for the animation to finish.",
+                                " ",
+                                "Do you really want to play it now?"
+                            ],
+                            "actions": [
+                                {"title": "Yes", "type": "fixed", "fixed": [{"type": "play_bad_apple"}]},
+                                {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
+                            ],
+                        }],
+                    }
                 },
                 {
                     "title": "2 {test_unstable_spinner_option}",
                     "description": "{test_unstable_spinner_desc}",
                     "actions": {"ok": [
-                        {"type": "test_unstable_spinner"}
+                        {"type": "calculate_test_unstable_spinner_warning"},
+                        {
+                            "type": "condition",
+                            "variable": "test_unstable_spinner_warning",
+                            "true": [{
+                                "ui": "confirm",
+                                "header": "WARNING",
+                                "alert_level": "red",
+                                "preselected_action": "No",
+                                "text": [
+                                    "This will replace the original firmware with an unstable test version that only works with Arkanoid. All other cores using the mouse WILL work erratically.",
+                                    " ",
+                                    "You have to revert to the original firmware after you are done testing Arkanoid.",
+                                    " ",
+                                    "DON'T REPORT ISSUES IN ANY CORE WHILE USING THIS FIRMWARE!"
+                                ],
+                                "actions": [
+                                    {"title": "Yes", "type": "fixed", "fixed": [{"type": "test_unstable_spinner"}]},
+                                    {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
+                                ],
+                            }],
+                            "false": [{"type": "test_unstable_spinner"}]
+                        }
                     ]}
                 },
                 {

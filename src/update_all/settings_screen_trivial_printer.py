@@ -27,8 +27,6 @@ class SettingsScreenTrivialPrinter(SettingsScreenPrinter, SettingsScreenThemeMan
     def initialize_screen(self, screen: curses.window) -> Tuple[UiDialogDrawerFactory, SettingsScreenThemeManager]:
         curses.start_color()
         curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
-        curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
-        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
         window = screen.subwin(0, 0)
         window.keypad(True)
@@ -62,7 +60,7 @@ class _Drawer(UiDialogDrawer):
         self._index_horizontal = 0
         if 'header' in data:
             self._window.addstr(0, 1, self._interpolator.interpolate(data['header']), curses.A_NORMAL)
-            self._index_vertical = 1
+            self._index_vertical += 1
 
     def add_text_line(self, text):
         self._window.addstr(self._index_vertical, 1, self._interpolator.interpolate(text), curses.A_NORMAL)
@@ -83,4 +81,4 @@ class _Drawer(UiDialogDrawer):
         return self._window.getch()
 
     def clear(self) -> None:
-        self._window.clear()
+        pass

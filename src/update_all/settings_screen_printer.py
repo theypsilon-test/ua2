@@ -23,7 +23,7 @@ from update_all.ui_engine_dialog_application import UiDialogDrawerFactory
 
 
 class SettingsScreenThemeManager(abc.ABC):
-    def set_theme(self, new_theme: str):
+    def set_theme(self, new_theme: str) -> None:
         """"Sets the theme for all drawers created or to be created"""
 
 

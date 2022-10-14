@@ -15,6 +15,7 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
+import abc
 import curses
 from typing import Tuple
 
@@ -22,40 +23,45 @@ from update_all.settings_screen_printer import SettingsScreenPrinter, SettingsSc
 from update_all.ui_engine import Interpolator
 from update_all.ui_engine_dialog_application import UiDialogDrawer, UiDialogDrawerFactory
 
-COLOR_RED_OVER_BLUE = 1
-COLOR_WHITE_OVER_BLUE = 2
-COLOR_CYAN_OVER_BLUE = 3
-COLOR_RED_OVER_WHITE = 4
-COLOR_BLUE_OVER_WHITE = 5
-COLOR_CYAN_OVER_WHITE = 6
-COLOR_BLACK_OVER_WHITE = 7
-COLOR_CYAN_OVER_BLACK = 8
-COLOR_WHITE_OVER_BLACK = 9
-COLOR_RED_OVER_BLACK = 10
-COLOR_YELLOW_OVER_BLACK = 11
-COLOR_GREEN_OVER_BLACK = 12
-COLOR_MAGENTA_OVER_BLACK = 13
-COLOR_RED_OVER_CYAN = 14
-COLOR_BLACK_OVER_CYAN = 15
-COLOR_WHITE_OVER_CYAN = 16
-COLOR_BLACK_OVER_YELLOW = 17
-COLOR_BLACK_OVER_RED = 18
-COLOR_WHITE_OVER_RED = 19
+COLOR_PAIR_RED_OVER_BLUE = 1
+COLOR_PAIR_WHITE_OVER_BLUE = 2
+COLOR_PAIR_CYAN_OVER_BLUE = 3
+COLOR_PAIR_RED_OVER_WHITE = 4
+COLOR_PAIR_BLUE_OVER_WHITE = 5
+COLOR_PAIR_CYAN_OVER_WHITE = 6
+COLOR_PAIR_BLACK_OVER_WHITE = 7
+COLOR_PAIR_CYAN_OVER_BLACK = 8
+COLOR_PAIR_WHITE_OVER_BLACK = 9
+COLOR_PAIR_RED_OVER_BLACK = 10
+COLOR_PAIR_YELLOW_OVER_BLACK = 11
+COLOR_PAIR_GREEN_OVER_BLACK = 12
+COLOR_PAIR_MAGENTA_OVER_BLACK = 13
+COLOR_PAIR_RED_OVER_CYAN = 14
+COLOR_PAIR_BLACK_OVER_CYAN = 15
+COLOR_PAIR_WHITE_OVER_CYAN = 16
+COLOR_PAIR_BLACK_OVER_YELLOW = 17
+COLOR_PAIR_BLACK_OVER_RED = 18
+COLOR_PAIR_WHITE_OVER_RED = 19
 
-FIRST_OPTION_KEY_UNSELECTED_COLOR = 0
-FIRST_OPTION_KEY_SELECTED_COLOR = 0
-WINDOW_BACKGROUND_COLOR = 0
-SELECTED_OPTION_INFO_COLOR = 0
-SELECTED_ACTION_BORDER_COLOR = 0
-HEADER_COLOR = 0
-OPTION_UNSELECTED_COLOR = 0
-SYMBOL_TILDE_COLOR = 0
-SELECTED_ACTION_INTERIOR_COLOR = 0
-SELECTED_OPTION_TEXT_COLOR = 0
-SYMBOL_AT_COLOR = 0
-BOX_BACKGROUND_COLOR = 0
-COMMON_TEXT_COLOR = 0
-UNSELECTED_ACTION_COLOR = 0
+
+class ColorConfiguration:
+    FIRST_OPTION_KEY_UNSELECTED_COLOR = 0
+    FIRST_OPTION_KEY_SELECTED_COLOR = 0
+    WINDOW_BACKGROUND_COLOR = 0
+    SELECTED_OPTION_INFO_COLOR = 0
+    SELECTED_ACTION_BORDER_COLOR = 0
+    HEADER_COLOR = 0
+    OPTION_UNSELECTED_COLOR = 0
+    SYMBOL_TILDE_COLOR = 0
+    SELECTED_ACTION_INTERIOR_COLOR = 0
+    SELECTED_OPTION_TEXT_COLOR = 0
+    SYMBOL_AT_COLOR = 0
+    BOX_BACKGROUND_COLOR = 0
+    COMMON_TEXT_COLOR = 0
+    UNSELECTED_ACTION_COLOR = 0
+
+
+colors = ColorConfiguration()
 
 
 class SettingsScreenStandardPrinter(SettingsScreenPrinter):
@@ -71,25 +77,25 @@ class SettingsScreenStandardPrinter(SettingsScreenPrinter):
         color_green = curses.COLOR_GREEN
         color_magenta = curses.COLOR_MAGENTA
 
-        curses.init_pair(COLOR_RED_OVER_WHITE, color_red, color_white)
-        curses.init_pair(COLOR_RED_OVER_BLUE, color_red, color_blue)
-        curses.init_pair(COLOR_WHITE_OVER_BLUE, color_white, color_blue)
-        curses.init_pair(COLOR_BLUE_OVER_WHITE, color_blue, color_white)
-        curses.init_pair(COLOR_CYAN_OVER_BLUE, color_cyan, color_blue)
-        curses.init_pair(COLOR_CYAN_OVER_WHITE, color_cyan, color_white)
-        curses.init_pair(COLOR_BLACK_OVER_WHITE, color_black, color_white)
-        curses.init_pair(COLOR_CYAN_OVER_BLACK, color_cyan, color_black)
-        curses.init_pair(COLOR_WHITE_OVER_BLACK, color_white, color_black)
-        curses.init_pair(COLOR_RED_OVER_BLACK, color_red, color_black)
-        curses.init_pair(COLOR_YELLOW_OVER_BLACK, color_yellow, color_black)
-        curses.init_pair(COLOR_GREEN_OVER_BLACK, color_green, color_black)
-        curses.init_pair(COLOR_MAGENTA_OVER_BLACK, color_magenta, color_black)
-        curses.init_pair(COLOR_RED_OVER_CYAN, color_red, color_cyan)
-        curses.init_pair(COLOR_BLACK_OVER_CYAN, color_black, color_cyan)
-        curses.init_pair(COLOR_WHITE_OVER_CYAN, color_white, color_cyan)
-        curses.init_pair(COLOR_BLACK_OVER_YELLOW, color_black, color_yellow)
-        curses.init_pair(COLOR_BLACK_OVER_RED, color_black, color_red)
-        curses.init_pair(COLOR_WHITE_OVER_RED, color_white, color_red)
+        curses.init_pair(COLOR_PAIR_RED_OVER_WHITE, color_red, color_white)
+        curses.init_pair(COLOR_PAIR_RED_OVER_BLUE, color_red, color_blue)
+        curses.init_pair(COLOR_PAIR_WHITE_OVER_BLUE, color_white, color_blue)
+        curses.init_pair(COLOR_PAIR_BLUE_OVER_WHITE, color_blue, color_white)
+        curses.init_pair(COLOR_PAIR_CYAN_OVER_BLUE, color_cyan, color_blue)
+        curses.init_pair(COLOR_PAIR_CYAN_OVER_WHITE, color_cyan, color_white)
+        curses.init_pair(COLOR_PAIR_BLACK_OVER_WHITE, color_black, color_white)
+        curses.init_pair(COLOR_PAIR_CYAN_OVER_BLACK, color_cyan, color_black)
+        curses.init_pair(COLOR_PAIR_WHITE_OVER_BLACK, color_white, color_black)
+        curses.init_pair(COLOR_PAIR_RED_OVER_BLACK, color_red, color_black)
+        curses.init_pair(COLOR_PAIR_YELLOW_OVER_BLACK, color_yellow, color_black)
+        curses.init_pair(COLOR_PAIR_GREEN_OVER_BLACK, color_green, color_black)
+        curses.init_pair(COLOR_PAIR_MAGENTA_OVER_BLACK, color_magenta, color_black)
+        curses.init_pair(COLOR_PAIR_RED_OVER_CYAN, color_red, color_cyan)
+        curses.init_pair(COLOR_PAIR_BLACK_OVER_CYAN, color_black, color_cyan)
+        curses.init_pair(COLOR_PAIR_WHITE_OVER_CYAN, color_white, color_cyan)
+        curses.init_pair(COLOR_PAIR_BLACK_OVER_YELLOW, color_black, color_yellow)
+        curses.init_pair(COLOR_PAIR_BLACK_OVER_RED, color_black, color_red)
+        curses.init_pair(COLOR_PAIR_WHITE_OVER_RED, color_white, color_red)
 
         window = screen.subwin(0, 0)
         window.keypad(True)
@@ -97,211 +103,137 @@ class SettingsScreenStandardPrinter(SettingsScreenPrinter):
         return _DrawerFactory(window, layout), layout
 
 
-def blue_and_grey_color_theme():
-    global FIRST_OPTION_KEY_UNSELECTED_COLOR
-    global FIRST_OPTION_KEY_SELECTED_COLOR
-    global WINDOW_BACKGROUND_COLOR
-    global SELECTED_OPTION_INFO_COLOR
-    global SELECTED_ACTION_BORDER_COLOR
-    global HEADER_COLOR
-    global OPTION_UNSELECTED_COLOR
-    global SYMBOL_TILDE_COLOR
-    global SELECTED_ACTION_INTERIOR_COLOR
-    global SELECTED_OPTION_TEXT_COLOR
-    global SYMBOL_AT_COLOR
-    global BOX_BACKGROUND_COLOR
-    global COMMON_TEXT_COLOR
-    global UNSELECTED_ACTION_COLOR
-
-    FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_RED_OVER_WHITE
-    FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_RED_OVER_BLUE
-    WINDOW_BACKGROUND_COLOR = COLOR_WHITE_OVER_BLUE
-    SELECTED_OPTION_INFO_COLOR = COLOR_WHITE_OVER_BLUE
-    SELECTED_ACTION_BORDER_COLOR = COLOR_WHITE_OVER_BLUE
-    HEADER_COLOR = COLOR_BLUE_OVER_WHITE
-    OPTION_UNSELECTED_COLOR = COLOR_BLUE_OVER_WHITE
-    SYMBOL_TILDE_COLOR = COLOR_BLUE_OVER_WHITE
-    SELECTED_ACTION_INTERIOR_COLOR = COLOR_CYAN_OVER_BLUE
-    SELECTED_OPTION_TEXT_COLOR = COLOR_CYAN_OVER_BLUE
-    SYMBOL_AT_COLOR = COLOR_CYAN_OVER_WHITE
-    BOX_BACKGROUND_COLOR = COLOR_BLACK_OVER_WHITE
-    COMMON_TEXT_COLOR = COLOR_BLACK_OVER_WHITE
-    UNSELECTED_ACTION_COLOR = COLOR_BLACK_OVER_WHITE
+class ColorTheme(abc.ABC):
+    def standard(self): pass
+    def black(self): pass
+    def red(self): pass
 
 
-def black_and_grey_color_theme():
-    global FIRST_OPTION_KEY_UNSELECTED_COLOR
-    global FIRST_OPTION_KEY_SELECTED_COLOR
-    global WINDOW_BACKGROUND_COLOR
-    global SELECTED_OPTION_INFO_COLOR
-    global SELECTED_ACTION_BORDER_COLOR
-    global HEADER_COLOR
-    global OPTION_UNSELECTED_COLOR
-    global SYMBOL_TILDE_COLOR
-    global SELECTED_ACTION_INTERIOR_COLOR
-    global SELECTED_OPTION_TEXT_COLOR
-    global SYMBOL_AT_COLOR
-    global BOX_BACKGROUND_COLOR
-    global COMMON_TEXT_COLOR
-    global UNSELECTED_ACTION_COLOR
+class BlueInstallerColorTheme(ColorTheme):
+    def standard(self):
+        colors.WINDOW_BACKGROUND_COLOR = COLOR_PAIR_WHITE_OVER_BLUE
+        colors.BOX_BACKGROUND_COLOR = COLOR_PAIR_BLACK_OVER_WHITE
+        colors.HEADER_COLOR = COLOR_PAIR_BLUE_OVER_WHITE
 
-    FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_RED_OVER_WHITE
-    FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_RED_OVER_BLUE
-    WINDOW_BACKGROUND_COLOR = COLOR_WHITE_OVER_BLACK
-    SELECTED_OPTION_INFO_COLOR = COLOR_WHITE_OVER_BLACK
-    SELECTED_ACTION_BORDER_COLOR = COLOR_WHITE_OVER_BLACK
-    HEADER_COLOR = COLOR_BLACK_OVER_WHITE
-    OPTION_UNSELECTED_COLOR = COLOR_BLUE_OVER_WHITE
-    SYMBOL_TILDE_COLOR = COLOR_BLUE_OVER_WHITE
-    SELECTED_ACTION_INTERIOR_COLOR = COLOR_WHITE_OVER_BLACK
-    SELECTED_OPTION_TEXT_COLOR = COLOR_CYAN_OVER_BLUE
-    SYMBOL_AT_COLOR = COLOR_CYAN_OVER_WHITE
-    BOX_BACKGROUND_COLOR = COLOR_BLACK_OVER_WHITE
-    COMMON_TEXT_COLOR = COLOR_BLACK_OVER_WHITE
-    UNSELECTED_ACTION_COLOR = COLOR_BLACK_OVER_WHITE
+        colors.SELECTED_OPTION_INFO_COLOR = COLOR_PAIR_WHITE_OVER_BLUE
+        colors.SELECTED_OPTION_TEXT_COLOR = COLOR_PAIR_CYAN_OVER_BLUE
+        colors.OPTION_UNSELECTED_COLOR = COLOR_PAIR_BLUE_OVER_WHITE
 
+        colors.FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_PAIR_RED_OVER_WHITE
+        colors.FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_PAIR_RED_OVER_BLUE
 
-def red_and_grey_color_theme():
-    global FIRST_OPTION_KEY_UNSELECTED_COLOR
-    global FIRST_OPTION_KEY_SELECTED_COLOR
-    global WINDOW_BACKGROUND_COLOR
-    global SELECTED_OPTION_INFO_COLOR
-    global SELECTED_ACTION_BORDER_COLOR
-    global HEADER_COLOR
-    global OPTION_UNSELECTED_COLOR
-    global SYMBOL_TILDE_COLOR
-    global SELECTED_ACTION_INTERIOR_COLOR
-    global SELECTED_OPTION_TEXT_COLOR
-    global SYMBOL_AT_COLOR
-    global BOX_BACKGROUND_COLOR
-    global COMMON_TEXT_COLOR
-    global UNSELECTED_ACTION_COLOR
+        colors.SELECTED_ACTION_BORDER_COLOR = COLOR_PAIR_WHITE_OVER_BLUE
+        colors.SELECTED_ACTION_INTERIOR_COLOR = COLOR_PAIR_CYAN_OVER_BLUE
+        colors.UNSELECTED_ACTION_COLOR = COLOR_PAIR_BLACK_OVER_WHITE
 
-    FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_RED_OVER_WHITE
-    FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_WHITE_OVER_RED
-    WINDOW_BACKGROUND_COLOR = COLOR_WHITE_OVER_RED
-    SELECTED_OPTION_INFO_COLOR = COLOR_WHITE_OVER_RED
-    SELECTED_ACTION_BORDER_COLOR = COLOR_WHITE_OVER_RED
-    HEADER_COLOR = COLOR_RED_OVER_WHITE
-    OPTION_UNSELECTED_COLOR = COLOR_BLACK_OVER_WHITE
-    SYMBOL_TILDE_COLOR = COLOR_BLUE_OVER_WHITE
-    SELECTED_ACTION_INTERIOR_COLOR = COLOR_WHITE_OVER_RED
-    SELECTED_OPTION_TEXT_COLOR = COLOR_WHITE_OVER_RED
-    SYMBOL_AT_COLOR = COLOR_RED_OVER_WHITE
-    BOX_BACKGROUND_COLOR = COLOR_BLACK_OVER_WHITE
-    COMMON_TEXT_COLOR = COLOR_BLACK_OVER_WHITE
-    UNSELECTED_ACTION_COLOR = COLOR_RED_OVER_WHITE
+        colors.SYMBOL_AT_COLOR = COLOR_PAIR_CYAN_OVER_WHITE
+        colors.SYMBOL_TILDE_COLOR = COLOR_PAIR_BLUE_OVER_WHITE
+        colors.COMMON_TEXT_COLOR = COLOR_PAIR_BLACK_OVER_WHITE
+
+    def black(self):
+        colors.WINDOW_BACKGROUND_COLOR = COLOR_PAIR_WHITE_OVER_BLACK
+        colors.BOX_BACKGROUND_COLOR = COLOR_PAIR_BLACK_OVER_WHITE
+        colors.HEADER_COLOR = COLOR_PAIR_BLACK_OVER_WHITE
+
+        colors.SELECTED_OPTION_INFO_COLOR = COLOR_PAIR_WHITE_OVER_BLACK
+        colors.SELECTED_OPTION_TEXT_COLOR = COLOR_PAIR_CYAN_OVER_BLUE
+        colors.OPTION_UNSELECTED_COLOR = COLOR_PAIR_BLUE_OVER_WHITE
+
+        colors.FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_PAIR_RED_OVER_WHITE
+        colors.FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_PAIR_RED_OVER_BLUE
+
+        colors.SELECTED_ACTION_BORDER_COLOR = COLOR_PAIR_WHITE_OVER_BLACK
+        colors.SELECTED_ACTION_INTERIOR_COLOR = COLOR_PAIR_WHITE_OVER_BLACK
+        colors.UNSELECTED_ACTION_COLOR = COLOR_PAIR_BLACK_OVER_WHITE
+
+        colors.SYMBOL_AT_COLOR = COLOR_PAIR_CYAN_OVER_WHITE
+        colors.SYMBOL_TILDE_COLOR = COLOR_PAIR_BLUE_OVER_WHITE
+        colors.COMMON_TEXT_COLOR = COLOR_PAIR_BLACK_OVER_WHITE
+
+    def red(self):
+        colors.WINDOW_BACKGROUND_COLOR = COLOR_PAIR_WHITE_OVER_RED
+        colors.BOX_BACKGROUND_COLOR = COLOR_PAIR_BLACK_OVER_WHITE
+        colors.HEADER_COLOR = COLOR_PAIR_RED_OVER_WHITE
+
+        colors.SELECTED_OPTION_INFO_COLOR = COLOR_PAIR_WHITE_OVER_RED
+        colors.SELECTED_OPTION_TEXT_COLOR = COLOR_PAIR_WHITE_OVER_RED
+        colors.OPTION_UNSELECTED_COLOR = COLOR_PAIR_BLACK_OVER_WHITE
+
+        colors.FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_PAIR_RED_OVER_WHITE
+        colors.FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_PAIR_WHITE_OVER_RED
+
+        colors.SELECTED_ACTION_BORDER_COLOR = COLOR_PAIR_WHITE_OVER_RED
+        colors.SELECTED_ACTION_INTERIOR_COLOR = COLOR_PAIR_WHITE_OVER_RED
+        colors.UNSELECTED_ACTION_COLOR = COLOR_PAIR_RED_OVER_WHITE
+
+        colors.SYMBOL_AT_COLOR = COLOR_PAIR_RED_OVER_WHITE
+        colors.SYMBOL_TILDE_COLOR = COLOR_PAIR_BLUE_OVER_WHITE
+        colors.COMMON_TEXT_COLOR = COLOR_PAIR_BLACK_OVER_WHITE
 
 
-def cyan_in_black_color_theme():
-    global FIRST_OPTION_KEY_UNSELECTED_COLOR
-    global FIRST_OPTION_KEY_SELECTED_COLOR
-    global WINDOW_BACKGROUND_COLOR
-    global SELECTED_OPTION_INFO_COLOR
-    global SELECTED_ACTION_BORDER_COLOR
-    global HEADER_COLOR
-    global OPTION_UNSELECTED_COLOR
-    global SYMBOL_TILDE_COLOR
-    global SELECTED_ACTION_INTERIOR_COLOR
-    global SELECTED_OPTION_TEXT_COLOR
-    global SYMBOL_AT_COLOR
-    global BOX_BACKGROUND_COLOR
-    global COMMON_TEXT_COLOR
-    global UNSELECTED_ACTION_COLOR
+class CyanNightColorTheme(ColorTheme):
+    def standard(self):
+        colors.WINDOW_BACKGROUND_COLOR = COLOR_PAIR_CYAN_OVER_BLACK
+        colors.BOX_BACKGROUND_COLOR = COLOR_PAIR_CYAN_OVER_BLACK
+        colors.HEADER_COLOR = COLOR_PAIR_CYAN_OVER_BLACK
 
-    WINDOW_BACKGROUND_COLOR = COLOR_CYAN_OVER_BLACK
-    BOX_BACKGROUND_COLOR = COLOR_CYAN_OVER_BLACK
-    HEADER_COLOR = COLOR_CYAN_OVER_BLACK
+        colors.FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_PAIR_BLACK_OVER_CYAN
+        colors.SELECTED_OPTION_INFO_COLOR = COLOR_PAIR_BLACK_OVER_CYAN
+        colors.SELECTED_OPTION_TEXT_COLOR = COLOR_PAIR_BLACK_OVER_CYAN
 
-    FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_BLACK_OVER_CYAN
-    SELECTED_OPTION_INFO_COLOR = COLOR_BLACK_OVER_CYAN
-    SELECTED_OPTION_TEXT_COLOR = COLOR_BLACK_OVER_CYAN
+        colors.OPTION_UNSELECTED_COLOR = COLOR_PAIR_CYAN_OVER_BLACK
+        colors.FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_PAIR_WHITE_OVER_BLACK
 
-    OPTION_UNSELECTED_COLOR = COLOR_CYAN_OVER_BLACK
-    FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_WHITE_OVER_BLACK
+        colors.SELECTED_ACTION_INTERIOR_COLOR = COLOR_PAIR_BLACK_OVER_CYAN
+        colors.SELECTED_ACTION_BORDER_COLOR = COLOR_PAIR_BLACK_OVER_CYAN
 
-    SELECTED_ACTION_INTERIOR_COLOR = COLOR_BLACK_OVER_CYAN
-    SELECTED_ACTION_BORDER_COLOR = COLOR_BLACK_OVER_CYAN
+        colors.UNSELECTED_ACTION_COLOR = COLOR_PAIR_CYAN_OVER_BLACK
 
-    UNSELECTED_ACTION_COLOR = COLOR_CYAN_OVER_BLACK
+        colors.SYMBOL_TILDE_COLOR = COLOR_PAIR_YELLOW_OVER_BLACK
+        colors.SYMBOL_AT_COLOR = COLOR_PAIR_WHITE_OVER_BLACK
+        colors.COMMON_TEXT_COLOR = COLOR_PAIR_CYAN_OVER_BLACK
 
-    SYMBOL_TILDE_COLOR = COLOR_YELLOW_OVER_BLACK
-    SYMBOL_AT_COLOR = COLOR_WHITE_OVER_BLACK
-    COMMON_TEXT_COLOR = COLOR_CYAN_OVER_BLACK
+    def black(self):
+        colors.WINDOW_BACKGROUND_COLOR = COLOR_PAIR_YELLOW_OVER_BLACK
+        colors.BOX_BACKGROUND_COLOR = COLOR_PAIR_YELLOW_OVER_BLACK
+        colors.HEADER_COLOR = COLOR_PAIR_YELLOW_OVER_BLACK
 
+        colors.FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_PAIR_BLACK_OVER_YELLOW
+        colors.SELECTED_OPTION_INFO_COLOR = COLOR_PAIR_BLACK_OVER_YELLOW
+        colors.SELECTED_OPTION_TEXT_COLOR = COLOR_PAIR_BLACK_OVER_YELLOW
 
-def yellow_in_black_color_theme():
-    global FIRST_OPTION_KEY_UNSELECTED_COLOR
-    global FIRST_OPTION_KEY_SELECTED_COLOR
-    global WINDOW_BACKGROUND_COLOR
-    global SELECTED_OPTION_INFO_COLOR
-    global SELECTED_ACTION_BORDER_COLOR
-    global HEADER_COLOR
-    global OPTION_UNSELECTED_COLOR
-    global SYMBOL_TILDE_COLOR
-    global SELECTED_ACTION_INTERIOR_COLOR
-    global SELECTED_OPTION_TEXT_COLOR
-    global SYMBOL_AT_COLOR
-    global BOX_BACKGROUND_COLOR
-    global COMMON_TEXT_COLOR
-    global UNSELECTED_ACTION_COLOR
+        colors.OPTION_UNSELECTED_COLOR = COLOR_PAIR_YELLOW_OVER_BLACK
+        colors.FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_PAIR_WHITE_OVER_BLACK
 
-    WINDOW_BACKGROUND_COLOR = COLOR_YELLOW_OVER_BLACK
-    BOX_BACKGROUND_COLOR = COLOR_YELLOW_OVER_BLACK
-    HEADER_COLOR = COLOR_YELLOW_OVER_BLACK
+        colors.SELECTED_ACTION_INTERIOR_COLOR = COLOR_PAIR_BLACK_OVER_YELLOW
+        colors.SELECTED_ACTION_BORDER_COLOR = COLOR_PAIR_BLACK_OVER_YELLOW
 
-    FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_BLACK_OVER_YELLOW
-    SELECTED_OPTION_INFO_COLOR = COLOR_BLACK_OVER_YELLOW
-    SELECTED_OPTION_TEXT_COLOR = COLOR_BLACK_OVER_YELLOW
+        colors.UNSELECTED_ACTION_COLOR = COLOR_PAIR_YELLOW_OVER_BLACK
 
-    OPTION_UNSELECTED_COLOR = COLOR_YELLOW_OVER_BLACK
-    FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_WHITE_OVER_BLACK
+        colors.SYMBOL_TILDE_COLOR = COLOR_PAIR_CYAN_OVER_BLACK
+        colors.SYMBOL_AT_COLOR = COLOR_PAIR_WHITE_OVER_BLACK
+        colors.COMMON_TEXT_COLOR = COLOR_PAIR_YELLOW_OVER_BLACK
 
-    SELECTED_ACTION_INTERIOR_COLOR = COLOR_BLACK_OVER_YELLOW
-    SELECTED_ACTION_BORDER_COLOR = COLOR_BLACK_OVER_YELLOW
+    def red(self):
+        colors.WINDOW_BACKGROUND_COLOR = COLOR_PAIR_RED_OVER_BLACK
+        colors.BOX_BACKGROUND_COLOR = COLOR_PAIR_RED_OVER_BLACK
+        colors.HEADER_COLOR = COLOR_PAIR_RED_OVER_BLACK
 
-    UNSELECTED_ACTION_COLOR = COLOR_YELLOW_OVER_BLACK
+        colors.FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_PAIR_BLACK_OVER_RED
+        colors.SELECTED_OPTION_INFO_COLOR = COLOR_PAIR_BLACK_OVER_RED
+        colors.SELECTED_OPTION_TEXT_COLOR = COLOR_PAIR_BLACK_OVER_RED
 
-    SYMBOL_TILDE_COLOR = COLOR_CYAN_OVER_BLACK
-    SYMBOL_AT_COLOR = COLOR_WHITE_OVER_BLACK
-    COMMON_TEXT_COLOR = COLOR_YELLOW_OVER_BLACK
+        colors.OPTION_UNSELECTED_COLOR = COLOR_PAIR_RED_OVER_BLACK
+        colors.FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_PAIR_WHITE_OVER_BLACK
 
+        colors.SELECTED_ACTION_INTERIOR_COLOR = COLOR_PAIR_BLACK_OVER_RED
+        colors.SELECTED_ACTION_BORDER_COLOR = COLOR_PAIR_BLACK_OVER_RED
 
-def red_in_black_color_theme():
-    global FIRST_OPTION_KEY_UNSELECTED_COLOR
-    global FIRST_OPTION_KEY_SELECTED_COLOR
-    global WINDOW_BACKGROUND_COLOR
-    global SELECTED_OPTION_INFO_COLOR
-    global SELECTED_ACTION_BORDER_COLOR
-    global HEADER_COLOR
-    global OPTION_UNSELECTED_COLOR
-    global SYMBOL_TILDE_COLOR
-    global SELECTED_ACTION_INTERIOR_COLOR
-    global SELECTED_OPTION_TEXT_COLOR
-    global SYMBOL_AT_COLOR
-    global BOX_BACKGROUND_COLOR
-    global COMMON_TEXT_COLOR
-    global UNSELECTED_ACTION_COLOR
+        colors.UNSELECTED_ACTION_COLOR = COLOR_PAIR_RED_OVER_BLACK
 
-    WINDOW_BACKGROUND_COLOR = COLOR_RED_OVER_BLACK
-    BOX_BACKGROUND_COLOR = COLOR_RED_OVER_BLACK
-    HEADER_COLOR = COLOR_RED_OVER_BLACK
-
-    FIRST_OPTION_KEY_SELECTED_COLOR = COLOR_BLACK_OVER_RED
-    SELECTED_OPTION_INFO_COLOR = COLOR_BLACK_OVER_RED
-    SELECTED_OPTION_TEXT_COLOR = COLOR_BLACK_OVER_RED
-
-    OPTION_UNSELECTED_COLOR = COLOR_RED_OVER_BLACK
-    FIRST_OPTION_KEY_UNSELECTED_COLOR = COLOR_WHITE_OVER_BLACK
-
-    SELECTED_ACTION_INTERIOR_COLOR = COLOR_BLACK_OVER_RED
-    SELECTED_ACTION_BORDER_COLOR = COLOR_BLACK_OVER_RED
-
-    UNSELECTED_ACTION_COLOR = COLOR_RED_OVER_BLACK
-
-    SYMBOL_TILDE_COLOR = COLOR_CYAN_OVER_BLACK
-    SYMBOL_AT_COLOR = COLOR_WHITE_OVER_BLACK
-    COMMON_TEXT_COLOR = COLOR_RED_OVER_BLACK
+        colors.SYMBOL_TILDE_COLOR = COLOR_PAIR_CYAN_OVER_BLACK
+        colors.SYMBOL_AT_COLOR = COLOR_PAIR_WHITE_OVER_BLACK
+        colors.COMMON_TEXT_COLOR = COLOR_PAIR_RED_OVER_BLACK
 
 
 class _Layout(SettingsScreenThemeManager):
@@ -309,41 +241,38 @@ class _Layout(SettingsScreenThemeManager):
         self._window = window
         self._painted = False
         self._box_id = None
-        self._current_subtheme = None
         self._current_theme = None
+        self._current_sub_theme = None
 
-    def set_subtheme(self, new_subtheme):
-        if new_subtheme == self._current_subtheme:
-            return
-
-        self._current_subtheme = new_subtheme
-        self._painted = False
-        self._apply_theme()
-
-    def set_theme(self, new_theme):
+    def set_theme(self, new_theme) -> None:
         if new_theme == self._current_theme:
             return
 
         self._current_theme = new_theme
-        self._painted = False
         self._apply_theme()
 
-    def _apply_theme(self):
-        if self._current_theme == 'Cyan Night':
-            if self._current_subtheme == 'black':
-                yellow_in_black_color_theme()
-            elif self._current_subtheme == 'red':
-                red_in_black_color_theme()
-            else:
-                cyan_in_black_color_theme()
+    def set_sub_theme(self, new_sub_theme) -> None:
+        if new_sub_theme == self._current_sub_theme:
+            return
 
-        elif self._current_theme == 'Blue Installer':
-            if self._current_subtheme == 'black':
-                black_and_grey_color_theme()
-            elif self._current_subtheme == 'red':
-                black_and_grey_color_theme()
-            else:
-                blue_and_grey_color_theme()
+        self._current_sub_theme = new_sub_theme
+        self._apply_theme()
+
+    def _apply_theme(self) -> None:
+        self._painted = False
+        color_theme = self._get_color_theme()
+        if self._current_sub_theme == 'black':
+            color_theme.black()
+        elif self._current_sub_theme == 'red':
+            color_theme.red()
+        else:
+            color_theme.standard()
+
+    def _get_color_theme(self) -> ColorTheme:
+        if self._current_theme == 'Cyan Night':
+            return CyanNightColorTheme()
+        else:
+            return BlueInstallerColorTheme()
 
     def paint_layout(self, h: int, w: int, y: int, x: int, has_header: bool) -> None:
         box_id = f'{h}_{w}_{y}_{x}_{str(has_header)}'
@@ -353,7 +282,7 @@ class _Layout(SettingsScreenThemeManager):
         self._painted = True
         self._box_id = box_id
         self._window.clear()
-        self._window.bkgd(' ', curses.color_pair(WINDOW_BACKGROUND_COLOR))
+        self._window.bkgd(' ', curses.color_pair(colors.WINDOW_BACKGROUND_COLOR))
         if box_id == self._box_id:
             self._paint_box(h, w, y, x, has_header)
 
@@ -362,18 +291,18 @@ class _Layout(SettingsScreenThemeManager):
         try:
             box1 = screen.subwin(h, w, y, x)
             box1.clear()
-            box1.attron(curses.color_pair(BOX_BACKGROUND_COLOR))
-            box1.bkgd(' ', curses.color_pair(BOX_BACKGROUND_COLOR) | curses.A_NORMAL)
+            box1.attron(curses.color_pair(colors.BOX_BACKGROUND_COLOR))
+            box1.bkgd(' ', curses.color_pair(colors.BOX_BACKGROUND_COLOR) | curses.A_NORMAL)
             box1.box()
 
             if has_header:
-                screen.hline(y + 2, x + 1, curses.ACS_HLINE | curses.color_pair(BOX_BACKGROUND_COLOR), w - 2)
+                screen.hline(y + 2, x + 1, curses.ACS_HLINE | curses.color_pair(colors.BOX_BACKGROUND_COLOR), w - 2)
 
         except curses.error as _:
             box1 = screen.subwin(curses.LINES, curses.COLS, 0, 0)
             box1.clear()
-            box1.attron(curses.color_pair(BOX_BACKGROUND_COLOR))
-            box1.bkgd(' ', curses.color_pair(BOX_BACKGROUND_COLOR) | curses.A_NORMAL)
+            box1.attron(curses.color_pair(colors.BOX_BACKGROUND_COLOR))
+            box1.bkgd(' ', curses.color_pair(colors.BOX_BACKGROUND_COLOR) | curses.A_NORMAL)
             box1.box()
 
     def reset(self) -> None:
@@ -410,7 +339,7 @@ class _Drawer(UiDialogDrawer):
         if 'header' in data:
             self._header = self._interpolator.interpolate(data['header'])
 
-        self._layout.set_subtheme(data.get('alert_level', None))
+        self._layout.set_sub_theme(data.get('alert_level', None))
 
     def add_text_line(self, text):
         interpolated_text = self._interpolator.interpolate(text)
@@ -465,7 +394,7 @@ class _Drawer(UiDialogDrawer):
         line_index = offset_vertical
 
         if max_length_header > 0:
-            self._write_line(line_index, offset_header, self._header, curses.A_NORMAL | curses.color_pair(HEADER_COLOR))
+            self._write_line(line_index, offset_header, self._header, curses.A_NORMAL | curses.color_pair(colors.HEADER_COLOR))
             line_index += 2
 
         for line in self._text_lines:
@@ -474,28 +403,28 @@ class _Drawer(UiDialogDrawer):
                     self._write_line(line_index, offset_text_line + start, line[start:end], mode)
 
             else:
-                self._write_line(line_index, offset_text_line, line, curses.A_NORMAL | curses.color_pair(COMMON_TEXT_COLOR))
+                self._write_line(line_index, offset_text_line, line, curses.A_NORMAL | curses.color_pair(colors.COMMON_TEXT_COLOR))
             line_index += 1
 
         for option, info, is_selected in self._menu_entries:
             if is_selected:
-                mode = curses.A_NORMAL | curses.color_pair(FIRST_OPTION_KEY_SELECTED_COLOR)
+                mode = curses.A_NORMAL | curses.color_pair(colors.FIRST_OPTION_KEY_SELECTED_COLOR)
             else:
-                mode = curses.A_NORMAL | curses.color_pair(FIRST_OPTION_KEY_UNSELECTED_COLOR)
+                mode = curses.A_NORMAL | curses.color_pair(colors.FIRST_OPTION_KEY_UNSELECTED_COLOR)
 
             self._write_line(line_index, offset_menu, option[0:1], mode)
 
             if is_selected:
-                mode = curses.A_NORMAL | curses.color_pair(SELECTED_OPTION_TEXT_COLOR)
+                mode = curses.A_NORMAL | curses.color_pair(colors.SELECTED_OPTION_TEXT_COLOR)
             else:
-                mode = curses.A_NORMAL | curses.color_pair(OPTION_UNSELECTED_COLOR)
+                mode = curses.A_NORMAL | curses.color_pair(colors.OPTION_UNSELECTED_COLOR)
 
             self._write_line(line_index, offset_menu + 1, option[1:], mode)
 
             if is_selected:
-                mode = curses.A_NORMAL | curses.color_pair(SELECTED_OPTION_INFO_COLOR)
+                mode = curses.A_NORMAL | curses.color_pair(colors.SELECTED_OPTION_INFO_COLOR)
             else:
-                mode = curses.A_NORMAL | curses.color_pair(COMMON_TEXT_COLOR)
+                mode = curses.A_NORMAL | curses.color_pair(colors.COMMON_TEXT_COLOR)
             self._write_line(line_index, offset_menu + max_length_option + 2, info, mode)
             line_index += 1
 
@@ -504,11 +433,11 @@ class _Drawer(UiDialogDrawer):
 
         for action, is_selected in self._actions:
             if is_selected:
-                self._write_line(line_index, offset_actions, action[0:1], curses.A_BLINK | curses.color_pair(SELECTED_ACTION_BORDER_COLOR))
-                self._write_line(line_index, offset_actions + 1, action[1:-1], curses.A_BLINK | curses.color_pair(SELECTED_ACTION_INTERIOR_COLOR))
-                self._write_line(line_index, offset_actions + len(action) - 1, action[-1:], curses.A_BLINK | curses.color_pair(SELECTED_ACTION_BORDER_COLOR))
+                self._write_line(line_index, offset_actions, action[0:1], curses.A_BLINK | curses.color_pair(colors.SELECTED_ACTION_BORDER_COLOR))
+                self._write_line(line_index, offset_actions + 1, action[1:-1], curses.A_BLINK | curses.color_pair(colors.SELECTED_ACTION_INTERIOR_COLOR))
+                self._write_line(line_index, offset_actions + len(action) - 1, action[-1:], curses.A_BLINK | curses.color_pair(colors.SELECTED_ACTION_BORDER_COLOR))
             else:
-                self._write_line(line_index, offset_actions, action, curses.A_NORMAL | curses.color_pair(UNSELECTED_ACTION_COLOR))
+                self._write_line(line_index, offset_actions, action, curses.A_NORMAL | curses.color_pair(colors.UNSELECTED_ACTION_COLOR))
             offset_actions += action_width
 
         return self._window.getch()
@@ -533,13 +462,13 @@ def parse_effects(chunk):
             if char == '~':
                 state = 1
                 chunk = chunk[0:cursor] + chunk[cursor + 1:]
-                effects.append((curses.color_pair(COMMON_TEXT_COLOR) | curses.A_NORMAL, last, cursor))
+                effects.append((curses.color_pair(colors.COMMON_TEXT_COLOR) | curses.A_NORMAL, last, cursor))
                 last = cursor
                 continue
             elif char == '@':
                 state = 2
                 chunk = chunk[0:cursor] + chunk[cursor + 1:]
-                effects.append((curses.color_pair(COMMON_TEXT_COLOR) | curses.A_NORMAL, last, cursor))
+                effects.append((curses.color_pair(colors.COMMON_TEXT_COLOR) | curses.A_NORMAL, last, cursor))
                 last = cursor
                 continue
 
@@ -547,7 +476,7 @@ def parse_effects(chunk):
             if char == '~':
                 state = 0
                 chunk = chunk[0:cursor] + chunk[cursor + 1:]
-                effects.append((curses.color_pair(SYMBOL_TILDE_COLOR) | curses.A_UNDERLINE, last, cursor))
+                effects.append((curses.color_pair(colors.SYMBOL_TILDE_COLOR) | curses.A_UNDERLINE, last, cursor))
                 last = cursor
                 continue
 
@@ -555,7 +484,7 @@ def parse_effects(chunk):
             if char == '@':
                 state = 0
                 chunk = chunk[0:cursor] + chunk[cursor + 1:]
-                effects.append((curses.color_pair(SYMBOL_AT_COLOR) | curses.A_BOLD, last, cursor))
+                effects.append((curses.color_pair(colors.SYMBOL_AT_COLOR) | curses.A_BOLD, last, cursor))
                 last = cursor
                 continue
 
@@ -564,7 +493,7 @@ def parse_effects(chunk):
 
         cursor += 1
 
-    effects.append((curses.color_pair(COMMON_TEXT_COLOR) | curses.A_NORMAL, last, len(chunk)))
+    effects.append((curses.color_pair(colors.COMMON_TEXT_COLOR) | curses.A_NORMAL, last, len(chunk)))
     return chunk, effects
 
 

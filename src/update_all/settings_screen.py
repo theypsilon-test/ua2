@@ -82,6 +82,7 @@ class SettingsScreen(UiApplication, UiComponent):
     def initialize_effects(self, ui: Ui, effects: Dict[str, Callable[[], None]]) -> None:
         effects['calculate_needs_save'] = lambda effect: self.calculate_needs_save(ui)
         effects['calculate_patrons'] = lambda effect: self.calculate_patrons(ui)
+        effects['calculate_test_unstable_spinner_warning'] = lambda effect: self.calculate_test_unstable_spinner_warning(ui)
         effects['test_unstable_spinner'] = lambda effect: self.test_unstable_spinner(ui)
         effects['play_bad_apple'] = lambda effect: self.play_bad_apple(ui)
         effects['save'] = lambda effect: self.save(ui)
@@ -100,7 +101,7 @@ class SettingsScreen(UiApplication, UiComponent):
     def remove_file(self, ui, effect) -> None:
         ui.set_value('file_exists', self._file_system.unlink(effect['target']))
 
-    def calculate_patrons(self, ui) -> None:
+    def calculate_patrons(self, ui: Ui) -> None:
         is_test_firmware, firmware_md5 = self._is_test_firmware()
         if firmware_md5 is not None:
             self._original_firmware = firmware_md5
@@ -132,7 +133,11 @@ class SettingsScreen(UiApplication, UiComponent):
 
         return is_test_firmware, firmware_md5
 
-    def test_unstable_spinner(self, ui) -> None:
+    def calculate_test_unstable_spinner_warning(self, ui: Ui) -> None:
+        is_test_firmware, _ = self._is_test_firmware()
+        ui.set_value('test_unstable_spinner_warning', 'false' if is_test_firmware else 'true')
+
+    def test_unstable_spinner(self, ui: Ui) -> None:
         is_test_firmware, firmware_md5 = self._is_test_firmware()
         if is_test_firmware:
             content = self._os_utils.download(
@@ -145,7 +150,7 @@ class SettingsScreen(UiApplication, UiComponent):
 
         self._set_spinner_options(ui)
 
-    def _set_spinner_options(self, ui):
+    def _set_spinner_options(self, ui: Ui):
         is_test_firmware, firmware_md5 = self._is_test_firmware()
 
         ui.set_value('test_unstable_spinner_option',
@@ -181,7 +186,7 @@ class SettingsScreen(UiApplication, UiComponent):
 
         curses.initscr()
 
-    def calculate_needs_save(self, ui) -> None:
+    def calculate_needs_save(self, ui: Ui) -> None:
         arcade_organizer_ini = load_ini_config_with_no_section(
             self._logger,
             Path(self._file_system.download_target_path(ARCADE_ORGANIZER_INI))
@@ -218,7 +223,7 @@ class SettingsScreen(UiApplication, UiComponent):
         ui.set_value('needs_save', str(len(needs_save_file_set) > 0).lower())
         ui.set_value('needs_save_file_list', needs_save_file_list)
 
-    def save(self, ui) -> None:
+    def save(self, ui: Ui) -> None:
         self.copy_ui_options_to_current_config(ui)
 
         variable_defaults = gather_default_values(settings_screen_model())
@@ -250,7 +255,7 @@ class SettingsScreen(UiApplication, UiComponent):
             arcade_organizer.writelines(
                 [f'{variable.upper()}={str(value).lower()}\n' for variable, value in options.items()])
 
-    def copy_ui_options_to_current_config(self, ui) -> None:
+    def copy_ui_options_to_current_config(self, ui: Ui) -> None:
         self._copy_temp_save_to_config(ui, self._config_provider.get())
 
     def _copy_temp_save_to_config(self, ui, config: Config) -> None:
@@ -264,7 +269,7 @@ class SettingsScreen(UiApplication, UiComponent):
     def _all_config_variables(self):
         return [*list_variables_with_group(settings_screen_model(), "main_ini"), *list_variables_with_group(settings_screen_model(), "downloader_only")]
 
-    def calculate_names_char_code_warning(self, ui) -> None:
+    def calculate_names_char_code_warning(self, ui: Ui) -> None:
 
         names_char_code = ui.get_value('names_char_code').lower()
 
@@ -277,7 +282,7 @@ class SettingsScreen(UiApplication, UiComponent):
         ui.set_value('names_char_code_warning',
                      'true' if names_char_code == 'char28' and not has_date_code_1 else 'false')
 
-    def calculate_names_txt_warning(self, ui):
+    def calculate_names_txt_warning(self, ui: Ui):
         if not self._file_system.is_file('names.txt'):
             ui.set_value('names_txt_warning', 'false')
             return
@@ -291,7 +296,7 @@ class SettingsScreen(UiApplication, UiComponent):
         else:
             return ''
 
-    def calculate_arcade_organizer_folders(self, ui) -> None:
+    def calculate_arcade_organizer_folders(self, ui: Ui) -> None:
         content = self._os_utils.download(ARCADE_ORGANIZER_URL)
         temp_file = self._file_system.temp_file_by_id('arcade_organizer.sh')
         self._file_system.write_file_bytes(temp_file.name, content)
@@ -306,12 +311,12 @@ class SettingsScreen(UiApplication, UiComponent):
                      'true' if return_code == 0 and len(output.strip()) > 0 else 'false')
         ui.set_value('arcade_organizer_folders_list', output if return_code == 0 else '')
 
-    def clean_arcade_organizer_folders(self, ui) -> None:
+    def clean_arcade_organizer_folders(self, ui: Ui) -> None:
         for line in ui.get_value('arcade_organizer_folders_list').splitlines():
             self._file_system.remove_non_empty_folder(line.strip())
 
         ui.set_value('has_arcade_organizer_folders', 'false')
         ui.set_value('arcade_organizer_folders_list', '')
 
-    def apply_theme(self, ui):
+    def apply_theme(self, ui: Ui):
         self._theme_manager.set_theme(ui.get_value('ui_theme'))
