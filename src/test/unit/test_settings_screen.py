@@ -33,7 +33,7 @@ class TestSettingsScreen(unittest.TestCase):
     def test_calculate_needs_save___on_no_files_setup___returns_downloader_ini_changes(self) -> None:
         sut, ui, _ = tester()
         sut.calculate_needs_save(ui)
-        self.assertEqual('downloader.ini', ui.get_value('needs_save_file_list'))
+        self.assertEqual('  - downloader.ini', ui.get_value('needs_save_file_list'))
         self.assertEqual('true', ui.get_value('needs_save'))
 
     def test_save___on_no_files_setup___creates_default_downloader_ini(self) -> None:
@@ -45,7 +45,7 @@ class TestSettingsScreen(unittest.TestCase):
         sut, ui, _ = tester(files={downloader_ini: {'content': default_downloader_ini_content()}})
         ui.set_value('names_txt_updater', 'false')
         sut.calculate_needs_save(ui)
-        self.assertEqual('downloader.ini, update_all.ini', ui.get_value('needs_save_file_list'))
+        self.assertEqual('  - downloader.ini\n  - update_all.ini', ui.get_value('needs_save_file_list'))
         self.assertEqual('true', ui.get_value('needs_save'))
 
     def test_calculate_needs_save___with_default_downloader_ini___returns_no_changes(self) -> None:

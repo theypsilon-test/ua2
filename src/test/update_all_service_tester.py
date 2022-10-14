@@ -106,9 +106,6 @@ class UiStub(Ui):
     def set_value(self, key: str, value: Any) -> None:
         self._props[key] = value
 
-    def refresh_screen(self) -> None:
-        pass
-
 
 class UpdateAllServiceTester(UpdateAllService):
     def __init__(self, config_reader: ConfigReader = None,

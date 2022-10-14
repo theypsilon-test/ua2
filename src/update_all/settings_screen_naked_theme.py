@@ -23,25 +23,30 @@ from update_all.ui_engine_client_helpers import NavigationState, make_action_eff
 
 
 class SettingsScreenNakedTheme(UiTheme):
-    def initialize_theme(self, window: curses.window):
-        window.bkgd(' ', curses.color_pair(1) | curses.A_BOLD)
-        window.keypad(True)
-        window.clear()
+    def __init__(self):
+        self._window = None
+
+    def initialize_theme(self, screen: curses.window):
         curses.start_color()
         curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
-    def create_ui_section(self, ui_type: str, window: curses.window, data: Dict[str, Any], interpolator: Interpolator) -> UiSection:
+        self._window = screen.subwin(0, 0)
+        self._window.keypad(True)
+        self._window.clear()
+        self._window.bkgd(' ', curses.color_pair(1) | curses.A_BOLD)
+
+    def create_ui_section(self, ui_type: str, data: Dict[str, Any], interpolator: Interpolator) -> UiSection:
         state = NavigationState(len(data.get('entries', {})), len(data.get('actions', {})))
         if ui_type == 'menu':
-            return _Menu(window, data, state, interpolator)
+            return _Menu(self._window, data, state, interpolator)
         elif ui_type == 'confirm':
-            return _Confirm(window, data, state, interpolator)
+            return _Confirm(self._window, data, state, interpolator)
         elif ui_type == 'message':
             if 'effects' not in data:
                 data['effects'] = [{"type": "navigate", "target": "back"}]
-            return _Message(window, data, interpolator)
+            return _Message(self._window, data, interpolator)
         else:
             raise ValueError(f'Not implemented ui_type: {ui_type}')
 
@@ -53,6 +58,8 @@ class _Message(UiSection):
         self._interpolator = interpolator
 
     def process_key(self) -> Optional[ProcessKeyResult]:
+        self._window.clear()
+
         header_offset = 0
         if 'header' in self._data:
             self._window.addstr(0, 1, self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
@@ -72,6 +79,9 @@ class _Message(UiSection):
     def reset(self) -> None:
         pass
 
+    def clear(self) -> None:
+        self._window.clear()
+
 
 class _Confirm(UiSection):
     def __init__(self, window: curses.window, data: Dict[str, Any], state: NavigationState, interpolator: Interpolator):
@@ -81,6 +91,7 @@ class _Confirm(UiSection):
         self._interpolator = interpolator
 
     def process_key(self) -> Optional[ProcessKeyResult]:
+        self._window.clear()
         self._window.addstr(0, 1,  self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
 
         for index, text_line in enumerate(self._data['text']):
@@ -110,6 +121,8 @@ class _Confirm(UiSection):
             if action['title'] == preselected_action:
                 self._state.reset_lateral_position(index)
 
+    def clear(self) -> None:
+        self._window.clear()
 
 class _Menu(UiSection):
     def __init__(self, window: curses.window, data: Dict[str, Any], state: NavigationState, interpolator: Interpolator):
@@ -119,6 +132,7 @@ class _Menu(UiSection):
         self._interpolator = interpolator
 
     def process_key(self) -> Optional[ProcessKeyResult]:
+        self._window.clear()
         self._window.addstr(0, 1,  self._interpolator.interpolate(self._data['header']), curses.A_NORMAL)
 
         for index, entry in enumerate(self._data['entries']):
@@ -147,3 +161,5 @@ class _Menu(UiSection):
     def reset(self) -> None:
         self._state.reset_lateral_position()
 
+    def clear(self) -> None:
+        self._window.clear()

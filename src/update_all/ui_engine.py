@@ -27,14 +27,8 @@ class Ui(abc.ABC):
     def set_value(self, key: str, value: Any) -> None:
         """Sets value as string for variable on the given key"""
 
-    def refresh_screen(self) -> None:
-        """Refreshes UI Screen"""
-
 
 class UiComponent(abc.ABC):
-    def initialize_ui(self, ui: Ui):
-        """Initializes the UI object"""
-
     def initialize_effects(self, ui: Ui, effects: Dict[str, Callable[[], None]]):
         """Initializes the effects dictionary if necessary"""
 
@@ -59,40 +53,40 @@ class UiSection(abc.ABC):
     def reset(self) -> None:
         """Resets the UI Section"""
 
+    def clear(self) -> None:
+        """Clears the UI Section"""
+
 
 class UiTheme(abc.ABC):
-    def initialize_theme(self, window: curses.window):
+    def initialize_ui(self, ui: Ui, screen: curses.window) -> List[UiComponent]:
         """Initializes the theme at the start"""
 
-    def create_ui_section(self, ui_type: str, window: curses.window, data: Dict[str, Any], interpolator: Interpolator) -> UiSection:
+    def create_ui_section(self, ui_type: str, data: Dict[str, Any], interpolator: Interpolator) -> UiSection:
         """Creates an instance of a UiSection"""
 
 
 class _UiSystem(Ui):
-    def __init__(self, window, entrypoint, model, ui_components, ui_section_factory: UiTheme):
-        self._window = window
+    def __init__(self, screen, entrypoint, model, ui_theme: UiTheme):
+        self._screen = screen
         self._section = entrypoint
         self._model = model
-        self._ui_components = ui_components
-        self._ui_section_factory = ui_section_factory
+        self._ui_theme = ui_theme
         self._items = self._model['items']
         self._values = {k: v['default'] for k, v in self._model.get('variables', {}).items()}
         for item in self._model['items'].values():
             self._values.update({k: v['default'] for k, v in item.get('variables', {}).items()})
         self._section_states = {}
         self._history = []
+        self._ui_components = None
 
     def get_value(self, key: str) -> str:
         return self._values[key]
 
     def set_value(self, key: str, value: Any) -> None:
-        self._values[key] = str(value).lower()
-
-    def refresh_screen(self) -> None:
-        self._window.clear()
+        self._values[key] = value
 
     def display(self):
-        self._ui_section_factory.initialize_theme(self._window)
+        self._ui_components = self._ui_theme.initialize_ui(self, self._screen)
 
         for component in self._ui_components:
             component.initialize_ui(self)
@@ -102,13 +96,10 @@ class _UiSystem(Ui):
         while True:
             new_section = self._current_section_state().process()
 
-            self._window.refresh()
             curses.doupdate()
 
             if new_section is None:
                 continue
-
-            self._window.clear()
 
             if new_section == 'exit_and_run':
                 break
@@ -120,11 +111,12 @@ class _UiSystem(Ui):
                 self._section = self._history.pop()
 
             elif new_section == 'clear_window':
+                self._current_section_state().clear()
                 continue
             elif isinstance(new_section, dict):
                 self._push_history()
                 self._section = '@temporary'
-                self._section_states['@temporary'] = self._make_section_state(self._window, new_section, self._values, self._model, self._ui_components)
+                self._section_states['@temporary'] = self._make_section_state(new_section, self._values, self._model, self._ui_components)
                 self._section_states['@temporary'].reset()
             else:
                 self._push_history()
@@ -138,30 +130,30 @@ class _UiSystem(Ui):
 
     def _current_section_state(self):
         if self._section not in self._section_states:
-            self._section_states[self._section] = self._make_section_state(self._window, self._items[self._section], self._values, self._model, self._ui_components)
+            self._section_states[self._section] = self._make_section_state(self._items[self._section], self._values, self._model, self._ui_components)
         return self._section_states[self._section]
 
-    def _make_section_state(self, window, data, values, model, ui_components):
+    def _make_section_state(self,data, values, model, ui_components):
         expand_ui_type(data, model)
 
         data['formatters'] = {**data.get('formatters', {}), **model.get('formatters', {})}
         data['variables'] = {**data.get('variables', {}), **model.get('variables', {})}
-
-        interpolator = _Interpolator(data, values)
-        effect_resolver = _EffectResolver(self, data, values)
-        for component in ui_components:
-            effect_resolver.add_ui_component(component)
 
         hotkeys = {}
         for hk in data.get('hotkeys', []):
             for key in hk['keys']:
                 hotkeys[key] = hk['action']
 
+        interpolator = _Interpolator(data, values)
+        effect_resolver = _EffectResolver(self, data, values)
+        for component in ui_components:
+            effect_resolver.add_ui_component(component)
+
         ui_type = data['ui'] if 'ui' in data else None
         if ui_type is None:
             raise ValueError(f'Wrong ui_type: "{data["ui"] if "ui" in data else "`ui` field not found"}"')
 
-        ui_section = self._ui_section_factory.create_ui_section(ui_type, window, data, interpolator)
+        ui_section = self._ui_theme.create_ui_section(ui_type, data, interpolator)
         return _UiSectionProcessor(ui_section, effect_resolver, hotkeys)
 
 
@@ -185,6 +177,9 @@ class _UiSectionProcessor:
 
     def reset(self):
         self._ui_section.reset()
+
+    def clear(self):
+        self._ui_section.clear()
 
 
 def expand_ui_type(data, model):
@@ -331,11 +326,9 @@ class _EffectResolver:
         return result
 
 
-def run_ui_engine(entrypoint: str, model: Dict[str, Any], ui_components: List[UiComponent], ui_section_factory: UiTheme):
+def run_ui_engine(entrypoint: str, model: Dict[str, Any], ui_theme: UiTheme):
     def loader(screen):
-        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
-        window = screen.subwin(0, 0)
-        ui = _UiSystem(window, entrypoint, model, ui_components, ui_section_factory)
+        ui = _UiSystem(screen, entrypoint, model, ui_theme)
         ui.display()
 
     curses.wrapper(loader)

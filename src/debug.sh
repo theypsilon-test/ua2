@@ -18,7 +18,8 @@ if [ -f dont_download.ini ] ; then
   sshpass -p "${MISTER_PW}" scp -o StrictHostKeyChecking=no dont_download.ini "root@${MISTER_IP}:/media/fat/Scripts/update_all.ini"
 fi
 sshpass -p "${MISTER_PW}" scp -o StrictHostKeyChecking=no "${TEMP_SCRIPT}" "root@${MISTER_IP}:/media/fat/update_all.sh"
-sshpass -p "${MISTER_PW}" scp -o StrictHostKeyChecking=no update_all.sh "root@${MISTER_IP}:/media/fat/Scripts/update_all.sh"
+sshpass -p "${MISTER_PW}" scp -o StrictHostKeyChecking=no "${TEMP_SCRIPT}" "root@${MISTER_IP}:/media/fat/Scripts/ua2.sh"
+#sshpass -p "${MISTER_PW}" scp -o StrictHostKeyChecking=no update_all.sh "root@${MISTER_IP}:/media/fat/Scripts/update_all.sh"
 rm "${TEMP_SCRIPT}"
 
 if [[ "${1:-}" == 'run' ]] ; then

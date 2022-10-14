@@ -19,8 +19,8 @@
 def settings_screen_model(): return {
     "formatters": {
         "yesno": {
-            "false": "no",
-            "true": "yes",
+            "false": "No",
+            "true": "Yes",
         },
         "enabled": {
             "false": "Disabled.",
@@ -231,7 +231,7 @@ def settings_screen_model(): return {
                 },
                 {
                     "title": "0 Patrons Menu",
-                    "description": "Last updated: 2022.06.24",
+                    "description": "Last updated: 2022.10.14",
                     "actions": {
                         "ok": [
                             {"type": "calculate_patrons"},
@@ -244,30 +244,30 @@ def settings_screen_model(): return {
                                     "header": "Patreon Key not found!",
                                     "text": [
                                         "This menu contains exclusive content for patrons only.",
-                                        "",
-                                        "Get your 'Patreon Key' at \Zu\Z4patreon.com/theypsilon\Z7\Zn and put it on the \Zb/Scripts\Zn folder to unlock early access and experimental options.",
-                                        "",
+                                        " ",
+                                        "Get your @'Patreon Key'@ file from ~patreon.com/theypsilon~ and put it on the @Scripts@ folder to unlock early access and experimental options.",
+                                        " ",
                                         "Thank you so much for your support!",
                                     ],
                                     "effects": [{
                                         "ui": "message",
                                         "header": "Support MiSTer",
                                         "text": [
-                                            "Consider supporting Alexey Melnikov 'Sorgelig' for his invaluable work as the main maintainer of the MiSTer Project: \Zu\Z4patreon.com/FPGAMiSTer\Z7\Zn",
-                                            "",
+                                            "Consider supporting @Alexey Melnikov@ aka @'Sorgelig'@ for his invaluable work as the main maintainer of the MiSTer Project: ~patreon.com/FPGAMiSTer~",
+                                            " ",
                                             "Other key contributors:",
-                                            "  ·Ace \Zu\Z4ko-fi.com/ace9921\Z7\Zn - Arcade cores",
-                                            "  ·Artemio \Zu\Z4patreon.com/aurbina\Z7\Zn Pinobatch \Zu\Z4patreon.com/pineight\Z7\Zn - Testing tools",
-                                            "  ·Atrac17 \Zu\Z4patreon.com/atrac17\Z7\Zn - MRAs & Modelines",
-                                            "  ·Blackwine \Zu\Z4patreon.com/blackwine\Z7\Zn - Arcade cores",
-                                            "  ·FPGAZumSpass \Zu\Z4patreon.com/FPGAZumSpass\Z7\Zn - Console & Computer cores",
-                                            "  ·d0pefish \Zu\Z4ko-fi.com/d0pefish\Z7\Zn - mt32pi author",
-                                            "  ·Jotego \Zu\Z4patreon.com/topapate\Z7\Zn - Arcade & Console cores",
-                                            "  ·MiSTer-X \Zu\Z4patreon.com/MrX_8B\Z7\Zn - Arcade cores",
-                                            "  ·Nullobject \Zu\Z4patreon.com/nullobject\Z7\Zn - Arcade cores",
-                                            "  ·Srg320 \Zu\Z4patreon.com/srg320\Z7\Zn - Console cores",
-                                            "  ·Theypsilon \Zu\Z4patreon.com/theypsilon\Z7\Zn - Downloader, Update All & Other Tools",
-                                            "",
+                                            " ·@Ace@ ~ko-fi.com/ace9921~ - Arcade cores",
+                                            " ·@Artemio@ ~patreon.com/aurbina~ - Testing tools",
+                                            " ·@atrac17@ ~patreon.com/atrac17~ - MRAs & Modelines",
+                                            " ·@Blackwine@ ~patreon.com/blackwine~ - Arcade cores",
+                                            " ·@FPGAZumSpass@ ~patreon.com/FPGAZumSpass~ - Console & Computer cores",
+                                            " ·@d0pefish@ ~ko-fi.com/d0pefish~ - mt32pi author",
+                                            " ·@JOTEGO@ ~patreon.com/jotego~ - Arcade & Console cores",
+                                            " ·@MiSTer-X@ ~patreon.com/MrX_8B~ - Arcade cores",
+                                            " ·@Nullobject@ ~patreon.com/nullobject~ - Arcade cores",
+                                            " ·@Srg320@ ~patreon.com/srg320~ - Console cores",
+                                            " ·@theypsilon@ ~patreon.com/theypsilon~ - Downloader, Update All & Other Tools",
+                                            " ",
                                             "Your favorite open-source projects require your support to keep evolving!"
                                         ]
                                     }],
@@ -290,7 +290,7 @@ def settings_screen_model(): return {
                                     "ui": "confirm",
                                     "header": "Are you sure?",
                                     "text": [
-                                        "Following files may be overwritten with your changes:",
+                                        "Following files will be overwritten with your changes:",
                                         "{needs_save_file_list}"
                                     ],
                                     "preselected_action": "No",
@@ -360,7 +360,7 @@ def settings_screen_model(): return {
             "entries": [
                 {
                     "title": "1 {main_updater:do_enable}",
-                    "description": "Activated: {main_updater}",
+                    "description": "Activated: {main_updater:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "main_updater"}]}
                 },
                 {
@@ -376,7 +376,7 @@ def settings_screen_model(): return {
             "entries": [
                 {
                     "title": "1 {jotego_updater:do_enable}",
-                    "description": "Activated: {jotego_updater}",
+                    "description": "Activated: {jotego_updater:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "jotego_updater"}]}
                 },
                 {
@@ -392,7 +392,7 @@ def settings_screen_model(): return {
             "entries": [
                 {
                     "title": "1 {unofficial_updater:do_enable}",
-                    "description": "Activated: {unofficial_updater}",
+                    "description": "Activated: {unofficial_updater:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "unofficial_updater"}]}
                 },
             ]
@@ -403,7 +403,7 @@ def settings_screen_model(): return {
             "entries": [
                 {
                     "title": "1 {llapi_updater:do_enable}",
-                    "description": "Activated: {llapi_updater}",
+                    "description": "Activated: {llapi_updater:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "llapi_updater"}]}
                 },
             ]
@@ -414,7 +414,7 @@ def settings_screen_model(): return {
             "entries": [
                 {
                     "title": "1 {bios_getter:do_enable}",
-                    "description": "Activated: {bios_getter}",
+                    "description": "Activated: {bios_getter:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "bios_getter"}]}
                 },
             ]
@@ -425,7 +425,7 @@ def settings_screen_model(): return {
             "entries": [
                 {
                     "title": "1 {arcade_roms_db_downloader:do_enable}",
-                    "description": "Activated: {arcade_roms_db_downloader}",
+                    "description": "Activated: {arcade_roms_db_downloader:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "arcade_roms_db_downloader"}]}
                 },
             ]
@@ -438,20 +438,25 @@ def settings_screen_model(): return {
                 "names_char_code": {"group": "downloader_only", "default": "CHAR18", "values": ["CHAR18", "CHAR28"]},
                 "names_sort_code": {"group": "downloader_only", "default": "Common", "values": ["Common", "Manufacturer"]},
             },
+            "text": [
+                "Installs names.txt file containing curated names for your cores.",
+                "You can also contribute to the naming of the cores at:",
+                "~https://github.com/ThreepwoodLeBrush/Names_MiSTer~"
+            ],
             "entries": [
                 {
                     "title": "1 {names_txt_updater:do_enable}",
-                    "description": "Activated: {names_txt_updater}",
+                    "description": "Activated: {names_txt_updater:yesno}",
                     "actions": {"ok": [
                         {
                             "type": "condition",
                             "variable": "names_txt_updater",
                             "true": [{"type": "rotate_variable", "target": "names_txt_updater"}],
                             "false": [
-                                {"type": "calculate_file_exists", "target": "names.txt"},
+                                {"type": "calculate_names_txt_warning"},
                                 {
                                     "type": "condition",
-                                    "variable": "file_exists",
+                                    "variable": "names_txt_warning",
                                     "true": [{
                                         "ui": "message",
                                         "text": ["WARNING! Your current names.txt file will be overwritten after updating"],
@@ -619,6 +624,7 @@ def settings_screen_model(): return {
             "variables": {
                 "test_unstable_spinner_option": {"default": "Test Unstable Spinner Firmware", "values": ["Test Unstable Spinner Firmware", "Revert Unstable Spinner Firmware"]},
                 "test_unstable_spinner_desc": {"default": "For the Taito EGRET II Mini", "values": ["For the Taito EGRET II Mini", "Restore the original MiSTer binary"]},
+                "ui_theme": {"default": "Blue Dialog", "values": ["Blue Dialog", "Cyan Night"]},
             },
             "entries": [
                 {
@@ -632,6 +638,11 @@ def settings_screen_model(): return {
                     "actions": {"ok": [
                         {"type": "test_unstable_spinner"}
                     ]}
+                },
+                {
+                    "title": "3 Settings Screen Theme",
+                    "description": "{ui_theme}",
+                    "actions": {"ok": [{"type": "rotate_variable", "target": "ui_theme"}, {"type": "apply_theme"}]}
                 },
                 {
                     "title": "BACK",
@@ -665,7 +676,7 @@ def settings_screen_model(): return {
             "entries": [
                 {
                     "title": "1 {arcade_organizer:do_enable}",
-                    "description": "Activated: {arcade_organizer}",
+                    "description": "Activated: {arcade_organizer:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "arcade_organizer"}]}
                 },
                 {
@@ -739,7 +750,7 @@ def settings_screen_model(): return {
             "entries": [
                 {
                     "title": "1 Alphabetic folders",
-                    "description": "Activated: {arcade_organizer_az_dir:yesno}",
+                    "description": "{arcade_organizer_az_dir:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "arcade_organizer_az_dir"}]}
                 },
             ]
