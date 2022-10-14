@@ -18,30 +18,12 @@
 
 def settings_screen_model(): return {
     "formatters": {
-        "yesno": {
-            "false": "No",
-            "true": "Yes",
-        },
-        "enabled": {
-            "false": "Disabled.",
-            "true": "Enabled. ",
-        },
-        "do_enable": {
-            "false": "Enable",
-            "true": "Disable",
-        },
-        "encc_forks": {
-            "false": "MiSTer-devel",
-            "true": "MiSTer-DB9",
-        },
-        "encc_forks_description": {
-            "false": "Official Cores from MiSTer-devel",
-            "true": "DB9 / SNAC8 forks with ENCC",
-        },
-        "download_beta_cores": {
-            "false": "jtcores",
-            "true": "jtpremium",
-        },
+        "yesno": {"false": "No", "true": "Yes"},
+        "enabled": {"false": "Disabled.", "true": "Enabled. "},
+        "do_enable": {"false": "Enable", "true": "Disable"},
+        "encc_forks": {"false": "MiSTer-devel", "true": "MiSTer-DB9"},
+        "encc_forks_description": {"false": "Official Cores from MiSTer-devel", "true": "DB9 / SNAC8 forks with ENCC"},
+        "download_beta_cores": {"false": "jtcores", "true": "jtpremium"},
         "bool_flag_presence_text": {
             "0": "Ignore them entirely",
             "1": "Place them only on its {0} folder",
@@ -64,29 +46,10 @@ def settings_screen_model(): return {
     "base_types": {
         "dialog_sub_menu": {
             "ui": "menu",
-            "hotkeys": [
-                {
-                    "keys": [27],
-                    "action": [{
-                        "type": "navigate",
-                        "target": "back"
-                    }]
-                },
-            ],
+            "hotkeys": [{"keys": [27], "action": [{"type": "navigate", "target": "back"}]}],
             "actions": [
-                {
-                    "title": "Select",
-                    "type": "symbol",
-                    "symbol": "ok"
-                },
-                {
-                    "title": "Back",
-                    "type": "fixed",
-                    "fixed": [{
-                        "type": "navigate",
-                        "target": "back"
-                    }]
-                }
+                {"title": "Select", "type": "symbol", "symbol": "ok"},
+                {"title": "Back", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
             ],
             "entries": [
                 {
@@ -101,60 +64,11 @@ def settings_screen_model(): return {
         "main_menu": {
             "ui": "menu",
             "header": "Update All {update_all_version} Settings",
-            "hotkeys": [
-                {
-                    "keys": [27],
-                    "action": [
-                        {"type": "calculate_needs_save"},
-                        {
-                            "type": "condition",
-                            "variable": "needs_save",
-                            "true": [{
-                                "ui": "confirm",
-                                "header": "INI file/s were not saved",
-                                "text": ["Do you really want to abort Update All without saving your changes?"],
-                                "actions": [
-                                    {"title": "Yes", "type": "fixed", "fixed": [{"type": "navigate", "target": "abort"}]},
-                                    {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
-                                ],
-                            }],
-                            "false": [{"ui": "message", "text": ["Pressed ESC/Abort", "Closing Update All..."], "effects": [{"type": "navigate", "target": "abort"}]}]
-                        }
-                    ]
-                },
-            ],
+            "hotkeys": [{"keys": [27], "action": try_abort()}],
             "actions": [
-                {
-                    "title": "Select",
-                    "type": "symbol",
-                    "symbol": "ok"
-                },
-                {
-                    "title": "Toggle",
-                    "type": "symbol",
-                    "symbol": "toggle"
-                },
-                {
-                    "title": "Abort",
-                    "type": "fixed",
-                    "fixed": [
-                        {"type": "calculate_needs_save"},
-                        {
-                            "type": "condition",
-                            "variable": "needs_save",
-                            "true": [{
-                                "ui": "confirm",
-                                "header": "INI file/s were not saved",
-                                "text": ["Do you really want to abort Update All without saving your changes?"],
-                                "actions": [
-                                    {"title": "Yes", "type": "fixed", "fixed": [{"type": "navigate", "target": "abort"}]},
-                                    {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
-                                ],
-                            }],
-                            "false": [{"ui": "message", "text": ["Pressed ESC/Abort", "Closing Update All..."], "effects": [{"type": "navigate", "target": "abort"}]}]
-                        }
-                    ]
-                }
+                {"title": "Select", "type": "symbol", "symbol": "ok"},
+                {"title": "Toggle",  "type": "symbol", "symbol": "toggle"},
+                {"title": "Abort", "type": "fixed", "fixed": try_abort()}
             ],
             "entries": [
                 {
@@ -226,131 +140,23 @@ def settings_screen_model(): return {
                     "description": "",
                     "actions": {
                         "ok": [{"type": "navigate", "target": "misc_menu"}],
-                        "toggle": [],
+                        "toggle": [{"type": "navigate", "target": "misc_menu"}],
                     }
                 },
                 {
                     "title": "0 Patrons Menu",
                     "description": "Last updated: 2022.10.14",
-                    "actions": {
-                        "ok": [
-                            {"type": "calculate_patrons"},
-                            {
-                                "type": "condition",
-                                "variable": "can_access_patron_menu",
-                                "true": [{"type": "navigate", "target": "patrons_menu"}],
-                                "false": [{
-                                    "ui": "message",
-                                    "header": "Patreon Key not found!",
-                                    "text": [
-                                        "This menu contains exclusive content for patrons only.",
-                                        " ",
-                                        "Get your @'Patreon Key'@ file from ~patreon.com/theypsilon~ and put it on the @Scripts@ folder to unlock early access and experimental options.",
-                                        " ",
-                                        "Thank you so much for your support!",
-                                    ],
-                                    "effects": [{
-                                        "ui": "message",
-                                        "header": "Support MiSTer",
-                                        "text": [
-                                            "Consider supporting @Alexey Melnikov@ aka @'Sorgelig'@ for his invaluable work as the main maintainer of the MiSTer Project: ~patreon.com/FPGAMiSTer~",
-                                            " ",
-                                            "Other key contributors:",
-                                            " ·@Ace@ ~ko-fi.com/ace9921~ - Arcade cores",
-                                            " ·@Artemio@ ~patreon.com/aurbina~ - Testing tools",
-                                            " ·@atrac17@ ~patreon.com/atrac17~ - MRAs & Modelines",
-                                            " ·@Blackwine@ ~patreon.com/blackwine~ - Arcade cores",
-                                            " ·@FPGAZumSpass@ ~patreon.com/FPGAZumSpass~ - Console & Computer cores",
-                                            " ·@d0pefish@ ~ko-fi.com/d0pefish~ - mt32pi author",
-                                            " ·@JOTEGO@ ~patreon.com/jotego~ - Arcade & Console cores",
-                                            " ·@MiSTer-X@ ~patreon.com/MrX_8B~ - Arcade cores",
-                                            " ·@Nullobject@ ~patreon.com/nullobject~ - Arcade cores",
-                                            " ·@Srg320@ ~patreon.com/srg320~ - Console cores",
-                                            " ·@theypsilon@ ~patreon.com/theypsilon~ - Downloader, Update All & Other Tools",
-                                            " ",
-                                            "Your favorite open-source projects require your support to keep evolving!"
-                                        ]
-                                    }],
-                                }]
-                            }
-                        ],
-                        "toggle": [],
-                    }
+                    "actions": {"ok": try_access_patrons_menu(), "toggle": try_access_patrons_menu()}
                 },
                 {
                     "title": "SAVE",
                     "description": "Writes all changes to the INI file/s",
-                    "actions": {
-                        "ok": [
-                            {"type": "calculate_needs_save"},
-                            {
-                                "type": "condition",
-                                "variable": "needs_save",
-                                "true": [{
-                                    "ui": "confirm",
-                                    "header": "Are you sure?",
-                                    "text": [
-                                        "Following files will be overwritten with your changes:",
-                                        "{needs_save_file_list}"
-                                    ],
-                                    "preselected_action": "No",
-                                    "actions": [
-                                        {
-                                            "title": "Yes",
-                                            "type": "fixed",
-                                            "fixed": [{"type": "save"}, {"type": "navigate", "target": "back"}]
-                                        },
-                                        {
-                                            "title": "No",
-                                            "type": "fixed",
-                                            "fixed": [{"type": "navigate", "target": "back"}]
-                                        }
-                                    ],
-                                }],
-                                "false": [{"ui": "message", "text": ["No changes to save"]}]
-                            }
-                        ],
-                        "toggle": [],
-                    }
+                    "actions": {"ok": try_save(), "toggle": try_save()}
                 },
                 {
                     "title": "EXIT and RUN UPDATE ALL",
                     "description": "",
-                    "actions": {
-                        "ok": [
-                            {"type": "calculate_needs_save"},
-                            {
-                                "type": "condition",
-                                "variable": "needs_save",
-                                "true": [{
-                                    "ui": "confirm",
-                                    "header": "INI file/s were not saved",
-                                    "text": [
-                                        "Do you really want to run Update All without saving your changes?",
-                                        "(current changes will apply only for this run)",
-                                    ],
-                                    "actions": [
-                                        {
-                                            "title": "Yes",
-                                            "type": "fixed",
-                                            "fixed": [
-                                                {"type": "copy_ui_options_to_current_config"},
-                                                {"type": "navigate", "target": "exit_and_run"}
-                                            ]
-                                        },
-                                        {
-                                            "title": "No",
-                                            "type": "fixed",
-                                            "fixed": [{"type": "navigate", "target": "back"}]
-                                        }
-                                    ],
-                                }],
-                                "false": [{"type": "navigate", "target": "exit_and_run"}]
-                            },
-                            {"type": "navigate", "target": "exit_and_run"}
-                        ],
-                        "toggle": [],
-                    }
+                    "actions": {"ok": try_exit(),  "toggle": try_exit()}
                 }
             ]
         },
@@ -1094,3 +900,129 @@ def settings_screen_model(): return {
         },
     }
 }
+
+def try_access_patrons_menu(): return [
+    {"type": "calculate_can_access_patron_menu"},
+    {
+        "type": "condition",
+        "variable": "can_access_patron_menu",
+        "true": [{"type": "navigate", "target": "patrons_menu"}],
+        "false": [{
+            "ui": "message",
+            "header": "Patreon Key not found!",
+            "text": [
+                "This menu contains exclusive content for patrons only.",
+                " ",
+                "Get your @'Patreon Key'@ file from ~patreon.com/theypsilon~ and put it on the @Scripts@ folder to unlock early access and experimental options.",
+                " ",
+                "Thank you so much for your support!",
+            ],
+            "effects": [{
+                "ui": "message",
+                "header": "Support MiSTer",
+                "text": [
+                    "Consider supporting @Alexey Melnikov@ aka @'Sorgelig'@ for his invaluable work as the main maintainer of the MiSTer Project: ~patreon.com/FPGAMiSTer~",
+                    " ",
+                    "Other key contributors:",
+                    " ·@Ace@ ~ko-fi.com/ace9921~ - Arcade cores",
+                    " ·@Artemio@ ~patreon.com/aurbina~ - Testing tools",
+                    " ·@atrac17@ ~patreon.com/atrac17~ - MRAs & Modelines",
+                    " ·@Blackwine@ ~patreon.com/blackwine~ - Arcade cores",
+                    " ·@FPGAZumSpass@ ~patreon.com/FPGAZumSpass~ - Console & Computer cores",
+                    " ·@d0pefish@ ~ko-fi.com/d0pefish~ - mt32pi author",
+                    " ·@JOTEGO@ ~patreon.com/jotego~ - Arcade & Console cores",
+                    " ·@MiSTer-X@ ~patreon.com/MrX_8B~ - Arcade cores",
+                    " ·@Nullobject@ ~patreon.com/nullobject~ - Arcade cores",
+                    " ·@Srg320@ ~patreon.com/srg320~ - Console cores",
+                    " ·@theypsilon@ ~patreon.com/theypsilon~ - Downloader, Update All & Other Tools",
+                    " ",
+                    "Your favorite open-source projects require your support to keep evolving!"
+                ]
+            }],
+        }]
+    }
+]
+
+
+def try_save(): return [
+    {"type": "calculate_needs_save"},
+    {
+        "type": "condition",
+        "variable": "needs_save",
+        "true": [{
+            "ui": "confirm",
+            "header": "Are you sure?",
+            "text": [
+                "Following files will be overwritten with your changes:",
+                "{needs_save_file_list}"
+            ],
+            "preselected_action": "No",
+            "actions": [
+                {
+                    "title": "Yes",
+                    "type": "fixed",
+                    "fixed": [{"type": "save"}, {"type": "navigate", "target": "back"}]
+                },
+                {
+                    "title": "No",
+                    "type": "fixed",
+                    "fixed": [{"type": "navigate", "target": "back"}]
+                }
+            ],
+        }],
+        "false": [{"ui": "message", "text": ["No changes to save"]}]
+    }
+]
+
+
+def try_abort(): return [
+    {"type": "calculate_needs_save"},
+    {
+        "type": "condition",
+        "variable": "needs_save",
+        "true": [{
+            "ui": "confirm",
+            "header": "INI file/s were not saved",
+            "text": ["Do you really want to abort Update All without saving your changes?"],
+            "actions": [
+                {"title": "Yes", "type": "fixed", "fixed": [{"type": "navigate", "target": "abort"}]},
+                {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
+            ],
+        }],
+        "false": [{"ui": "message", "text": ["Pressed ESC/Abort", "Closing Update All..."], "effects": [{"type": "navigate", "target": "abort"}]}]
+    }
+]
+
+
+def try_exit(): return [
+    {"type": "calculate_needs_save"},
+    {
+        "type": "condition",
+        "variable": "needs_save",
+        "true": [{
+            "ui": "confirm",
+            "header": "INI file/s were not saved",
+            "text": [
+                "Do you really want to run Update All without saving your changes?",
+                "(current changes will apply only for this run)",
+            ],
+            "actions": [
+                {
+                    "title": "Yes",
+                    "type": "fixed",
+                    "fixed": [
+                        {"type": "copy_ui_options_to_current_config"},
+                        {"type": "navigate", "target": "exit_and_run"}
+                    ]
+                },
+                {
+                    "title": "No",
+                    "type": "fixed",
+                    "fixed": [{"type": "navigate", "target": "back"}]
+                }
+            ],
+        }],
+        "false": [{"type": "navigate", "target": "exit_and_run"}]
+    },
+    {"type": "navigate", "target": "exit_and_run"}
+]

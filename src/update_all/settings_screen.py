@@ -81,7 +81,7 @@ class SettingsScreen(UiApplication, UiComponent):
 
     def initialize_effects(self, ui: Ui, effects: Dict[str, Callable[[], None]]) -> None:
         effects['calculate_needs_save'] = lambda effect: self.calculate_needs_save(ui)
-        effects['calculate_patrons'] = lambda effect: self.calculate_patrons(ui)
+        effects['calculate_can_access_patron_menu'] = lambda effect: self.calculate_can_access_patron_menu(ui)
         effects['calculate_test_unstable_spinner_warning'] = lambda effect: self.calculate_test_unstable_spinner_warning(ui)
         effects['test_unstable_spinner'] = lambda effect: self.test_unstable_spinner(ui)
         effects['play_bad_apple'] = lambda effect: self.play_bad_apple(ui)
@@ -101,7 +101,7 @@ class SettingsScreen(UiApplication, UiComponent):
     def remove_file(self, ui, effect) -> None:
         ui.set_value('file_exists', self._file_system.unlink(effect['target']))
 
-    def calculate_patrons(self, ui: Ui) -> None:
+    def calculate_can_access_patron_menu(self, ui: Ui) -> None:
         is_test_firmware, firmware_md5 = self._is_test_firmware()
         if firmware_md5 is not None:
             self._original_firmware = firmware_md5
