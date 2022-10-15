@@ -22,7 +22,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import Dict, Callable, List, Tuple
 
-from update_all.config import ConfigProvider, load_ini_config_with_no_section, Config
+from update_all.config_reader import ConfigProvider, load_ini_config_with_no_section, Config
 from update_all.constants import ARCADE_ORGANIZER_INI, FILE_update_all_ini, \
     UPDATE_ALL_PATREON_KEY_PATH, UPDATE_ALL_PATREON_KEY_MD5Q0, UPDATE_ALL_PATREON_KEY_SIZE, FILE_MiSTer, \
     TEST_UNSTABLE_SPINNER_FIRMWARE_MD5, DOWNLOADER_URL, FILE_MiSTer_ini, ARCADE_ORGANIZER_URL, \
@@ -82,8 +82,8 @@ class SettingsScreen(UiApplication, UiComponent):
     def initialize_effects(self, ui: Ui, effects: Dict[str, Callable[[], None]]) -> None:
         effects['calculate_needs_save'] = lambda effect: self.calculate_needs_save(ui)
         effects['calculate_can_access_patron_menu'] = lambda effect: self.calculate_can_access_patron_menu(ui)
-        effects['calculate_test_unstable_spinner_warning'] = lambda effect: self.calculate_test_unstable_spinner_warning(ui)
-        effects['test_unstable_spinner'] = lambda effect: self.test_unstable_spinner(ui)
+        effects['calculate_is_test_spinner_firmware_applied'] = lambda effect: self.calculate_is_test_spinner_firmware_applied(ui)
+        effects['test_unstable_spinner_firmware'] = lambda effect: self.test_unstable_spinner_firmware(ui)
         effects['play_bad_apple'] = lambda effect: self.play_bad_apple(ui)
         effects['save'] = lambda effect: self.save(ui)
         effects['copy_ui_options_to_current_config'] = lambda effect: self.copy_ui_options_to_current_config(ui)
@@ -133,11 +133,11 @@ class SettingsScreen(UiApplication, UiComponent):
 
         return is_test_firmware, firmware_md5
 
-    def calculate_test_unstable_spinner_warning(self, ui: Ui) -> None:
+    def calculate_is_test_spinner_firmware_applied(self, ui: Ui) -> None:
         is_test_firmware, _ = self._is_test_firmware()
-        ui.set_value('test_unstable_spinner_warning', 'false' if is_test_firmware else 'true')
+        ui.set_value('is_test_spinner_firmware_applied', 'true' if is_test_firmware else 'false')
 
-    def test_unstable_spinner(self, ui: Ui) -> None:
+    def test_unstable_spinner_firmware(self, ui: Ui) -> None:
         is_test_firmware, firmware_md5 = self._is_test_firmware()
         if is_test_firmware:
             content = self._os_utils.download("https://raw.githubusercontent.com/MiSTer-devel/Distribution_MiSTer/main/MiSTer")
@@ -151,7 +151,7 @@ class SettingsScreen(UiApplication, UiComponent):
     def _set_spinner_options(self, ui: Ui):
         is_test_firmware, firmware_md5 = self._is_test_firmware()
 
-        ui.set_value('spinner_firmware_installed', 'true' if is_test_firmware else 'false')
+        ui.set_value('is_test_spinner_firmware_applied', 'true' if is_test_firmware else 'false')
         ui.set_value('firmware_needs_reboot', 'true' if self._original_firmware != firmware_md5 else 'false')
 
     def play_bad_apple(self, _ui) -> None:
@@ -204,7 +204,7 @@ class SettingsScreen(UiApplication, UiComponent):
                 needs_save_file_set.add("update_arcade-organizer.ini")
 
         config = self._config_provider.get()
-        for variable in list_variables_with_group(settings_screen_model(), 'main_ini'):
+        for variable in list_variables_with_group(settings_screen_model(), "ua_ini"):
             old_value = str(getattr(config, variable)).lower()
             new_value = ui.get_value(variable).lower()
             if old_value != new_value:
@@ -222,14 +222,15 @@ class SettingsScreen(UiApplication, UiComponent):
         self.copy_ui_options_to_current_config(ui)
 
         variable_defaults = gather_default_values(settings_screen_model())
-        main_non_default_options = self._calculate_non_default_options(ui, "main_ini", variable_defaults)
+        main_non_default_options = self._calculate_non_default_options(ui, "ua_ini", variable_defaults)
         ao_non_default_options = self._calculate_non_default_options(ui, "ao_ini", variable_defaults)
 
         self._write_ini_options(main_non_default_options, FILE_update_all_ini)
         self._write_ini_options(ao_non_default_options, ARCADE_ORGANIZER_INI)
         self._downloader_ini_repository.write_downloader_ini(self._config_provider.get())
 
-    def _calculate_non_default_options(self, ui, group, variable_defaults):
+    @staticmethod
+    def _calculate_non_default_options(ui, group, variable_defaults):
         non_default_options = {}
         for variable, name in list_variables_with_group(settings_screen_model(), group).items():
             value = ui.get_value(variable).lower()
@@ -262,7 +263,7 @@ class SettingsScreen(UiApplication, UiComponent):
 
     @cached_property
     def _all_config_variables(self):
-        return [*list_variables_with_group(settings_screen_model(), "main_ini"), *list_variables_with_group(settings_screen_model(), "downloader_only")]
+        return [*list_variables_with_group(settings_screen_model(), "ua_ini"), *list_variables_with_group(settings_screen_model(), "jt_ini"), *list_variables_with_group(settings_screen_model(), "names_ini")]
 
     def calculate_names_char_code_warning(self, ui: Ui) -> None:
 

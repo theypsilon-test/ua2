@@ -73,35 +73,10 @@ K_DEFAULT_DB_ID = 'default_db_id'
 K_START_TIME = 'start_time'
 
 # Update All old options
-## "Updaters"
-K_MAIN_UPDATER = "main_updater"
-K_JOTEGO_UPDATER = "jotego_updater"
-K_UNOFFICIAL_UPDATER = "unofficial_updater"
-K_LLAPI_UPDATER = "llapi_updater"
-K_ARCADE_OFFSET_DOWNLOADER = "arcade_offset_downloader"
-K_COIN_OP_COLLECTION_DOWNLOADER = "coin_op_collection_downloader"
-K_ARCADE_ROMS_DB_DOWNLOADER = "arcade_roms_db_downloader"
-K_TTY2OLED_FILES_DOWNLOADER = "tty2oled_files_downloader"
-K_I2C2OLED_FILES_DOWNLOADER = "i2c2oled_files_downloader"
-K_MISTERSAM_FILES_DOWNLOADER = "mistersam_files_downloader"
-K_BIOS_GETTER = "bios_getter"
-K_MAME_GETTER = "mame_getter"
-K_HBMAME_GETTER = "hbmame_getter"
-K_NAMES_TXT_UPDATER = "names_txt_updater"
-K_ARCADE_ORGANIZER = "arcade_organizer"
-
-## Options
-K_ENCC_FORKS = "encc_forks"
-K_DOWNLOAD_BETA_CORES = "download_beta_cores"
-
-## Misc
 K_COUNTDOWN_TIME = "countdown_time"
 K_WAIT_TIME_FOR_READING = "wait_time_for_reading"
 K_AUTOREBOOT = "autoreboot"
 K_KEEP_USBMOUNT_CONF = "keep_usbmount_conf"
-K_NAMES_REGION = "names_region"
-K_NAMES_CHAR_CODE = "names_char_code"
-K_NAMES_SORT_CODE = "names_sort_code"
 
 
 # Env

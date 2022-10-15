@@ -20,6 +20,7 @@ import re
 from pathlib import Path
 
 from test.file_system_tester_state import FileSystemState
+from update_all.config import Config
 from update_all.constants import K_BASE_PATH, K_ALLOW_DELETE
 from update_all.file_system import FileSystemFactory as ProductionFileSystemFactory, FileSystem as ProductionFileSystem, \
     absolute_parent_folder
@@ -44,7 +45,7 @@ def fs_records(records):
 
 class FileSystemFactory:
     def __init__(self, state=None, write_records=None, config_provider=None):
-        self._state = state if state is not None else FileSystemState(config=config_provider.get())
+        self._state = state if state is not None else FileSystemState(config=Config() if config_provider is None else config_provider.get())
         self._fake_failures = {}
         self._write_records = write_records if write_records is not None else []
 

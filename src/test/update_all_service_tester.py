@@ -22,7 +22,7 @@ from test.countdown_stub import CountdownStub
 from test.fake_filesystem import FileSystemFactory
 from test.logger_tester import NoLogger
 from test.spy_os_utils import SpyOsUtils
-from update_all.config import ConfigReader, ConfigProvider, Config
+from update_all.config_reader import ConfigReader, ConfigProvider, Config
 from update_all.constants import KENV_COMMIT, KENV_CURL_SSL, DEFAULT_CURL_SSL_OPTIONS, DEFAULT_COMMIT, \
     KENV_LOCATION_STR, DEFAULT_LOCATION_STR
 from update_all.countdown import Countdown

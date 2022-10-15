@@ -16,7 +16,7 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from update_all.config import ConfigProvider
+from update_all.config_reader import ConfigProvider
 from update_all.constants import FILE_update_all_storage, FILE_update_all_log, FILE_update_all_ini
 from update_all.local_store import LocalStore
 from update_all.store_migrator import make_new_local_store

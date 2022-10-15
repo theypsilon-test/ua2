@@ -23,7 +23,7 @@ from unittest.mock import MagicMock
 from test.file_system_tester_state import FileSystemState
 from test.unit.test_update_all_service import downloader_ini
 from test.update_all_service_tester import SettingsScreenTester, UiStub
-from update_all.config import Config, ConfigProvider
+from update_all.config_reader import Config, ConfigProvider
 from test.fake_filesystem import FileSystemFactory
 from update_all.settings_screen import SettingsScreen
 from update_all.ui_engine import Ui

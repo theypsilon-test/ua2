@@ -32,16 +32,16 @@ def settings_screen_model(): return {
     },
     "variables": {
         "update_all_version": {"default": "2.0"},
-        "main_updater": {"group": "main_ini", "default": "true", "values": ["false", "true"]},
-        "encc_forks": {"group": "main_ini", "default": "false", "values": ["false", "true"]},
-        "jotego_updater": {"group": "main_ini", "default": "true", "values": ["false", "true"]},
-        "download_beta_cores": {"group": "downloader_only", "default": "false", "values": ["false", "true"]},
-        "unofficial_updater": {"group": "main_ini", "default": "false", "values": ["false", "true"]},
-        "llapi_updater": {"group": "main_ini", "default": "false", "values": ["false", "true"]},
-        "bios_getter": {"group": "main_ini", "default": "false", "values": ["false", "true"]},
-        "arcade_roms_db_downloader": {"group": "main_ini", "default": "false", "values": ["false", "true"]},
-        "names_txt_updater": {"group": "main_ini", "default": "true", "values": ["false", "true"]},
-        "arcade_organizer": {"group": "main_ini", "default": "true", "values": ["false", "true"]},
+        "main_updater": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
+        "encc_forks": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
+        "jotego_updater": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
+        "download_beta_cores": {"group": "jt_ini", "default": "false", "values": ["false", "true"]},
+        "unofficial_updater": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
+        "llapi_updater": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
+        "bios_getter": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
+        "arcade_roms_db_downloader": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
+        "names_txt_updater": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
+        "arcade_organizer": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
     },
     "base_types": {
         "dialog_sub_menu": {
@@ -240,9 +240,9 @@ def settings_screen_model(): return {
             "ui": "dialog_sub_menu",
             "header": "Names TXT Settings",
             "variables": {
-                "names_region": {"group": "downloader_only", "default": "US", "values": ["US", "EU", "JP"]},
-                "names_char_code": {"group": "downloader_only", "default": "CHAR18", "values": ["CHAR18", "CHAR28"]},
-                "names_sort_code": {"group": "downloader_only", "default": "Common", "values": ["Common", "Manufacturer"]},
+                "names_region": {"group": "names_ini", "default": "US", "values": ["US", "EU", "JP"]},
+                "names_char_code": {"group": "names_ini", "default": "CHAR18", "values": ["CHAR18", "CHAR28"]},
+                "names_sort_code": {"group": "names_ini", "default": "Common", "values": ["Common", "Manufacturer"]},
             },
             "text": [
                 "Installs names.txt file containing curated names for your cores.",
@@ -335,15 +335,15 @@ def settings_screen_model(): return {
             "ui": "dialog_sub_menu",
             "header": "Misc | Other Settings",
             "variables": {
-                "arcade_offset_downloader": {"group": "main_ini", "default": "false", "values": ["false", "true"]},
-                "coin_op_collection_downloader": {"group": "main_ini", "default": "true", "values": ["false", "true"]},
-                "tty2oled_files_downloader": {"group": "main_ini", "default": "false", "values": ["false", "true"]},
-                "i2c2oled_files_downloader": {"group": "main_ini", "default": "false", "values": ["false", "true"]},
-                "mistersam_files_downloader": {"group": "main_ini", "default": "false", "values": ["false", "true"]},
+                "arcade_offset_downloader": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
+                "coin_op_collection_downloader": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
+                "tty2oled_files_downloader": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
+                "i2c2oled_files_downloader": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
+                "mistersam_files_downloader": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
 
-                "autoreboot": {"group": "main_ini", "default": "true", "values": ["false", "true"]},
-                "wait_time_for_reading": {"group": "main_ini", "default": "2", "values": ["2", "0", "30"]},
-                "countdown_time": {"group": "main_ini", "default": "15", "values": ["15", "4", "60"]},
+                "autoreboot": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
+                "wait_time_for_reading": {"group": "ua_ini", "default": "2", "values": ["2", "0", "30"]},
+                "countdown_time": {"group": "ua_ini", "default": "15", "values": ["15", "4", "60"]},
             },
             "entries": [
                 {
@@ -432,7 +432,7 @@ def settings_screen_model(): return {
                 "spinner_desc": {"true": "Restore the original MiSTer binary", "false": "For the Taito EGRET II Mini"}
             },
             "variables": {
-                "spinner_firmware_installed": {"default": "false", "values": ["false", "true"]},
+                "is_test_spinner_firmware_applied": {"default": "false", "values": ["false", "true"]},
                 "ui_theme": {"default": "Blue Installer", "values": ["Blue Installer", "Cyan Night"]},
                 "firmware_needs_reboot": {"default": "false", "values": ["false", "true"]},
             },
@@ -460,13 +460,13 @@ def settings_screen_model(): return {
                     }
                 },
                 {
-                    "title": "2 {spinner_firmware_installed:spinner_option}",
-                    "description": "{spinner_firmware_installed:spinner_desc}",
+                    "title": "2 {is_test_spinner_firmware_applied:spinner_option}",
+                    "description": "{is_test_spinner_firmware_applied:spinner_desc}",
                     "actions": {"ok": [
-                        {"type": "calculate_test_unstable_spinner_warning"},
+                        {"type": "calculate_is_test_spinner_firmware_applied"},
                         {
                             "type": "condition",
-                            "variable": "test_unstable_spinner_warning",
+                            "variable": "is_test_spinner_firmware_applied",
                             "true": [{
                                 "ui": "confirm",
                                 "header": "WARNING",
@@ -480,11 +480,11 @@ def settings_screen_model(): return {
                                     "DON'T REPORT ISSUES IN ANY CORE WHILE USING THIS FIRMWARE!"
                                 ],
                                 "actions": [
-                                    {"title": "Yes", "type": "fixed", "fixed": [{"type": "test_unstable_spinner"}, {"type": "navigate", "target": "back"}]},
+                                    {"title": "Yes", "type": "fixed", "fixed": [{"type": "test_unstable_spinner_firmware"}, {"type": "navigate", "target": "back"}]},
                                     {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
                                 ],
                             }],
-                            "false": [{"type": "test_unstable_spinner"}]
+                            "false": [{"type": "test_unstable_spinner_firmware"}]
                         }
                     ]}
                 },

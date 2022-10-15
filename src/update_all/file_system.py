@@ -24,7 +24,7 @@ import tempfile
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path
-from update_all.config import AllowDelete
+from update_all.config_reader import AllowDelete
 from update_all.constants import K_ALLOW_DELETE
 from update_all.other import ClosableValue
 

@@ -15,7 +15,7 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from update_all.config import Config
+from update_all.config_reader import Config
 from update_all.constants import MEDIA_FAT
 
 

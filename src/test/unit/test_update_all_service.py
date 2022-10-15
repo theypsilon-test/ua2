@@ -17,7 +17,7 @@
 # https://github.com/theypsilon-test/ua2
 from pathlib import Path
 
-from update_all.config import Config
+from update_all.config_reader import Config
 from update_all.constants import DOWNLOADER_INI_STANDARD_PATH, MEDIA_FAT
 from update_all.update_all_service import UpdateAllService
 from test.fake_filesystem import FileSystemFactory

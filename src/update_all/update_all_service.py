@@ -25,6 +25,7 @@ from update_all.constants import UPDATE_ALL_VERSION, DOWNLOADER_INI_STANDARD_PAT
     DOWNLOADER_URL, ARCADE_ORGANIZER_URL, FILE_update_all_log, FILE_mister_downloader_needs_reboot, MEDIA_FAT, \
     ARCADE_ORGANIZER_INI
 from update_all.countdown import Countdown, CountdownImpl, CountdownOutcome
+from update_all.databases import active_databases
 from update_all.downloader_ini_repository import DownloaderIniRepository
 from update_all.local_store import LocalStoreProvider
 from update_all.logger import Logger
@@ -36,7 +37,7 @@ from update_all.store_migrator import StoreMigrator
 from update_all.migrations import migrations
 from update_all.local_repository import LocalRepository, LocalRepositoryProvider
 from update_all.file_system import FileSystemFactory, FileSystem
-from update_all.config import ConfigReader, ConfigProvider
+from update_all.config_reader import ConfigReader, ConfigProvider
 
 
 class UpdateAllServiceFactory:
@@ -149,7 +150,7 @@ class UpdateAllService:
 
     def _run_downloader(self) -> None:
         config = self._config_provider.get()
-        if len(self._downloader_ini_repository.active_databases(config)) == 0:
+        if len(active_databases(config)) == 0:
             return
 
         self._draw_separator()
@@ -215,7 +216,7 @@ class UpdateAllService:
         if not config.update_linux:
             return
 
-        if len(self._downloader_ini_repository.active_databases(config)) == 0 or not config.arcade_organizer:
+        if len(active_databases(config)) == 0 or not config.arcade_organizer:
             return
 
         self._draw_separator()
@@ -291,7 +292,7 @@ class UpdateAllService:
     def _print_sequence(self) -> None:
         self._logger.print('Sequence:')
         config = self._config_provider.get()
-        for db in self._downloader_ini_repository.active_databases(config):
+        for db in active_databases(config):
             self._logger.print(f'- {db.title}')
         if config.arcade_organizer:
             self._logger.print('- Arcade Organizer')

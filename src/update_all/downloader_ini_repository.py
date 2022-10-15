@@ -16,47 +16,23 @@
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
 import configparser
-import dataclasses
 import io
 import json
 import re
-from typing import Tuple, Optional
+from typing import Optional
 
-from update_all.config import Config
-from update_all.constants import K_MAIN_UPDATER, K_JOTEGO_UPDATER, K_UNOFFICIAL_UPDATER, K_LLAPI_UPDATER, \
-    K_ARCADE_OFFSET_DOWNLOADER, K_COIN_OP_COLLECTION_DOWNLOADER, K_ARCADE_ROMS_DB_DOWNLOADER, \
-    K_TTY2OLED_FILES_DOWNLOADER, K_I2C2OLED_FILES_DOWNLOADER, K_MISTERSAM_FILES_DOWNLOADER, K_BIOS_GETTER, \
-    K_NAMES_TXT_UPDATER, DOWNLOADER_INI_STANDARD_PATH
-from update_all.databases import Database, db_distribution_mister_by_encc_forks, db_jtcores_by_download_beta_cores, \
-    DB_THEYPSILON_UNOFFICIAL_DISTRIBUTION, DB_LLAPI_FOLDER, DB_ARCADE_OFFSET_FOLDER, DB_COIN_OP_COLLECTION, \
-    DB_ARCADE_ROMS, DB_TTY2OLED_FILES, DB_I2C2OLED_FILES, DB_MISTERSAM_FILES, DB_BIOS, db_names_txt_by_locale
+from update_all.config_reader import Config
+from update_all.constants import DOWNLOADER_INI_STANDARD_PATH
+from update_all.databases import candidate_databases, active_databases
 from update_all.file_system import FileSystem
 from update_all.logger import Logger
 
 
 class DownloaderIniRepository:
+
     def __init__(self, logger: Logger, file_system: FileSystem):
         self._logger = logger
         self._file_system = file_system
-
-    def candidate_databases(self, config: Config) -> list[Tuple[str, Database]]:
-        return [
-            (K_MAIN_UPDATER, db_distribution_mister_by_encc_forks(config.encc_forks)),
-            (K_JOTEGO_UPDATER, db_jtcores_by_download_beta_cores(config.download_beta_cores)),
-            (K_UNOFFICIAL_UPDATER, DB_THEYPSILON_UNOFFICIAL_DISTRIBUTION),
-            (K_LLAPI_UPDATER, DB_LLAPI_FOLDER),
-            (K_ARCADE_OFFSET_DOWNLOADER, DB_ARCADE_OFFSET_FOLDER),
-            (K_COIN_OP_COLLECTION_DOWNLOADER, DB_COIN_OP_COLLECTION),
-            (K_ARCADE_ROMS_DB_DOWNLOADER, DB_ARCADE_ROMS),
-            (K_TTY2OLED_FILES_DOWNLOADER, DB_TTY2OLED_FILES),
-            (K_I2C2OLED_FILES_DOWNLOADER, DB_I2C2OLED_FILES),
-            (K_MISTERSAM_FILES_DOWNLOADER, DB_MISTERSAM_FILES),
-            (K_BIOS_GETTER, DB_BIOS),
-            (K_NAMES_TXT_UPDATER, db_names_txt_by_locale(config.names_region, config.names_char_code, config.names_sort_code)),
-        ]
-
-    def active_databases(self, config: Config) -> list[Database]:
-        return [db for var, db in self.candidate_databases(config) if dataclasses.asdict(config)[var.lower()]]
 
     def needs_save(self, config: Config) -> bool:
         if not self._file_system.is_file(DOWNLOADER_INI_STANDARD_PATH):
@@ -91,9 +67,9 @@ class DownloaderIniRepository:
             return {}
 
     def _add_new_downloader_ini_changes(self, ini, config: Config):
-        for _, db in self.candidate_databases(config):
+        for _, db in candidate_databases(config):
             db_id = db.db_id.lower()
-            if db in self.active_databases(config):
+            if db in active_databases(config):
                 if db_id not in ini:
                     ini[db_id] = {}
                 ini[db_id]['db_url'] = db.db_url
@@ -109,7 +85,7 @@ class DownloaderIniRepository:
         if before == after:
             return None
 
-        db_ids = {db.db_id.lower(): db.db_id for _, db in self.candidate_databases(config)}
+        db_ids = {db.db_id.lower(): db.db_id for _, db in candidate_databases(config)}
 
         mister_section = ''
         nomister_section = ''

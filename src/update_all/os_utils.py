@@ -22,7 +22,7 @@ import time
 from abc import ABC
 from urllib.request import urlopen
 
-from update_all.config import ConfigProvider
+from update_all.config_reader import ConfigProvider
 from update_all.logger import Logger
 
 

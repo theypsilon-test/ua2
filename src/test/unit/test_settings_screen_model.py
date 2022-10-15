@@ -18,7 +18,7 @@
 import unittest
 
 from test.ui_model_test_utils import special_navigate_targets, all_nodes_of_type
-from update_all.config import Config
+from update_all.config_reader import Config
 from update_all.settings_screen_model import settings_screen_model
 from update_all.ui_model_utilities import list_variables_with_group, gather_default_values
 
@@ -39,7 +39,7 @@ class TestSettingsScreenModel(unittest.TestCase):
         self.assertEqual([], invalid_target_nodes)
 
     def test_main_variables___have_length_greater_than_5(self):
-        self.assertGreater(len(list_variables_with_group(self.model, "main_ini")), 5)
+        self.assertGreater(len(list_variables_with_group(self.model, "ua_ini")), 5)
 
     def test_ao_variables___have_length_greater_than_5(self):
         self.assertGreater(len(list_variables_with_group(self.model, "ao_ini")), 5)
@@ -57,7 +57,7 @@ class TestSettingsScreenModel(unittest.TestCase):
     def test_config_default_values___match_main_variables_default_values(self):
         config = Config()
         defaults = gather_default_values(self.model)
-        main_variables = list_variables_with_group(self.model, "main_ini")
+        main_variables = list_variables_with_group(self.model, "ua_ini")
 
         default_config_values = {variable: getattr(config, variable) for variable in main_variables}
         default_model_main_values = {variable: defaults[variable] for variable in main_variables}
