@@ -22,15 +22,16 @@ from test.countdown_stub import CountdownStub
 from test.fake_filesystem import FileSystemFactory
 from test.logger_tester import NoLogger
 from test.spy_os_utils import SpyOsUtils
-from update_all.config_reader import ConfigReader, ConfigProvider, Config
+from update_all.config import ConfigProvider, Config
+from update_all.config_reader import ConfigReader
 from update_all.constants import KENV_COMMIT, KENV_CURL_SSL, DEFAULT_CURL_SSL_OPTIONS, DEFAULT_COMMIT, \
     KENV_LOCATION_STR, DEFAULT_LOCATION_STR
 from update_all.countdown import Countdown
 from update_all.downloader_ini_repository import DownloaderIniRepository
 from update_all.file_system import FileSystem
 from update_all.local_repository import LocalRepositoryProvider, LocalRepository
-from update_all.local_store import LocalStoreProvider
 from update_all.os_utils import OsUtils
+from update_all.other import Checker
 from update_all.settings_screen import SettingsScreen
 from update_all.settings_screen_printer import SettingsScreenPrinter, SettingsScreenThemeManager
 from update_all.store_migrator import StoreMigrator
@@ -57,11 +58,15 @@ class ConfigReaderTester(ConfigReader):
         self._config = config
         super().__init__(NoLogger(), default_env())
 
-    def read_config(self) -> Tuple[Config, bool]:
+    def fill_config_with_environment(self, config) -> None:
         if self._config is not None:
-            return self._config, True
+            for k, v in self._config.__dict__.items():
+                if k.startswith('_'):
+                    continue
+                config.__setattr__(k, v)
+            return
 
-        return super().read_config()
+        super().fill_config_with_environment(config)
 
 
 class StoreMigratorTester(StoreMigrator):
@@ -80,10 +85,11 @@ class LocalRepositoryTester(LocalRepository):
 
 
 class DownloaderIniRepositoryTester(DownloaderIniRepository):
-    def __init__(self, file_system: FileSystem = None):
+    def __init__(self, file_system: FileSystem = None, os_utils: OsUtils = None):
         super().__init__(
             logger=NoLogger(),
-            file_system=file_system or FileSystemFactory().create_for_system_scope()
+            file_system=file_system or FileSystemFactory().create_for_system_scope(),
+            os_utils=os_utils or SpyOsUtils()
         )
 
 
@@ -96,8 +102,13 @@ class SettingsScreenPrinterStub(SettingsScreenPrinter):
         return self._factory, self._theme_manager
 
 
+class CheckerTester(Checker):
+    def __init__(self, file_system: FileSystem = None):
+        super().__init__(file_system or FileSystemFactory().create_for_system_scope())
+
+
 class SettingsScreenTester(SettingsScreen):
-    def __init__(self, config_provider: ConfigProvider = None, file_system: FileSystem = None, downloader_ini_repository: DownloaderIniRepository = None, os_utils: OsUtils = None, settings_screen_printer: SettingsScreenPrinter = None):
+    def __init__(self, config_provider: ConfigProvider = None, file_system: FileSystem = None, downloader_ini_repository: DownloaderIniRepository = None, os_utils: OsUtils = None, settings_screen_printer: SettingsScreenPrinter = None, checker: Checker = None, local_repository: LocalRepository = None):
         config_provider = config_provider or ConfigProvider()
         file_system = file_system or FileSystemFactory(config_provider=config_provider).create_for_system_scope()
         super().__init__(
@@ -106,7 +117,9 @@ class SettingsScreenTester(SettingsScreen):
             file_system=file_system,
             downloader_ini_repository=downloader_ini_repository or DownloaderIniRepositoryTester(file_system=file_system),
             os_utils=os_utils or SpyOsUtils(),
-            settings_screen_printer=settings_screen_printer or SettingsScreenPrinterStub()
+            settings_screen_printer=settings_screen_printer or SettingsScreenPrinterStub(),
+            checker=checker or CheckerTester(file_system=file_system),
+            local_repository=local_repository or LocalRepositoryTester(config_provider=config_provider, file_system=file_system)
         )
 
 
@@ -124,7 +137,6 @@ class UiStub(Ui):
 class UpdateAllServiceTester(UpdateAllService):
     def __init__(self, config_reader: ConfigReader = None,
                  config_provider: ConfigProvider = None,
-                 local_store_provider: LocalStoreProvider = None,
                  local_repository: LocalRepository = None,
                  store_migrator: StoreMigrator = None,
                  file_system: FileSystem = None,
@@ -135,7 +147,6 @@ class UpdateAllServiceTester(UpdateAllService):
 
         config_provider = config_provider or ConfigProvider()
         config_reader = config_reader or ConfigReaderTester()
-        local_store_provider = local_store_provider or LocalStoreProvider()
         store_migrator = store_migrator or StoreMigratorTester()
         file_system = file_system or FileSystemFactory().create_for_system_scope()
         local_repository = local_repository or LocalRepositoryTester(config_provider=config_provider, file_system=file_system, store_migrator=store_migrator)
@@ -146,7 +157,6 @@ class UpdateAllServiceTester(UpdateAllService):
         super().__init__(
             config_reader=config_reader,
             config_provider=config_provider,
-            local_store_provider=local_store_provider,
             logger=NoLogger(),
             local_repository=local_repository,
             store_migrator=store_migrator,
@@ -154,5 +164,9 @@ class UpdateAllServiceTester(UpdateAllService):
             os_utils=os_utils,
             countdown=countdown or CountdownStub(),
             settings_screen=settings_screen,
-            downloader_ini_repository=downloader_ini_repository
+            downloader_ini_repository=downloader_ini_repository,
+            checker=CheckerTester()
         )
+
+    def write_downloader_ini(self, config: Config):
+        self._downloader_ini_repository.write_downloader_ini(config)

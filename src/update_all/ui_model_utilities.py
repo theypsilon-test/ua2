@@ -16,7 +16,7 @@
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
 
-def gather_default_values(model):
+def gather_variable_descriptions(model):
     result = {}
     if 'variables' in model:
         _add_variables_default_values(result, model['variables'])
@@ -30,14 +30,7 @@ def gather_default_values(model):
 
 def _add_variables_default_values(result, variables):
     for variable, description in variables.items():
-        default_value = description['default']
-        if default_value == 'true':
-            default_value = True
-        elif default_value == 'false':
-            default_value = False
-        elif default_value.isdigit():
-            default_value = int(default_value)
-        result[variable] = default_value
+        result[variable] = description
 
 
 def list_variables_with_group(model, group):
@@ -61,9 +54,10 @@ def _add_variables_renames_with_group(result, variable_descriptions, group):
 
 def dynamic_convert_string(value):
     if type(value) == str:
-        if value == 'true':
+        lower_value = value.lower()
+        if lower_value == 'true':
             value = True
-        elif value == 'false':
+        elif lower_value == 'false':
             value = False
         elif value.isdigit():
             value = int(value)

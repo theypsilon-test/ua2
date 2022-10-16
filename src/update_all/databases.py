@@ -18,10 +18,7 @@
 import dataclasses
 from functools import cache
 from typing import Dict, List, Tuple
-from update_all.config import K_MAIN_UPDATER, K_JOTEGO_UPDATER, K_UNOFFICIAL_UPDATER, K_LLAPI_UPDATER, \
-    K_ARCADE_OFFSET_DOWNLOADER, K_COIN_OP_COLLECTION_DOWNLOADER, K_ARCADE_ROMS_DB_DOWNLOADER, \
-    K_TTY2OLED_FILES_DOWNLOADER, K_I2C2OLED_FILES_DOWNLOADER, K_MISTERSAM_FILES_DOWNLOADER, K_BIOS_GETTER, \
-    K_NAMES_TXT_UPDATER, Config
+from update_all.config import Config
 
 
 class Database:
@@ -76,9 +73,9 @@ class AllDBs:
 
 def candidate_databases(config: Config) -> List[Tuple[str, Database]]:
     configurable_dbs = {
-        K_MAIN_UPDATER: db_distribution_mister_by_encc_forks(config.encc_forks),
-        K_JOTEGO_UPDATER: db_jtcores_by_download_beta_cores(config.download_beta_cores),
-        K_NAMES_TXT_UPDATER: db_names_txt_by_locale(config.names_region, config.names_char_code, config.names_sort_code)
+        'main_updater': db_distribution_mister_by_encc_forks(config.encc_forks),
+        'jotego_updater': db_jtcores_by_download_beta_cores(config.download_beta_cores),
+        'names_txt_updater': db_names_txt_by_locale(config.names_region, config.names_char_code, config.names_sort_code)
     }
     result = []
     for config_field, dbs in dbs_to_config_fields_pairs():
@@ -98,28 +95,35 @@ def dbs_to_config_fields_pairs() -> List[Tuple[str, List[Database]]]:
     mapping = databases_by_ids()
     return [(config_field, mapping[db_id]) for config_field, db_id in db_ids_to_config_field_pairs() ]
 
+# Database variables
+class Variables:
+    main_updater = DB_ID_DISTRIBUTION_MISTER
+    jotego_updater = DB_ID_JTCORES
+    unofficial_updater = AllDBs.THEYPSILON_UNOFFICIAL_DISTRIBUTION.db_id
+    llapi_updater = AllDBs.LLAPI_FOLDER.db_id
+    arcade_offset_downloader = AllDBs.ARCADE_OFFSET_FOLDER.db_id
+    coin_op_collection_downloader = AllDBs.COIN_OP_COLLECTION.db_id
+    arcade_roms_db_downloader = AllDBs.ARCADE_ROMS.db_id
+    tty2oled_files_downloader = AllDBs.TTY2OLED_FILES.db_id
+    i2c2oled_files_downloader = AllDBs.I2C2OLED_FILES.db_id
+    mistersam_files_downloader = AllDBs.MISTERSAM_FILES.db_id
+    bios_getter = AllDBs.BIOS.db_id
+    names_txt_updater = DB_ID_NAMES_TXT
+
 
 @cache
 def db_ids_to_config_field_pairs() -> List[Tuple[str, str]]:
-    return [
-        (K_MAIN_UPDATER, DB_ID_DISTRIBUTION_MISTER),
-        (K_JOTEGO_UPDATER, DB_ID_JTCORES),
-        (K_UNOFFICIAL_UPDATER, AllDBs.THEYPSILON_UNOFFICIAL_DISTRIBUTION.db_id),
-        (K_LLAPI_UPDATER, AllDBs.LLAPI_FOLDER.db_id),
-        (K_ARCADE_OFFSET_DOWNLOADER, AllDBs.ARCADE_OFFSET_FOLDER.db_id),
-        (K_COIN_OP_COLLECTION_DOWNLOADER, AllDBs.COIN_OP_COLLECTION.db_id),
-        (K_ARCADE_ROMS_DB_DOWNLOADER, AllDBs.ARCADE_ROMS.db_id),
-        (K_TTY2OLED_FILES_DOWNLOADER, AllDBs.TTY2OLED_FILES.db_id),
-        (K_I2C2OLED_FILES_DOWNLOADER, AllDBs.I2C2OLED_FILES.db_id),
-        (K_MISTERSAM_FILES_DOWNLOADER, AllDBs.MISTERSAM_FILES.db_id),
-        (K_BIOS_GETTER, AllDBs.BIOS.db_id),
-        (K_NAMES_TXT_UPDATER, DB_ID_NAMES_TXT),
-    ]
+    return [(variable, db_id) for variable, db_id in Variables.__dict__.items() if not variable.startswith('_')]
 
 
 @cache
-def config_field_by_db_ids() -> Dict[str, str]:
-    return {db.db_id: config_field for config_field, db in candidate_databases(Config())}
+def config_fields_by_db_id() -> Dict[str, str]:
+    return {db_id: variable for variable, db_id in Variables.__dict__.items() if not variable.startswith('_')}
+
+
+@cache
+def db_ids_by_config_fields() -> Dict[str, str]:
+    return {variable: db_id for variable, db_id in Variables.__dict__.items() if not variable.startswith('_')}
 
 
 def active_databases(config: Config) -> list[Database]:

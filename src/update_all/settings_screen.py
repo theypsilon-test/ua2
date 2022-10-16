@@ -17,76 +17,91 @@
 # https://github.com/theypsilon-test/ua2
 import curses
 import hashlib
-import os
 from functools import cached_property
-from pathlib import Path
 from typing import Dict, Callable, List, Tuple
 
-from update_all.config_reader import ConfigProvider, load_ini_config_with_no_section, Config
-from update_all.constants import ARCADE_ORGANIZER_INI, FILE_update_all_ini, \
-    UPDATE_ALL_PATREON_KEY_PATH, UPDATE_ALL_PATREON_KEY_MD5Q0, UPDATE_ALL_PATREON_KEY_SIZE, FILE_MiSTer, \
+from update_all.config import ConfigProvider, Config
+from update_all.config_reader import load_ini_config_with_no_section
+from update_all.constants import ARCADE_ORGANIZER_INI, FILE_MiSTer, \
     TEST_UNSTABLE_SPINNER_FIRMWARE_MD5, DOWNLOADER_URL, FILE_MiSTer_ini, ARCADE_ORGANIZER_URL, \
-    ARCADE_ORGANIZER_INSTALLED_NAMES_TXT
+    ARCADE_ORGANIZER_INSTALLED_NAMES_TXT, STANDARD_UI_THEME
 from update_all.downloader_ini_repository import DownloaderIniRepository
 from update_all.file_system import FileSystem
+from update_all.local_repository import LocalRepository
+from update_all.other import Checker
 from update_all.logger import Logger
 from update_all.os_utils import OsUtils
 from update_all.settings_screen_model import settings_screen_model
 from update_all.settings_screen_printer import SettingsScreenPrinter
 from update_all.ui_engine import run_ui_engine, Ui, UiComponent, UiApplication, UiSectionFactory
 from update_all.ui_engine_dialog_application import DialogSectionFactory
-from update_all.ui_model_utilities import gather_default_values, list_variables_with_group, dynamic_convert_string
+from update_all.ui_model_utilities import gather_variable_descriptions, list_variables_with_group, dynamic_convert_string
 
 
 class SettingsScreen(UiApplication, UiComponent):
     def __init__(self, logger: Logger, config_provider: ConfigProvider, file_system: FileSystem,
-                 downloader_ini_repository: DownloaderIniRepository, os_utils: OsUtils, settings_screen_printer: SettingsScreenPrinter):
+                 downloader_ini_repository: DownloaderIniRepository, os_utils: OsUtils, settings_screen_printer: SettingsScreenPrinter, checker: Checker, local_repository: LocalRepository):
         self._logger = logger
         self._config_provider = config_provider
         self._file_system = file_system
         self._downloader_ini_repository = downloader_ini_repository
         self._os_utils = os_utils
         self._settings_screen_printer = settings_screen_printer
+        self._checker = checker
+        self._local_repository = local_repository
         self._original_firmware = None
         self._theme_manager = None
+        self._local_store = None
 
     def load_main_menu(self) -> None:
         run_ui_engine('main_menu', settings_screen_model(), self)
 
     def initialize_ui(self, ui: Ui, screen: curses.window) -> Tuple[List[UiComponent], UiSectionFactory]:
-
         ui.set_value('needs_save', 'false')
 
         config = self._config_provider.get()
         for variable in self._all_config_variables:
-            ui.set_value(variable, str(getattr(config, variable)).lower())
-
-        arcade_organizer_ini_path = Path(f'{config.base_path}/{ARCADE_ORGANIZER_INI}')
-        arcade_organizer_ini = load_ini_config_with_no_section(self._logger, arcade_organizer_ini_path)
-
-        ao_variables = list_variables_with_group(settings_screen_model(), "ao_ini")
-        variable_defaults = gather_default_values(settings_screen_model())
-
-        for variable, rename in ao_variables.items():
-            value = arcade_organizer_ini.get_string(rename, str(variable_defaults[variable]).lower())
+            value = getattr(config, variable)
+            if not isinstance(value, str):
+                value = str(value).lower()
             ui.set_value(variable, value)
 
-        ui_theme = 'Blue Installer'
+        arcade_organizer_ini = load_ini_config_with_no_section(self._logger, self._file_system, ARCADE_ORGANIZER_INI)
+
+        ao_variables = list_variables_with_group(settings_screen_model(), "ao_ini")
+        variable_descriptions = gather_variable_descriptions(settings_screen_model())
+
+        for variable, rename in ao_variables.items():
+            value = arcade_organizer_ini.get_string(rename, variable_descriptions[variable]['default'])
+            ui.set_value(variable, value)
+
+        local_store = self._local_repository.load_store()
+        ui_theme =  local_store.get_theme() if self._checker.available_code > 1 else STANDARD_UI_THEME
         ui.set_value('ui_theme', ui_theme)
 
-        drawer_factory, self._theme_manager = self._settings_screen_printer.initialize_screen(screen)
-        self._theme_manager.set_theme(ui_theme)
+        if not config.jotego_updater:
+            ui.set_value('download_beta_cores', str(local_store.get_download_beta_cores()).lower())
 
+        if not config.names_txt_updater:
+            ui.set_value('names_region', local_store.get_names_region())
+            ui.set_value('names_char_code', local_store.get_names_char_code())
+            ui.set_value('names_sort_code', local_store.get_names_sort_code())
+
+        drawer_factory, theme_manager = self._settings_screen_printer.initialize_screen(screen)
+        theme_manager.set_theme(ui_theme)
+
+        self._local_store = local_store
+        self._theme_manager = theme_manager
         return [self], DialogSectionFactory(drawer_factory)
 
     def initialize_effects(self, ui: Ui, effects: Dict[str, Callable[[], None]]) -> None:
         effects['calculate_needs_save'] = lambda effect: self.calculate_needs_save(ui)
-        effects['calculate_can_access_patron_menu'] = lambda effect: self.calculate_can_access_patron_menu(ui)
+        effects['calculate_has_right_available_code'] = lambda effect: self.calculate_has_right_available_code(ui)
         effects['calculate_is_test_spinner_firmware_applied'] = lambda effect: self.calculate_is_test_spinner_firmware_applied(ui)
         effects['test_unstable_spinner_firmware'] = lambda effect: self.test_unstable_spinner_firmware(ui)
         effects['play_bad_apple'] = lambda effect: self.play_bad_apple(ui)
         effects['save'] = lambda effect: self.save(ui)
-        effects['copy_ui_options_to_current_config'] = lambda effect: self.copy_ui_options_to_current_config(ui)
+        effects['prepare_exit_dont_save_and_run'] = lambda effect: self.prepare_exit_dont_save_and_run(ui)
         effects['calculate_file_exists'] = lambda effect: self.calculate_file_exists(ui, effect)
         effects['remove_file'] = lambda effect: self.remove_file(ui, effect)
         effects['calculate_arcade_organizer_folders'] = lambda effect: self.calculate_arcade_organizer_folders(ui)
@@ -101,29 +116,14 @@ class SettingsScreen(UiApplication, UiComponent):
     def remove_file(self, ui, effect) -> None:
         ui.set_value('file_exists', self._file_system.unlink(effect['target']))
 
-    def calculate_can_access_patron_menu(self, ui: Ui) -> None:
+    def calculate_has_right_available_code(self, ui: Ui) -> None:
         is_test_firmware, firmware_md5 = self._is_test_firmware()
         if firmware_md5 is not None:
             self._original_firmware = firmware_md5
 
-        valid_patronkey = self._is_patronkey_valid()
-        ui.set_value('can_access_patron_menu', 'true' if valid_patronkey else 'false')
+        ui.set_value('has_right_available_code', 'true' if self._checker.available_code > 1 else 'false')
 
         self._set_spinner_options(ui)
-
-    def _is_patronkey_valid(self):
-        if not self._file_system.is_file(UPDATE_ALL_PATREON_KEY_PATH):
-            return False
-
-        file_size = os.path.getsize(self._file_system.download_target_path(UPDATE_ALL_PATREON_KEY_PATH))
-        if file_size != UPDATE_ALL_PATREON_KEY_SIZE:
-            return False
-
-        file_md5 = hashlib.md5(self._file_system.read_file_binary(UPDATE_ALL_PATREON_KEY_PATH)).hexdigest()
-        if file_md5 != UPDATE_ALL_PATREON_KEY_MD5Q0:
-            return False
-
-        return True
 
     def _is_test_firmware(self):
         is_test_firmware, firmware_md5 = False, None
@@ -182,13 +182,11 @@ class SettingsScreen(UiApplication, UiComponent):
         curses.initscr()
 
     def calculate_needs_save(self, ui: Ui) -> None:
-        arcade_organizer_ini = load_ini_config_with_no_section(
-            self._logger,
-            Path(self._file_system.download_target_path(ARCADE_ORGANIZER_INI))
-        )
+        arcade_organizer_ini = load_ini_config_with_no_section(self._logger, self._file_system, ARCADE_ORGANIZER_INI)
 
-        ao_variables = list_variables_with_group(settings_screen_model(), "ao_ini")
-        variable_defaults = gather_default_values(settings_screen_model())
+        ao_variables = [(variable, rename) for variable, rename in list_variables_with_group(settings_screen_model(), "ao_ini").items()]
+        ao_variables.append(('arcade_organizer', 'arcade_organizer'))
+        variable_descriptions = gather_variable_descriptions(settings_screen_model())
 
         needs_save_file_set = set()
 
@@ -197,18 +195,11 @@ class SettingsScreen(UiApplication, UiComponent):
         if self._downloader_ini_repository.needs_save(temp_config):
             needs_save_file_set.add("downloader.ini")
 
-        for variable, rename in ao_variables.items():
-            old_value = arcade_organizer_ini.get_string(rename, str(variable_defaults[variable])).lower()
+        for variable, rename in ao_variables:
+            old_value = arcade_organizer_ini.get_string(rename, variable_descriptions[variable]['default']).lower()
             new_value = ui.get_value(variable).lower()
             if old_value != new_value:
                 needs_save_file_set.add("update_arcade-organizer.ini")
-
-        config = self._config_provider.get()
-        for variable in list_variables_with_group(settings_screen_model(), "ua_ini"):
-            old_value = str(getattr(config, variable)).lower()
-            new_value = ui.get_value(variable).lower()
-            if old_value != new_value:
-                needs_save_file_set.add("update_all.ini")
 
         if len(needs_save_file_set) > 0:
             needs_save_file_list = "  - " + "\n  - ".join(sorted(needs_save_file_set))
@@ -219,44 +210,31 @@ class SettingsScreen(UiApplication, UiComponent):
         ui.set_value('needs_save_file_list', needs_save_file_list)
 
     def save(self, ui: Ui) -> None:
-        self.copy_ui_options_to_current_config(ui)
+        self._copy_ui_options_to_current_config(ui)
 
-        variable_defaults = gather_default_values(settings_screen_model())
-        main_non_default_options = self._calculate_non_default_options(ui, "ua_ini", variable_defaults)
-        ao_non_default_options = self._calculate_non_default_options(ui, "ao_ini", variable_defaults)
+        config = self._config_provider.get()
+        if config.arcade_organizer != Config().arcade_organizer:
+            self._file_system.make_dirs_parent(ARCADE_ORGANIZER_INI)
+            self._downloader_ini_repository.write_arcade_organizer_active_at_arcade_organizer_ini(config)
 
-        self._write_ini_options(main_non_default_options, FILE_update_all_ini)
-        self._write_ini_options(ao_non_default_options, ARCADE_ORGANIZER_INI)
-        self._downloader_ini_repository.write_downloader_ini(self._config_provider.get())
+        self._downloader_ini_repository.write_downloader_ini(config)
 
-    @staticmethod
-    def _calculate_non_default_options(ui, group, variable_defaults):
-        non_default_options = {}
-        for variable, name in list_variables_with_group(settings_screen_model(), group).items():
-            value = ui.get_value(variable).lower()
-            if value != str(variable_defaults[variable]).lower():
-                non_default_options[name] = value
+        if config.jotego_updater:
+            self._local_store.set_download_beta_cores(config.download_beta_cores)
 
-        return non_default_options
+        if config.names_txt_updater:
+            self._local_store.set_names_region(config.names_region)
+            self._local_store.set_names_char_code(config.names_char_code)
+            self._local_store.set_names_sort_code(config.names_sort_code)
 
-    def _write_ini_options(self, options, filename):
-        path = Path(f'{self._config_provider.get().base_path}/{filename}')
-        if len(options) == 0:
-            if path.exists():
-                path.unlink(missing_ok=True)
-            return
+        self._local_repository.save_store(self._local_store)
 
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open('w') as arcade_organizer:
-            arcade_organizer.writelines(
-                [f'{variable.upper()}={str(value).lower()}\n' for variable, value in options.items()])
-
-    def copy_ui_options_to_current_config(self, ui: Ui) -> None:
+    def _copy_ui_options_to_current_config(self, ui: Ui) -> None:
         self._copy_temp_save_to_config(ui, self._config_provider.get())
 
     def _copy_temp_save_to_config(self, ui, config: Config) -> None:
         for variable in self._all_config_variables:
-            value = dynamic_convert_string(ui.get_value(variable).lower())
+            value = dynamic_convert_string(ui.get_value(variable))
             if not isinstance(value, type(getattr(config, variable))):
                 raise TypeError(f'{variable} can not have value {value}! (wrong type)')
             setattr(config, variable, value)
@@ -313,4 +291,11 @@ class SettingsScreen(UiApplication, UiComponent):
         ui.set_value('arcade_organizer_folders_list', '')
 
     def apply_theme(self, ui: Ui):
-        self._theme_manager.set_theme(ui.get_value('ui_theme'))
+        ui_theme = ui.get_value('ui_theme')
+        self._theme_manager.set_theme(ui_theme)
+        self._local_store.set_theme(ui_theme)
+        self._local_repository.save_store(self._local_store)
+
+    def prepare_exit_dont_save_and_run(self, ui):
+        self._copy_ui_options_to_current_config(ui)
+        self._config_provider.get().temporary_downloader_ini = True

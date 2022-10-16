@@ -21,13 +21,14 @@ import time
 from typing import List
 
 from update_all.cli_output_formatting import CLEAR_SCREEN
+from update_all.config import Config, ConfigProvider
 from update_all.constants import UPDATE_ALL_VERSION, DOWNLOADER_INI_STANDARD_PATH, \
     DOWNLOADER_URL, ARCADE_ORGANIZER_URL, FILE_update_all_log, FILE_mister_downloader_needs_reboot, MEDIA_FAT, \
-    ARCADE_ORGANIZER_INI
+    ARCADE_ORGANIZER_INI, MISTER_DOWNLOADER_VERSION, FILE_downloader_temp_ini
 from update_all.countdown import Countdown, CountdownImpl, CountdownOutcome
 from update_all.databases import active_databases
 from update_all.downloader_ini_repository import DownloaderIniRepository
-from update_all.local_store import LocalStoreProvider
+from update_all.other import Checker
 from update_all.logger import Logger
 from update_all.os_utils import OsUtils, LinuxOsUtils
 from update_all.settings_screen import SettingsScreen
@@ -37,7 +38,7 @@ from update_all.store_migrator import StoreMigrator
 from update_all.migrations import migrations
 from update_all.local_repository import LocalRepository, LocalRepositoryProvider
 from update_all.file_system import FileSystemFactory, FileSystem
-from update_all.config_reader import ConfigReader, ConfigProvider
+from update_all.config_reader import ConfigReader
 
 
 class UpdateAllServiceFactory:
@@ -52,13 +53,12 @@ class UpdateAllServiceFactory:
         file_system = FileSystemFactory(config_provider, {}, self._logger).create_for_system_scope()
         local_repository = LocalRepository(config_provider, self._logger, file_system, store_migrator)
         self._local_repository_provider.initialize(local_repository)
-        local_store_provider = LocalStoreProvider()
         os_utils = LinuxOsUtils(config_provider=config_provider, logger=self._logger)
-        downloader_ini_repository = DownloaderIniRepository(self._logger, file_system=file_system)
+        downloader_ini_repository = DownloaderIniRepository(self._logger, file_system=file_system, os_utils=os_utils)
+        checker = Checker(file_system=file_system)
         return UpdateAllService(
             config_reader,
             config_provider,
-            local_store_provider,
             downloader_ini_repository,
             self._logger,
             local_repository,
@@ -72,16 +72,18 @@ class UpdateAllServiceFactory:
                 file_system=file_system,
                 downloader_ini_repository=downloader_ini_repository,
                 os_utils=os_utils,
-                settings_screen_printer=SettingsScreenStandardPrinter()
-            )
+                settings_screen_printer=SettingsScreenStandardPrinter(),
+                checker=checker,
+                local_repository=local_repository
+            ),
+            checker=checker
         )
 
 
 class UpdateAllService:
-    def __init__(self, config_reader: ConfigReader, config_provider: ConfigProvider, local_store_provider: LocalStoreProvider, downloader_ini_repository: DownloaderIniRepository, logger: Logger, local_repository: LocalRepository, store_migrator: StoreMigrator, file_system: FileSystem, os_utils: OsUtils, countdown: Countdown, settings_screen: SettingsScreen):
+    def __init__(self, config_reader: ConfigReader, config_provider: ConfigProvider, downloader_ini_repository: DownloaderIniRepository, logger: Logger, local_repository: LocalRepository, store_migrator: StoreMigrator, file_system: FileSystem, os_utils: OsUtils, countdown: Countdown, settings_screen: SettingsScreen, checker: Checker):
         self._config_reader = config_reader
         self._config_provider = config_provider
-        self._local_store_provider = local_store_provider
         self._downloader_ini_repository = downloader_ini_repository
         self._logger = logger
         self._local_repository = local_repository
@@ -90,13 +92,13 @@ class UpdateAllService:
         self._os_utils = os_utils
         self._countdown = countdown
         self._settings_screen = settings_screen
+        self._checker = checker
         self._exit_code = 0
         self._error_reports: List[str] = []
 
     def full_run(self) -> int:
-        self._show_intro()
         self._read_config()
-        self._initialize_store()
+        self._show_intro()
         self._run_settings_screen_countdown()
         self._tweak_not_mister_config()
         self._run_downloader()
@@ -108,25 +110,36 @@ class UpdateAllService:
         return self._exit_code
 
     def _show_intro(self) -> None:
-        self._logger.print("Executing 'Update All' script")
-        self._logger.print("The All-in-One Updater for MiSTer")
-        self._logger.print(f"Version {UPDATE_ALL_VERSION}")
         self._logger.print()
-        self._logger.print("By theypsilon  --  follow me on Twitter: @josembarroso")
+        self._logger.print(f"                        -------- Update All {UPDATE_ALL_VERSION} ---------                        ")
+        self._logger.print(f"                        The All-in-One Updater for MiSTer")
+        self._logger.print("                        ---------------------------------")
+        self._logger.print(f"                          - Powered by Downloader {MISTER_DOWNLOADER_VERSION} -")
+        self._logger.print()
+        if self._checker.available_code < 2:
+            self._logger.print()
+            self._logger.print("               ╔═════════════════════════════════════════════════╗              ")
+            self._logger.print("               ║  Become a patron to unlock exclusive features!  ║              ")
+            self._logger.print("               ║           www.patreon.com/theypsilon            ║              ")
+            self._logger.print("               ╚═════════════════════════════════════════════════╝              ")
+            self._os_utils.sleep(2.0)
+        else:
+            self._logger.print()
+            self._logger.print("                    ╔═══════════════════════════════════════╗                   ")
+            self._logger.print("                    ║  Thank you so much for your support!  ║                   ")
+            self._logger.print("                    ╚═══════════════════════════════════════╝                   ")
+
+        self._logger.print()
+        self._logger.print('Reading downloader.ini')
         self._logger.print()
 
     def _read_config(self) -> None:
-        config, is_file_read = self._config_reader.read_config()
-        if is_file_read:
-            self._logger.print('Reading configuration.')
-        else:
-            self._logger.print('No previous configuration detected.')
-
+        config = Config()
+        self._config_reader.fill_config_with_environment(config)
         self._config_provider.initialize(config)
-        self._logger.print()
+        self._downloader_ini_repository.transition_from_update_all_1(config)
+        self._config_reader.fill_config_with_ini_files(config, self._file_system)
 
-    def _initialize_store(self) -> None:
-        self._local_store_provider.initialize(self._local_repository.load_store())
 
     def _run_settings_screen_countdown(self) -> None:
         self._print_sequence()
@@ -155,7 +168,10 @@ class UpdateAllService:
 
         self._draw_separator()
         self._logger.print('Running MiSTer Downloader')
-        self._downloader_ini_repository.write_downloader_ini(config)
+
+        if config.temporary_downloader_ini:
+            self._downloader_ini_repository.write_downloader_ini(config, FILE_downloader_temp_ini)
+            self._logger.print(f'Written temporary {FILE_downloader_temp_ini} file.')
 
         content = self._os_utils.download(DOWNLOADER_URL)
         temp_file = self._file_system.temp_file_by_id('downloader.sh')
@@ -170,7 +186,7 @@ class UpdateAllService:
             update_linux = False
 
         env = {
-            'DOWNLOADER_INI_PATH': DOWNLOADER_INI_STANDARD_PATH,
+            'DOWNLOADER_INI_PATH': FILE_downloader_temp_ini if config.temporary_downloader_ini else DOWNLOADER_INI_STANDARD_PATH,
             'ALLOW_REBOOT': '0',
             'CURL_SSL': self._config_provider.get().curl_ssl,
             'UPDATE_LINUX': 'true' if update_linux else 'false',
@@ -225,7 +241,7 @@ class UpdateAllService:
 
         temp_file = self._file_system.temp_file_by_id('downloader.sh')
         return_code = self._os_utils.execute_process(temp_file.name, {
-            'DOWNLOADER_INI_PATH': DOWNLOADER_INI_STANDARD_PATH,
+            'DOWNLOADER_INI_PATH': FILE_downloader_temp_ini if config.temporary_downloader_ini else DOWNLOADER_INI_STANDARD_PATH,
             'ALLOW_REBOOT': '0',
             'CURL_SSL': config.curl_ssl,
             'UPDATE_LINUX': 'only',

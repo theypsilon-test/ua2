@@ -25,14 +25,20 @@ DEFAULT_LOCATION_STR = 'MiSTer'
 DEFAULT_DEBUG = 'false'
 
 MISTER_ENVIRONMENT = 'mister'
+STANDARD_UI_THEME = 'Blue Installer'
 
 # Downloader files
 FILE_update_all_storage = 'Scripts/.config/update_all/update_all.json.zip'
 FILE_update_all_log = 'Scripts/.config/update_all/update_all.log'
 FILE_update_all_ini = 'Scripts/update_all.ini'
+FILE_update_jtcores_ini = 'Scripts/update_jtcores.ini'
+FILE_update_jtcores_sh = 'Scripts/update_jtcores.sh'
+FILE_update_names_txt_ini = 'Scripts/update_names-txt.ini'
+FILE_update_names_txt_sh = 'Scripts/update_names-txt.sh'
 FILE_MiSTer = 'MiSTer'
 FILE_MiSTer_ini = 'MiSTer.ini'
 FOLDER_scripts = 'Scripts'
+FILE_downloader_temp_ini = '/tmp/downloader_temp.ini'
 
 # Reboot files
 FILE_downloader_needs_reboot_after_linux_update = '/tmp/downloader_needs_reboot_after_linux_update'
@@ -94,12 +100,10 @@ class PathType(Enum):
 
 # Update All old constants
 UPDATE_ALL_VERSION = "2.0"
+MISTER_DOWNLOADER_VERSION = "1.5"
 UPDATE_ALL_PC_UPDATER = "false"
 UPDATE_ALL_OS = "MiSTer_Linux"
 UPDATE_ALL_LAUNCHER_MD5 = "ac10fbada40e3e5f133bc0eee0dd53d5"
-UPDATE_ALL_PATREON_KEY_PATH = "Scripts/update_all.patreonkey"
-UPDATE_ALL_PATREON_KEY_SIZE = 16384
-UPDATE_ALL_PATREON_KEY_MD5Q0 = "00e9f6acaec74650ddd38a14334ebaef"
 SETTINGS_ON_FILENAME = "settings-on"
 WORK_PATH = "Scripts/.config/update_all"
 MISTER_DOWNLOADER_WORK_FOLDER = "Scripts/.config/downloader"

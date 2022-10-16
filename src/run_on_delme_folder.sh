@@ -22,7 +22,7 @@ chmod +x "${TMP_FILE}"
 
 export CURL_SSL=""
 export LOCATION_STR="$(pwd)"
-export DEBUG="true"
+export DEBUG="${DEBUG:-true}"
 
 echo "Running..."
 echo "LOCATION_STR=${LOCATION_STR}"

@@ -18,6 +18,7 @@
 
 from abc import ABC, abstractmethod
 
+from update_all.config import Config
 from update_all.logger import Logger
 
 
@@ -61,8 +62,14 @@ class StoreMigrator:
 
 
 def make_new_local_store(store_migrator):
+    default_config = Config()
     return {
-        'migration_version': store_migrator.latest_migration_version()
+        'migration_version': store_migrator.latest_migration_version(),
+        'theme': 'Blue Installer',
+        'download_beta_cores': default_config.download_beta_cores,
+        'names_region': default_config.names_region,
+        'names_char_code': default_config.names_char_code,
+        'names_sort_code': default_config.names_sort_code,
     }
 
 

@@ -17,17 +17,19 @@
 # https://github.com/theypsilon-test/ua2
 import unittest
 
-from update_all.ui_model_utilities import gather_default_values, list_variables_with_group
+from update_all.ui_model_utilities import gather_variable_descriptions, list_variables_with_group, \
+    dynamic_convert_string
 
 
 class TestUiModelsUtilities(unittest.TestCase):
     def test_gather_default_values(self):
+        default_values = {k: dynamic_convert_string(v['default']) for k, v in gather_variable_descriptions(test_model()).items()}
         expected = {
             "update_all_version": 2,
             "names_region": "US",
             "arcade_offset_downloader": False
         }
-        self.assertEqual(expected, gather_default_values(test_model()))
+        self.assertEqual(expected, default_values)
 
     def test_list_variables_with_group_x(self):
         expected = {"update_all_version": "version", "arcade_offset_downloader": "aod"}

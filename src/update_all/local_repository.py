@@ -16,7 +16,7 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from update_all.config_reader import ConfigProvider
+from update_all.config import ConfigProvider
 from update_all.constants import FILE_update_all_storage, FILE_update_all_log, FILE_update_all_ini
 from update_all.local_store import LocalStore
 from update_all.store_migrator import make_new_local_store
@@ -84,12 +84,12 @@ class LocalRepository:
 
         return LocalStore(local_store_props)
 
-    def save_store(self, local_store_wrapper):
+    def save_store(self, local_store_wrapper: LocalStore):
         if not local_store_wrapper.needs_save():
             self._logger.debug('Skipping local_store saving...')
             return
 
-        local_store = local_store_wrapper.unwrap_local_store()
+        local_store = local_store_wrapper.unwrap_props()
 
         self._file_system.make_dirs_parent(self._storage_path)
         self._file_system.save_json_on_zip(local_store, self._storage_path)

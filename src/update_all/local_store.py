@@ -15,32 +15,54 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
+from typing import Optional, Dict, Union
+
 
 class LocalStore:
-    def __init__(self, local_store):
-        self._local_store = local_store
+    def __init__(self, props: Dict[str, Union[str, bool]]):
+        self._props = props
         self._dirty = False
 
-    def unwrap_local_store(self):
-        return self._local_store
+    def set_theme(self, theme: str) -> None:
+        self._props['theme'] = theme
+        self._mark_force_save()
 
-    def mark_force_save(self):
-        self._dirty = True
+    def get_theme(self) -> Optional[str]:
+        return self._props['theme']
+
+    def set_download_beta_cores(self, download_beta_cores: bool) -> None:
+        self._props['download_beta_cores'] = download_beta_cores
+        self._mark_force_save()
+
+    def get_download_beta_cores(self) -> Optional[bool]:
+        return self._props['download_beta_cores']
+
+    def set_names_region(self, names_region: str) -> None:
+        self._props['names_region'] = names_region
+        self._mark_force_save()
+
+    def get_names_region(self) -> Optional[str]:
+        return self._props['names_region']
+
+    def set_names_char_code(self, names_char_code: str) -> None:
+        self._props['names_char_code'] = names_char_code
+        self._mark_force_save()
+
+    def get_names_char_code(self) -> Optional[str]:
+        return self._props['names_char_code']
+
+    def set_names_sort_code(self, names_sort_code: str) -> None:
+        self._props['names_sort_code'] = names_sort_code
+        self._mark_force_save()
+
+    def get_names_sort_code(self) -> Optional[str]:
+        return self._props['names_sort_code']
+
+    def unwrap_props(self):
+        return self._props
 
     def needs_save(self):
         return self._dirty
 
-
-class LocalStoreProvider:
-    _local_store: LocalStore
-
-    def __init__(self):
-        self._local_store = None
-
-    def initialize(self, local_store: LocalStore) -> None:
-        assert(self._local_store is None)
-        self._local_store = local_store
-
-    def get(self) -> LocalStore:
-        assert(self._local_store is not None)
-        return self._local_store
+    def _mark_force_save(self):
+        self._dirty = True

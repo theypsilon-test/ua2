@@ -903,10 +903,10 @@ def settings_screen_model(): return {
 
 
 def _try_access_patrons_menu(): return [
-    {"type": "calculate_can_access_patron_menu"},
+    {"type": "calculate_has_right_available_code"},
     {
         "type": "condition",
-        "variable": "can_access_patron_menu",
+        "variable": "has_right_available_code",
         "true": [{"type": "navigate", "target": "patrons_menu"}],
         "false": [{
             "ui": "message",
@@ -1012,7 +1012,7 @@ def _try_exit(): return [
                     "title": "Yes",
                     "type": "fixed",
                     "fixed": [
-                        {"type": "copy_ui_options_to_current_config"},
+                        {"type": "prepare_exit_dont_save_and_run"},
                         {"type": "navigate", "target": "exit_and_run"}
                     ]
                 },

@@ -17,7 +17,7 @@
 # https://github.com/theypsilon-test/ua2
 import unittest
 
-from update_all.config_reader import Config
+from update_all.config import Config
 from update_all.databases import all_dbs_list
 from update_all.downloader_ini_repository import candidate_databases
 

@@ -22,9 +22,10 @@ import shutil
 import json
 import tempfile
 import re
+import zipfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from update_all.config_reader import AllowDelete
+from update_all.config import AllowDelete
 from update_all.constants import K_ALLOW_DELETE
 from update_all.other import ClosableValue
 
@@ -342,12 +343,16 @@ class _FileSystem(FileSystem):
         if suffix == '.json':
             return _load_json(path)
         elif suffix == '.zip':
-            raise NotImplementedError('No need on update_all')
+            return _load_json_from_zip(path)
         else:
             raise Exception('File type "%s" not supported' % suffix)
 
     def save_json_on_zip(self, db, path):
-        raise NotImplementedError('No need on update_all')
+        json_name = Path(path).stem
+        zip_path = Path(self._path(path)).absolute()
+
+        with zipfile.ZipFile(zip_path, 'w') as zipf:
+            zipf.writestr(json_name, json.dumps(db))
 
     def save_json(self, db, path):
         with open(self._path(path), 'w') as f:
@@ -392,6 +397,15 @@ def hash_file(path):
 
 def absolute_parent_folder(absolute_path):
     return str(Path(absolute_path).parent)
+
+
+def _load_json_from_zip(path):
+    with zipfile.ZipFile(path) as jsonzipf:
+        namelist = jsonzipf.namelist()
+        if len(namelist) != 1:
+            raise Exception('Could not load "%s", because it has %s elements!' % (path, len(namelist)))
+        with jsonzipf.open(namelist[0]) as store_json_file:
+            return json.loads(store_json_file.read())
 
 
 def _load_json(file_path):

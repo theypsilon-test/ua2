@@ -23,7 +23,7 @@ from unittest.mock import MagicMock
 from test.file_system_tester_state import FileSystemState
 from test.unit.test_update_all_service import downloader_ini
 from test.update_all_service_tester import SettingsScreenTester, UiStub
-from update_all.config_reader import Config, ConfigProvider
+from update_all.config import Config, ConfigProvider
 from test.fake_filesystem import FileSystemFactory
 from update_all.settings_screen import SettingsScreen
 from update_all.ui_engine import Ui
@@ -42,11 +42,11 @@ class TestSettingsScreen(unittest.TestCase):
         sut.save(ui)
         self.assertEqual(default_downloader_ini_content(), fs.files[downloader_ini]['content'])
 
-    def test_calculate_needs_save___with_default_downloader_ini_and_disabled_names_txt_updater___returns_update_all_ini_and_downloader_ini_changes(self) -> None:
+    def test_calculate_needs_save___with_default_downloader_ini_and_disabled_names_txt_updater___returns_downloader_ini_changes(self) -> None:
         sut, ui, _ = tester(files={downloader_ini: {'content': default_downloader_ini_content()}})
         ui.set_value('names_txt_updater', 'false')
         sut.calculate_needs_save(ui)
-        self.assertEqual('  - downloader.ini\n  - update_all.ini', ui.get_value('needs_save_file_list'))
+        self.assertEqual('  - downloader.ini', ui.get_value('needs_save_file_list'))
         self.assertEqual('true', ui.get_value('needs_save'))
 
     def test_calculate_needs_save___with_default_downloader_ini___returns_no_changes(self) -> None:
@@ -64,6 +64,20 @@ class TestSettingsScreen(unittest.TestCase):
         self.assertEqual('', ui.get_value('needs_save_file_list'))
         self.assertEqual('false', ui.get_value('needs_save'))
 
+    def test_calculate_needs_save___with_arcade_organized_toggled___returns_arcade_organizer_ini_changes(self):
+        sut, ui, _ = tester(files={downloader_ini: {'content': default_downloader_ini_content()}})
+        ui.set_value('arcade_organizer', str(not Config().arcade_organizer).lower())
+        sut.calculate_needs_save(ui)
+        self.assertEqual('  - update_arcade-organizer.ini', ui.get_value('needs_save_file_list'))
+        self.assertEqual('true', ui.get_value('needs_save'))
+
+    def test_calculate_needs_save___with_ao_region_disabled_and_names_txt_disabled___returns_downloader_and_arcade_organizer_ini_changes(self):
+        sut, ui, _ = tester(files={downloader_ini: {'content': default_downloader_ini_content()}})
+        ui.set_value('arcade_organizer_region_dir', 'false')
+        ui.set_value('names_txt_updater', 'false')
+        sut.calculate_needs_save(ui)
+        self.assertEqual('  - downloader.ini\n  - update_arcade-organizer.ini', ui.get_value('needs_save_file_list'))
+        self.assertEqual('true', ui.get_value('needs_save'))
 
 def tester(files=None, config=None) -> Tuple[SettingsScreen, Ui, FileSystemState]:
     ui = UiStub()
