@@ -15,21 +15,22 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-import dataclasses
+from dataclasses import dataclass
 from functools import cache
 from typing import Dict, List, Tuple
-from update_all.config import Config
 
 
+@dataclass
 class Database:
-    def __init__(self, db_id: str, db_url: str, title: str):
-        self.db_id = db_id
-        self.db_url = db_url
-        self.title = title
+    db_id: str
+    db_url: str
+    title: str
+
 
 DB_ID_DISTRIBUTION_MISTER = 'distribution_mister'
 DB_ID_JTCORES = 'jtcores'
 DB_ID_NAMES_TXT = 'names_txt'
+
 
 class AllDBs:
     # Distribution MiSTer
@@ -46,6 +47,15 @@ class AllDBs:
     ARCADE_OFFSET_FOLDER = Database(db_id='arcade_offset_folder', db_url='https://raw.githubusercontent.com/atrac17/Arcade_Offset/db/arcadeoffsetdb.json.zip', title='Arcade Offset folder')
     COIN_OP_COLLECTION = Database(db_id='atrac17/Coin-Op_Collection', db_url='https://raw.githubusercontent.com/atrac17/Coin-Op_Collection/db/db.json.zip', title='Coin-Op Collection')
 
+    # UNOFFICIAL SCRIPTS
+    TTY2OLED_FILES = Database(db_id='tty2oled_files', db_url='https://raw.githubusercontent.com/venice1200/MiSTer_tty2oled/main/tty2oleddb.json', title='tty2oled files')
+    I2C2OLED_FILES = Database(db_id='i2c2oled_files', db_url='https://raw.githubusercontent.com/venice1200/MiSTer_i2c2oled/main/i2c2oleddb.json', title='i2c2oled files')
+    MISTERSAM_FILES = Database(db_id='MiSTer_SAM_files', db_url='https://raw.githubusercontent.com/mrchrisster/MiSTer_SAM/main/MiSTer_SAMdb.json', title='MiSTer SAM files')
+
+    # ROMS
+    BIOS = Database(db_id='bios_db', db_url='https://raw.githubusercontent.com/theypsilon/BiosDB_MiSTer/db/bios_db.json', title='BIOS Database')
+    ARCADE_ROMS = Database(db_id='arcade_roms_db', db_url='https://raw.githubusercontent.com/theypsilon/ArcadeROMsDB_MiSTer/db/arcade_roms_db.json.zip', title='Arcade ROMs Database')
+
     # NAMES TXT
     NAMES_CHAR54_MANUFACTURER_EU_TXT = Database(db_id=DB_ID_NAMES_TXT, db_url='https://raw.githubusercontent.com/ThreepwoodLeBrush/Names_MiSTer/dbs/names_CHAR54_Manufacturer_EU.json', title='Names TXT: CHAR54 Manufacturer EU')
     NAMES_CHAR28_MANUFACTURER_EU_TXT = Database(db_id=DB_ID_NAMES_TXT, db_url='https://raw.githubusercontent.com/ThreepwoodLeBrush/Names_MiSTer/dbs/names_CHAR28_Manufacturer_EU.json', title='Names TXT: CHAR28 Manufacturer EU')
@@ -61,73 +71,40 @@ class AllDBs:
     NAMES_CHAR18_COMMON_US_TXT = Database(db_id=DB_ID_NAMES_TXT, db_url='https://raw.githubusercontent.com/ThreepwoodLeBrush/Names_MiSTer/dbs/names_CHAR18_Common_US.json', title='Names TXT: CHAR18 Common US')
     NAMES_CHAR18_COMMON_JP_TXT = Database(db_id=DB_ID_NAMES_TXT, db_url='https://raw.githubusercontent.com/ThreepwoodLeBrush/Names_MiSTer/dbs/names_CHAR18_Common_JP.json', title='Names TXT: CHAR18 Common JP')
 
-    # UNOFFICIAL SCRIPTS
-    TTY2OLED_FILES = Database(db_id='tty2oled_files', db_url='https://raw.githubusercontent.com/venice1200/MiSTer_tty2oled/main/tty2oleddb.json', title='tty2oled files')
-    I2C2OLED_FILES = Database(db_id='i2c2oled_files', db_url='https://raw.githubusercontent.com/venice1200/MiSTer_i2c2oled/main/i2c2oleddb.json', title='i2c2oled files')
-    MISTERSAM_FILES = Database(db_id='MiSTer_SAM_files', db_url='https://raw.githubusercontent.com/mrchrisster/MiSTer_SAM/main/MiSTer_SAMdb.json', title='MiSTer SAM files')
 
-    # ROMS
-    BIOS = Database(db_id='bios_db', db_url='https://raw.githubusercontent.com/theypsilon/BiosDB_MiSTer/db/bios_db.json', title='BIOS Database')
-    ARCADE_ROMS = Database(db_id='arcade_roms_db', db_url='https://raw.githubusercontent.com/theypsilon/ArcadeROMsDB_MiSTer/db/arcade_roms_db.json.zip', title='Arcade ROMs Database')
+@cache
+def dbs_to_model_variables_pairs() -> List[Tuple[str, List[Database]]]:
+    mapping = databases_by_ids()
+    return [(variable, mapping[db_id]) for variable, db_id in db_ids_to_model_variable_pairs() ]
 
 
-def candidate_databases(config: Config) -> List[Tuple[str, Database]]:
-    configurable_dbs = {
-        'main_updater': db_distribution_mister_by_encc_forks(config.encc_forks),
-        'jotego_updater': db_jtcores_by_download_beta_cores(config.download_beta_cores),
-        'names_txt_updater': db_names_txt_by_locale(config.names_region, config.names_char_code, config.names_sort_code)
-    }
+@cache
+def ids_sequence() -> List[str]:
     result = []
-    for config_field, dbs in dbs_to_config_fields_pairs():
-        if config_field in configurable_dbs:
-            result.append((config_field, configurable_dbs[config_field]))
+    accounting = set()
+    for field, db in AllDBs.__dict__.items():
+        if field.startswith('_') or db.db_id in accounting:
             continue
 
-        if len(dbs) != 1:
-            raise ValueError(f"Needs to be length 1, but is '{len(dbs)}', or must be contained in configurable_dbs.")
+        result.append(db.db_id)
+        accounting.add(db.db_id)
 
-        result.append((config_field, dbs[0]))
     return result
 
 
 @cache
-def dbs_to_config_fields_pairs() -> List[Tuple[str, List[Database]]]:
-    mapping = databases_by_ids()
-    return [(config_field, mapping[db_id]) for config_field, db_id in db_ids_to_config_field_pairs() ]
-
-# Database variables
-class Variables:
-    main_updater = DB_ID_DISTRIBUTION_MISTER
-    jotego_updater = DB_ID_JTCORES
-    unofficial_updater = AllDBs.THEYPSILON_UNOFFICIAL_DISTRIBUTION.db_id
-    llapi_updater = AllDBs.LLAPI_FOLDER.db_id
-    arcade_offset_downloader = AllDBs.ARCADE_OFFSET_FOLDER.db_id
-    coin_op_collection_downloader = AllDBs.COIN_OP_COLLECTION.db_id
-    arcade_roms_db_downloader = AllDBs.ARCADE_ROMS.db_id
-    tty2oled_files_downloader = AllDBs.TTY2OLED_FILES.db_id
-    i2c2oled_files_downloader = AllDBs.I2C2OLED_FILES.db_id
-    mistersam_files_downloader = AllDBs.MISTERSAM_FILES.db_id
-    bios_getter = AllDBs.BIOS.db_id
-    names_txt_updater = DB_ID_NAMES_TXT
+def db_ids_to_model_variable_pairs() -> List[Tuple[str, str]]:
+    return [(_old_ini_variables_to_db_ids[db_id] if db_id in _old_ini_variables_to_db_ids else db_id, db_id) for db_id in ids_sequence()]
 
 
 @cache
-def db_ids_to_config_field_pairs() -> List[Tuple[str, str]]:
-    return [(variable, db_id) for variable, db_id in Variables.__dict__.items() if not variable.startswith('_')]
+def model_variables_by_db_id() -> Dict[str, str]:
+    return {db_id: variable for variable, db_id in db_ids_to_model_variable_pairs()}
 
 
 @cache
-def config_fields_by_db_id() -> Dict[str, str]:
-    return {db_id: variable for variable, db_id in Variables.__dict__.items() if not variable.startswith('_')}
-
-
-@cache
-def db_ids_by_config_fields() -> Dict[str, str]:
-    return {variable: db_id for variable, db_id in Variables.__dict__.items() if not variable.startswith('_')}
-
-
-def active_databases(config: Config) -> list[Database]:
-    return [db for var, db in candidate_databases(config) if dataclasses.asdict(config)[var.lower()]]
+def db_ids_by_model_variables() -> Dict[str, str]:
+    return {variable: db_id for variable, db_id in db_ids_to_model_variable_pairs()}
 
 
 @cache
@@ -205,4 +182,20 @@ _names_dict = {
             'Manufacturer': AllDBs.NAMES_CHAR54_MANUFACTURER_EU_TXT
         }
     }
+}
+
+# Old INI variables mapped to DB IDs
+_old_ini_variables_to_db_ids = {
+    DB_ID_DISTRIBUTION_MISTER: "main_updater",
+    DB_ID_JTCORES: "jotego_updater",
+    AllDBs.THEYPSILON_UNOFFICIAL_DISTRIBUTION.db_id: "unofficial_updater",
+    AllDBs.LLAPI_FOLDER.db_id: "llapi_updater",
+    AllDBs.COIN_OP_COLLECTION.db_id: "coin_op_collection_downloader",
+    AllDBs.ARCADE_OFFSET_FOLDER.db_id: "arcade_offset_downloader",
+    AllDBs.TTY2OLED_FILES.db_id: "tty2oled_files_downloader",
+    AllDBs.I2C2OLED_FILES.db_id: "i2c2oled_files_downloader",
+    AllDBs.MISTERSAM_FILES.db_id: "mistersam_files_downloader",
+    AllDBs.BIOS.db_id: "bios_getter",
+    AllDBs.ARCADE_ROMS.db_id: "arcade_roms_db_downloader",
+    DB_ID_NAMES_TXT: "names_txt_updater",
 }

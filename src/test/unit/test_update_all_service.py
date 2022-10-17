@@ -16,14 +16,16 @@
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
 from pathlib import Path
+from typing import Set, List
 
 from update_all.config import Config
 from update_all.constants import DOWNLOADER_INI_STANDARD_PATH, MEDIA_FAT
+from update_all.databases import AllDBs, DB_ID_DISTRIBUTION_MISTER, DB_ID_NAMES_TXT
 from update_all.update_all_service import UpdateAllService
 from test.fake_filesystem import FileSystemFactory
 from test.file_system_tester_state import FileSystemState
 from test.update_all_service_tester import UpdateAllServiceFactoryTester, UpdateAllServiceTester, ConfigReaderTester, \
-    default_env
+    default_env, default_databases
 import unittest
 
 
@@ -50,7 +52,7 @@ class TestUpdateAllService(unittest.TestCase):
         self.assertEqual(Path('test/fixtures/default_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
     def test_write_downloader_ini___over_dirty_downloader_ini_after_changing_some_options___writes_changed_downloader(self):
-        config = Config(main_updater=False, llapi_updater=True, names_region='EU', names_char_code='CHAR28', names_sort_code='Manufacturer', download_beta_cores=True)
+        config = Config(databases=default_databases(add=[AllDBs.LLAPI_FOLDER.db_id], sub=[DB_ID_DISTRIBUTION_MISTER]), names_region='EU', names_char_code='CHAR28', names_sort_code='Manufacturer', download_beta_cores=True)
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/dirty_downloader.ini').read_text()}
         }, config=config)
@@ -59,7 +61,7 @@ class TestUpdateAllService(unittest.TestCase):
         self.assertEqual(Path('test/fixtures/changed_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
     def test_write_downloader_ini___over_bug_duplications_downloader_ini_after_changing_some_options___writes_changed_downloader(self):
-        config = Config(download_beta_cores=True, names_region='EU', unofficial_updater=True, llapi_updater=True, arcade_roms_db_downloader=True, arcade_offset_downloader=True, tty2oled_files_downloader=True, i2c2oled_files_downloader=True, mistersam_files_downloader=True)
+        config = Config(download_beta_cores=True, names_region='EU', databases=default_databases(add=[AllDBs.THEYPSILON_UNOFFICIAL_DISTRIBUTION.db_id, AllDBs.LLAPI_FOLDER.db_id, AllDBs.ARCADE_ROMS.db_id, AllDBs.ARCADE_OFFSET_FOLDER.db_id, AllDBs.TTY2OLED_FILES.db_id, AllDBs.I2C2OLED_FILES.db_id, AllDBs.MISTERSAM_FILES.db_id]))
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/bug_duplications_downloader.ini').read_text()}
         }, config=config)
@@ -68,7 +70,7 @@ class TestUpdateAllService(unittest.TestCase):
         self.assertEqual(Path('test/fixtures/bug_duplications_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
     def test_write_downloader_ini___over_bug_names_txt_updater_disabled_downloader_ini_after_changing_some_options___writes_changed_downloader(self):
-        config = Config(download_beta_cores=True, names_txt_updater=False, bios_getter=True, unofficial_updater=True, llapi_updater=True, arcade_roms_db_downloader=True, arcade_offset_downloader=True, tty2oled_files_downloader=True, i2c2oled_files_downloader=True, mistersam_files_downloader=True)
+        config = Config(download_beta_cores=True, databases=default_databases(sub=[DB_ID_NAMES_TXT], add=[AllDBs.BIOS.db_id, AllDBs.THEYPSILON_UNOFFICIAL_DISTRIBUTION.db_id, AllDBs.LLAPI_FOLDER.db_id, AllDBs.ARCADE_ROMS.db_id, AllDBs.ARCADE_OFFSET_FOLDER.db_id, AllDBs.TTY2OLED_FILES.db_id, AllDBs.I2C2OLED_FILES.db_id, AllDBs.MISTERSAM_FILES.db_id]))
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/bug_names_txt_updater_disabled_downloader.ini').read_text()}
         }, config=config)

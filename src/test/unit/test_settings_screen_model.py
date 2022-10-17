@@ -19,9 +19,10 @@ import unittest
 
 from test.ui_model_test_utils import special_navigate_targets, all_nodes_of_type
 from update_all.config_reader import Config
+from update_all.databases import model_variables_by_db_id, db_ids_by_model_variables
 from update_all.settings_screen_model import settings_screen_model
-from update_all.ui_model_utilities import list_variables_with_group, gather_variable_descriptions, \
-    dynamic_convert_string
+from update_all.ui_model_utilities import gather_variable_declarations, \
+    dynamic_convert_string, gather_target_variables
 
 
 class TestSettingsScreenModel(unittest.TestCase):
@@ -40,29 +41,41 @@ class TestSettingsScreenModel(unittest.TestCase):
         self.assertEqual([], invalid_target_nodes)
 
     def test_main_variables___have_length_greater_than_5(self):
-        self.assertGreater(len(list_variables_with_group(self.model, "ua_ini")), 5)
+        self.assertGreater(len(gather_variable_declarations(self.model, "ua_ini")), 5)
 
     def test_ao_variables___have_length_greater_than_5(self):
-        self.assertGreater(len(list_variables_with_group(self.model, "ao_ini")), 5)
+        self.assertGreater(len(gather_variable_declarations(self.model, "ao_ini")), 5)
 
     def test_ao_variables___all_start_with_arcade_organizer_prefix(self):
         prefix = "arcade_organizer_"
-        for variable in list_variables_with_group(self.model, "ao_ini"):
+        for variable in gather_variable_declarations(self.model, "ao_ini"):
             self.assertEqual(prefix, variable[0:len(prefix)])
-
-    def test_ao_variables___all_get_renamed_without_arcade_organizer_prefix(self):
-        prefix = "arcade_organizer_"
-        for renamed in list_variables_with_group(self.model, "ao_ini").values():
-            self.assertNotEqual(prefix, renamed[0:len(prefix)])
 
     def test_config_default_values___match_main_variables_default_values(self):
         config = Config()
-        descriptions = gather_variable_descriptions(self.model)
-        main_variables = list_variables_with_group(self.model, "ua_ini")
 
-        default_config_values = {variable: getattr(config, variable) for variable in main_variables}
-        default_model_main_values = {variable: dynamic_convert_string(descriptions[variable]['default']) for variable in main_variables}
+        main_variables = gather_variable_declarations(self.model, "ua_ini")
+
+        default_config_values = {variable: getattr(config, variable) for variable in main_variables if hasattr(config, variable)}
+        for db_id, variable in model_variables_by_db_id().items():
+            default_config_values[variable] = db_id in config.databases
+
+        default_model_main_values = {variable: dynamic_convert_string(description['default']) for variable, description in main_variables.items()}
 
         self.assertNotEqual({}, default_config_values)
         self.assertNotEqual({}, default_model_main_values)
         self.assertEqual(default_config_values, default_model_main_values)
+
+    def test_all_database_variables_are_declared_in_the_model(self):
+        db_variables = set(db_ids_by_model_variables())
+        model_variables = set(gather_variable_declarations(self.model, 'db'))
+
+        self.assertGreaterEqual(len(db_variables), 5)
+        self.assertSetEqual(db_variables, model_variables)
+
+    def test_target_variables_are_declared_in_the_model(self):
+        target_variables = gather_target_variables(self.model)
+        declared_variables = set(gather_variable_declarations(self.model))
+
+        self.assertGreaterEqual(len(target_variables), 5)
+        self.assertSetEqual(target_variables, declared_variables)

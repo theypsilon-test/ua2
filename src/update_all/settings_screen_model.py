@@ -31,17 +31,24 @@ def settings_screen_model(): return {
         }
     },
     "variables": {
+        # Global variables
         "update_all_version": {"default": "2.0"},
-        "main_updater": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
+        "main_updater": {"group": ["ua_ini", "db"], "default": "true", "values": ["false", "true"]},
         "encc_forks": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
-        "jotego_updater": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
+        "jotego_updater": {"group": ["ua_ini", "db"], "default": "true", "values": ["false", "true"]},
         "download_beta_cores": {"group": "jt_ini", "default": "false", "values": ["false", "true"]},
-        "unofficial_updater": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
-        "llapi_updater": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
-        "bios_getter": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
-        "arcade_roms_db_downloader": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
-        "names_txt_updater": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
+        "unofficial_updater": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+        "llapi_updater": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+        "bios_getter": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+        "arcade_roms_db_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+        "names_txt_updater": {"group": ["ua_ini", "db"], "default": "true", "values": ["false", "true"]},
         "arcade_organizer": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
+
+        # Internal variables
+        "file_exists": {"default": "false", "values": ["false", "true"]},
+        "needs_save": {"default": "false", "values": ["false", "true"]},
+        "has_arcade_organizer_folders": {"default": "false", "values": ["false", "true"]},
+        "has_right_available_code": {"default": "false", "values": ["false", "true"]},
     },
     "base_types": {
         "dialog_sub_menu": {
@@ -243,6 +250,9 @@ def settings_screen_model(): return {
                 "names_region": {"group": "names_ini", "default": "US", "values": ["US", "EU", "JP"]},
                 "names_char_code": {"group": "names_ini", "default": "CHAR18", "values": ["CHAR18", "CHAR28"]},
                 "names_sort_code": {"group": "names_ini", "default": "Common", "values": ["Common", "Manufacturer"]},
+
+                "names_txt_file_warning": {"default": "false", "values": ["false", "true"]},
+                "names_char_code_warning": {"default": "false", "values": ["false", "true"]},
             },
             "text": [
                 "Installs names.txt file containing curated names for your cores.",
@@ -259,10 +269,10 @@ def settings_screen_model(): return {
                             "variable": "names_txt_updater",
                             "true": [{"type": "rotate_variable", "target": "names_txt_updater"}],
                             "false": [
-                                {"type": "calculate_names_txt_warning"},
+                                {"type": "calculate_names_txt_file_warning"},
                                 {
                                     "type": "condition",
-                                    "variable": "names_txt_warning",
+                                    "variable": "names_txt_file_warning",
                                     "true": [{
                                         "ui": "message",
                                         "text": ["WARNING! Your current names.txt file will be overwritten after updating"],
@@ -335,11 +345,11 @@ def settings_screen_model(): return {
             "ui": "dialog_sub_menu",
             "header": "Misc | Other Settings",
             "variables": {
-                "arcade_offset_downloader": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
-                "coin_op_collection_downloader": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
-                "tty2oled_files_downloader": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
-                "i2c2oled_files_downloader": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
-                "mistersam_files_downloader": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
+                "arcade_offset_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+                "coin_op_collection_downloader": {"group": ["ua_ini", "db"], "default": "true", "values": ["false", "true"]},
+                "tty2oled_files_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+                "i2c2oled_files_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+                "mistersam_files_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
 
                 "autoreboot": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
                 "wait_time_for_reading": {"group": "ua_ini", "default": "2", "values": ["2", "0", "30"]},
@@ -519,7 +529,7 @@ def settings_screen_model(): return {
                 "arcade_organizer_mad_db_description": {"rename": "mad_db_description", "group": "ao_ini", "default": "https://raw.githubusercontent.com/Toryalai1/MiSTer_ArcadeDatabase/db/mad_db.json.zip", "values": ["https://raw.githubusercontent.com/Toryalai1/MiSTer_ArcadeDatabase/db/mad_db.json.zip", "https://raw.githubusercontent.com/theypsilon/MAD_Database_MiSTer/db/mad_db.json.zip"]},
                 "arcade_organizer_topdir": {"rename": "topdir", "group": "ao_ini", "default": "", "values": ["", "platform", "core", "year"]},
                 "arcade_organizer_skipalts": {"rename": "skipalts", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
-                "arcade_organizer_prepend_year": {"rename": "prepend_year", "group": "ao_options]", "default": "false", "values": ["false", "true"]},
+                "arcade_organizer_prepend_year": {"rename": "prepend_year", "group": "ao_ini", "default": "false", "values": ["false", "true"]},
                 "arcade_organizer_verbose": {"rename": "verbose", "group": "ao_ini", "default": "false", "values": ["false", "true"]},
             },
             "entries": [

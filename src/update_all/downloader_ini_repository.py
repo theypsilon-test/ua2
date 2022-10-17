@@ -19,19 +19,14 @@ import configparser
 import io
 import json
 import re
-from pathlib import Path
 from typing import Optional
 
 from update_all.config import Config
-from update_all.config_reader import load_ini_config_with_no_section
-from update_all.constants import DOWNLOADER_INI_STANDARD_PATH, FILE_update_all_ini, FILE_update_jtcores_ini, \
-    FILE_update_names_txt_ini, ARCADE_ORGANIZER_INI, FILE_update_names_txt_sh, FILE_update_jtcores_sh
-from update_all.databases import candidate_databases, active_databases
+from update_all.config_reader import candidate_databases, active_databases
+from update_all.constants import DOWNLOADER_INI_STANDARD_PATH, ARCADE_ORGANIZER_INI
 from update_all.file_system import FileSystem
 from update_all.logger import Logger
 from update_all.os_utils import OsUtils
-from update_all.settings_screen_model import settings_screen_model
-from update_all.ui_model_utilities import gather_variable_descriptions, list_variables_with_group, dynamic_convert_string
 
 
 default_arcade_organizer_enabled = Config().arcade_organizer
@@ -44,82 +39,18 @@ class DownloaderIniRepository:
         self._file_system = file_system
         self._os_utils = os_utils
 
-    def transition_from_update_all_1(self, config: Config):
-        update_all_ini_exists = self._file_system.is_file(FILE_update_all_ini)
-        changes = []
+    def write_arcade_organizer_active_at_arcade_organizer_ini(self, config):
+        contents = ''
+        if self._file_system.is_file(ARCADE_ORGANIZER_INI):
+            contents = self._file_system.read_file_contents(ARCADE_ORGANIZER_INI).strip()
+            if 'arcade_organizer' in contents.lower():
+                return
+            contents += '\n'
 
-        if self._file_system.is_file(DOWNLOADER_INI_STANDARD_PATH):
-            if update_all_ini_exists:
-                self._fill_arcade_organizer_enabled_config_field_from_update_all_ini(config)
-        else:
-            variable_descriptions = gather_variable_descriptions(settings_screen_model())
-            if update_all_ini_exists:
-                self._fill_config_with_update_all_ini(config, variable_descriptions)
+        contents += f'ARCADE_ORGANIZER={str(config.arcade_organizer).lower()}\n'
+        contents += '\n'
 
-            for ini_file, ini_group in [(FILE_update_jtcores_ini, "jt_ini"), (FILE_update_names_txt_ini, "names_ini")]:
-                if self._file_system.is_file(ini_file):
-                    self._fill_config_with_ini_file(config, ini_file, ini_group, variable_descriptions)
-
-            self.write_downloader_ini(config)
-            changes.append('A new file "downloader.ini" has been created.')
-
-        if config.arcade_organizer != default_arcade_organizer_enabled:
-            self.write_arcade_organizer_active_at_arcade_organizer_ini(config)
-            changes.append(f'File "{ARCADE_ORGANIZER_INI}" now includes variable "ARCADE_ORGANIZER" previously found in "{FILE_update_all_ini}". It indicates whether the Arcade Organizer is enabled in Update All.')
-
-        for file in [FILE_update_all_ini, FILE_update_jtcores_ini, FILE_update_names_txt_ini, FILE_update_jtcores_sh, FILE_update_names_txt_sh]:
-            if self._file_system.is_file(file):
-                self._file_system.unlink(file, verbose=False)
-                changes.append(f'File "{file}" removed.')
-
-        if len(changes) >= 1:
-            coming_from_update_all_1 = len(changes) >= 2 or 'downloader.ini' not in changes[0]
-            if coming_from_update_all_1:
-                self._logger.print('Transitioning from Update All 1:')
-            else:
-                self._logger.print('Setting default options:')
-
-            for change in changes:
-                self._logger.print(f'  - {change}')
-            self._logger.print()
-            if coming_from_update_all_1:
-                self._logger.print('Waiting 10 seconds...')
-                self._os_utils.sleep(10.0)
-
-    def _fill_arcade_organizer_enabled_config_field_from_update_all_ini(self, config):
-        ini_content = load_ini_config_with_no_section(self._logger, self._file_system, FILE_update_all_ini)
-        config.arcade_organizer = ini_content.get_bool('arcade_organizer', default_arcade_organizer_enabled)
-
-    def _fill_config_with_update_all_ini(self, config, variable_descriptions):
-        update_all_ini = self._fill_config_with_ini_file(config, FILE_update_all_ini, "ua_ini", variable_descriptions)
-        config.arcade_roms_db_downloader = config.arcade_roms_db_downloader or \
-                                           update_all_ini.get_bool('mame_getter', False) or \
-                                           update_all_ini.get_bool('hbmame_getter', False)
-
-    def _fill_config_with_ini_file(self, config, ini_file, ini_group, variable_descriptions):
-        ini_content = load_ini_config_with_no_section(self._logger, self._file_system, ini_file)
-
-        for variable in list_variables_with_group(settings_screen_model(), ini_group):
-            string_value = ini_content.get_string(variable, None)
-            if string_value is None:
-                setattr(config, variable, dynamic_convert_string(variable_descriptions[variable]['default']))
-            else:
-                string_value = self._ensure_string_value_is_possible(string_value, variable_descriptions[variable]['values'])
-
-                setattr(config, variable, dynamic_convert_string(string_value))
-
-        return ini_content
-
-    @staticmethod
-    def _ensure_string_value_is_possible(string_value, possible_values):
-        if string_value in possible_values:
-            return string_value
-
-        for pb in possible_values:
-            if pb.lower() == string_value.lower():
-                return string_value
-
-        raise ValueError(f'Value {string_value} is not among the possible values: {", ".join(possible_values)}')
+        self._file_system.write_file_contents(ARCADE_ORGANIZER_INI, contents)
 
     def needs_save(self, config: Config) -> bool:
         if not self._file_system.is_file(DOWNLOADER_INI_STANDARD_PATH):
@@ -134,19 +65,6 @@ class DownloaderIniRepository:
 
         current_ini_contents = self._file_system.read_file_contents(DOWNLOADER_INI_STANDARD_PATH).strip().lower()
         return new_ini_contents != current_ini_contents
-
-    def write_arcade_organizer_active_at_arcade_organizer_ini(self, config):
-        contents = ''
-        if self._file_system.is_file(ARCADE_ORGANIZER_INI):
-            contents = self._file_system.read_file_contents(ARCADE_ORGANIZER_INI).strip()
-            if 'arcade_organizer' in contents.lower():
-                return
-            contents += '\n'
-
-        contents += f'ARCADE_ORGANIZER={str(config.arcade_organizer).lower()}\n'
-        contents += '\n'
-
-        self._file_system.write_file_contents(ARCADE_ORGANIZER_INI, contents)
 
     def write_downloader_ini(self, config: Config, target_path: str = None) -> None:
         new_ini_contents = self._build_new_downloader_ini_contents(config)

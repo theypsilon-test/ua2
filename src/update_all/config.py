@@ -15,10 +15,12 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import unique, IntEnum
+from typing import Set
 
 from update_all.constants import DEFAULT_CURL_SSL_OPTIONS, DEFAULT_COMMIT, MEDIA_FAT
+from update_all.databases import DB_ID_DISTRIBUTION_MISTER, DB_ID_JTCORES, DB_ID_NAMES_TXT, AllDBs
 
 
 @dataclass
@@ -32,27 +34,13 @@ class Config:
 
     # General options
     base_path: str = MEDIA_FAT
-    autoreboot: bool = True
     update_linux: bool = True
     not_mister: bool = False
     verbose: bool = False
     temporary_downloader_ini: bool = False
 
     # Global Updating Toggles
-    main_updater: bool = True
-    jotego_updater: bool = True
-    unofficial_updater: bool = False
-    llapi_updater: bool = False
-    arcade_offset_downloader: bool = False
-    coin_op_collection_downloader: bool = True
-    arcade_roms_db_downloader: bool = False
-    tty2oled_files_downloader: bool = False
-    i2c2oled_files_downloader: bool = False
-    mistersam_files_downloader: bool = False
-    bios_getter: bool = False
-    mame_getter: bool = False
-    hbmame_getter: bool = False
-    names_txt_updater: bool = True
+    databases: Set[str] = field(default_factory=lambda: {DB_ID_DISTRIBUTION_MISTER, DB_ID_JTCORES, DB_ID_NAMES_TXT, AllDBs.COIN_OP_COLLECTION.db_id})
     arcade_organizer: bool = True
 
     # Specific Updating Toggles
@@ -65,6 +53,7 @@ class Config:
     # Misc Options
     wait_time_for_reading: int = 2
     countdown_time: int = 15
+    autoreboot: bool = True
 
 
 @unique
@@ -73,19 +62,3 @@ class AllowDelete(IntEnum):
     ALL = 1
     OLD_RBF = 2
 
-
-class ConfigProvider:
-    _config: Config
-
-    def __init__(self):
-        self._config = None
-
-    def initialize(self, config: Config) -> None:
-        if self._config is not None:
-            raise Exception("Config must be initialized only once.")
-        self._config = config
-
-    def get(self) -> Config:
-        if self._config is None:
-            raise Exception("Config must be initialized before calling this method.")
-        return self._config

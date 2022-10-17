@@ -22,7 +22,8 @@ import time
 from abc import ABC
 from urllib.request import urlopen
 
-from update_all.config import ConfigProvider
+from update_all.config import Config
+from update_all.other import GenericProvider
 from update_all.logger import Logger
 
 
@@ -47,7 +48,7 @@ class OsUtils(ABC):
 
 
 class LinuxOsUtils(OsUtils):
-    def __init__(self, config_provider: ConfigProvider, logger: Logger):
+    def __init__(self, config_provider: GenericProvider[Config], logger: Logger):
         self._config_provider = config_provider
         self._logger = logger
 
@@ -78,8 +79,6 @@ class LinuxOsUtils(OsUtils):
                 outline = line.decode()
                 if len(outline):
                     self._logger.print(f'{outline}', end='')
-
-        time.sleep(self._config_provider.get().wait_time_for_reading)
 
         return return_code
 

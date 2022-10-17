@@ -66,6 +66,9 @@ def make_new_local_store(store_migrator):
     return {
         'migration_version': store_migrator.latest_migration_version(),
         'theme': 'Blue Installer',
+        'wait_time_for_reading': default_config.wait_time_for_reading,
+        'countdown_time': default_config.countdown_time,
+        'autoreboot': default_config.autoreboot,
         'download_beta_cores': default_config.download_beta_cores,
         'names_region': default_config.names_region,
         'names_char_code': default_config.names_char_code,

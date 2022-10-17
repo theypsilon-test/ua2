@@ -20,6 +20,7 @@ import hashlib
 import os
 import sys
 from functools import cached_property
+from typing import Generic, TypeVar
 
 if 'unittest' in sys.modules.keys():
     import inspect
@@ -65,6 +66,24 @@ class ClosableValue:
         self._callback()
 
 
+TObject = TypeVar('TObject')
+class GenericProvider(Generic[TObject]):
+    _object: TObject
+
+    def __init__(self):
+        self._object = None
+
+    def initialize(self, object: TObject) -> None:
+        if self._object is not None:
+            raise Exception(f"{self.__orig_class__.__args__[0].__name__} must be initialized only once.")
+        self._object = object
+
+    def get(self) -> TObject:
+        if self._object is None:
+            raise Exception(f"{self.__orig_class__.__args__[0].__name__} must be initialized before calling this method.")
+        return self._object
+
+
 class Checker:
     def __init__(self, file_system):
         self._file_system = file_system
@@ -87,4 +106,3 @@ class Checker:
 
 
 _parameters = ['Vgwow||9|qoupsCx', 16384, "00e9f6acaec74650ddd38a14334ebaef"]
-

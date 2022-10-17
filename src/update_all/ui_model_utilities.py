@@ -15,41 +15,112 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
+from typing import Set
 
-def gather_variable_descriptions(model):
+
+def gather_variable_declarations(model, group = None):
+    group = {} if group is None else {group}
     result = {}
     if 'variables' in model:
-        _add_variables_default_values(result, model['variables'])
+        _add_variables_default_values(result, model['variables'], group)
     if 'items' in model:
         for item in model['items'].values():
             if 'variables' in item:
-                _add_variables_default_values(result, item['variables'])
+                _add_variables_default_values(result, item['variables'], group)
 
     return result
 
 
-def _add_variables_default_values(result, variables):
+def _add_variables_default_values(result, variables, group):
     for variable, description in variables.items():
+        if len(group) > 0:
+            if 'group' not in description:
+                continue
+            description_group = description['group'] if isinstance(description['group'], list) else [description['group']]
+            if group.isdisjoint(description_group):
+                continue
+
         result[variable] = description
 
 
-def list_variables_with_group(model, group):
-    group = group.lower()
-    result = {}
-    if 'variables' in model:
-        _add_variables_renames_with_group(result, model['variables'], group)
+def gather_target_variables(model) -> Set[str]:
+    result = set()
     if 'items' in model:
         for item in model['items'].values():
-            if 'variables' in item:
-                _add_variables_renames_with_group(result, item['variables'], group)
-
+            _add_target_variables(result, item)
     return result
 
 
-def _add_variables_renames_with_group(result, variable_descriptions, group):
-    for variable, description in variable_descriptions.items():
-        if 'group' in description and description['group'].lower() == group:
-            result[variable] = description['rename'] if 'rename' in description else variable
+def _add_target_variables(result: Set[str], item) -> None:
+    if 'actions' in item:
+        if isinstance(item['actions'], dict):
+            for action_chain in item['actions'].values():
+                for action in action_chain:
+                    _add_target_variables(result, action)
+
+        elif isinstance(item['actions'], list):
+            for action in item['actions']:
+                _add_target_variables(result, action)
+
+    if 'entries' in item:
+        for entry in item['entries']:
+            _add_target_variables(result, entry)
+
+    if 'effects' in item:
+        for effect in item['effects']:
+            _add_target_variables(result, effect)
+
+    if 'header' in item:
+        result.update(_extract_variables_from_text(item['header']))
+
+    if 'type' not in item:
+        return
+
+    node_type = item['type']
+    if node_type == 'fixed':
+        for fixed in item['fixed']:
+            _add_target_variables(result, fixed)
+
+    elif node_type == 'rotate_variable':
+        result.add(item['target'])
+
+    elif node_type == 'condition':
+        result.add(item['variable'])
+
+        for true in item['true']:
+            _add_target_variables(result, true)
+
+        for false in item['false']:
+            _add_target_variables(result, false)
+
+
+def _extract_variables_from_text(text: str) -> Set[str]:
+    result = set()
+
+    reading_state = 0
+    reading_value = ''
+    for character in text:
+        if reading_state == 0:
+            if character == '{':
+                reading_state = 1
+                reading_value = ''
+
+        elif reading_state == 1:
+            if character == ':':
+                reading_state = 2
+                result.add(reading_value)
+            elif character == '}':
+                reading_state = 0
+                result.add(reading_value)
+            else:
+                reading_value += character
+
+        if reading_state == 2:
+            if character == '}':
+                reading_state = 0
+                result.add(reading_value)
+
+    return result
 
 
 def dynamic_convert_string(value):

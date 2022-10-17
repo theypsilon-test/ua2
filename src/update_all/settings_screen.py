@@ -20,27 +20,29 @@ import hashlib
 from functools import cached_property
 from typing import Dict, Callable, List, Tuple
 
-from update_all.config import ConfigProvider, Config
+from update_all.config import Config
 from update_all.config_reader import load_ini_config_with_no_section
 from update_all.constants import ARCADE_ORGANIZER_INI, FILE_MiSTer, \
     TEST_UNSTABLE_SPINNER_FIRMWARE_MD5, DOWNLOADER_URL, FILE_MiSTer_ini, ARCADE_ORGANIZER_URL, \
-    ARCADE_ORGANIZER_INSTALLED_NAMES_TXT, STANDARD_UI_THEME
+    ARCADE_ORGANIZER_INSTALLED_NAMES_TXT, STANDARD_UI_THEME, FILE_downloader_temp_ini
+from update_all.databases import db_ids_by_model_variables, DB_ID_JTCORES, DB_ID_NAMES_TXT
 from update_all.downloader_ini_repository import DownloaderIniRepository
 from update_all.file_system import FileSystem
 from update_all.local_repository import LocalRepository
-from update_all.other import Checker
+from update_all.local_store import LocalStore
+from update_all.other import Checker, GenericProvider
 from update_all.logger import Logger
 from update_all.os_utils import OsUtils
 from update_all.settings_screen_model import settings_screen_model
 from update_all.settings_screen_printer import SettingsScreenPrinter
 from update_all.ui_engine import run_ui_engine, Ui, UiComponent, UiApplication, UiSectionFactory
 from update_all.ui_engine_dialog_application import DialogSectionFactory
-from update_all.ui_model_utilities import gather_variable_descriptions, list_variables_with_group, dynamic_convert_string
+from update_all.ui_model_utilities import gather_variable_declarations, dynamic_convert_string
 
 
 class SettingsScreen(UiApplication, UiComponent):
-    def __init__(self, logger: Logger, config_provider: ConfigProvider, file_system: FileSystem,
-                 downloader_ini_repository: DownloaderIniRepository, os_utils: OsUtils, settings_screen_printer: SettingsScreenPrinter, checker: Checker, local_repository: LocalRepository):
+    def __init__(self, logger: Logger, config_provider: GenericProvider[Config], file_system: FileSystem,
+                 downloader_ini_repository: DownloaderIniRepository, os_utils: OsUtils, settings_screen_printer: SettingsScreenPrinter, checker: Checker, local_repository: LocalRepository, store_provider: GenericProvider[LocalStore]):
         self._logger = logger
         self._config_provider = config_provider
         self._file_system = file_system
@@ -49,9 +51,9 @@ class SettingsScreen(UiApplication, UiComponent):
         self._settings_screen_printer = settings_screen_printer
         self._checker = checker
         self._local_repository = local_repository
+        self._store_provider = store_provider
         self._original_firmware = None
         self._theme_manager = None
-        self._local_store = None
 
     def load_main_menu(self) -> None:
         run_ui_engine('main_menu', settings_screen_model(), self)
@@ -59,30 +61,37 @@ class SettingsScreen(UiApplication, UiComponent):
     def initialize_ui(self, ui: Ui, screen: curses.window) -> Tuple[List[UiComponent], UiSectionFactory]:
         ui.set_value('needs_save', 'false')
 
+        db_ids = db_ids_by_model_variables()
         config = self._config_provider.get()
         for variable in self._all_config_variables:
-            value = getattr(config, variable)
-            if not isinstance(value, str):
-                value = str(value).lower()
-            ui.set_value(variable, value)
+            if hasattr(config, variable):
+                value = getattr(config, variable)
+                if not isinstance(value, str):
+                    value = str(value).lower()
+                ui.set_value(variable, value)
+            else:
+                ui.set_value(variable, 'true' if db_ids[variable] in config.databases else 'false')
 
         arcade_organizer_ini = load_ini_config_with_no_section(self._logger, self._file_system, ARCADE_ORGANIZER_INI)
 
-        ao_variables = list_variables_with_group(settings_screen_model(), "ao_ini")
-        variable_descriptions = gather_variable_descriptions(settings_screen_model())
+        ao_variables = gather_variable_declarations(settings_screen_model(), "ao_ini")
 
-        for variable, rename in ao_variables.items():
-            value = arcade_organizer_ini.get_string(rename, variable_descriptions[variable]['default'])
+        for variable, description in ao_variables.items():
+            rename = variable.replace('arcade_organizer_', '')
+            value = arcade_organizer_ini.get_string(rename, description['default'])
             ui.set_value(variable, value)
 
-        local_store = self._local_repository.load_store()
+        local_store = self._store_provider.get()
         ui_theme =  local_store.get_theme() if self._checker.available_code > 1 else STANDARD_UI_THEME
         ui.set_value('ui_theme', ui_theme)
+        ui.set_value('wait_time_for_reading', str(local_store.get_wait_time_for_reading()))
+        ui.set_value('countdown_time', str(local_store.get_countdown_time()))
+        ui.set_value('autoreboot', str(local_store.get_autoreboot()).lower())
 
-        if not config.jotego_updater:
+        if DB_ID_JTCORES not in config.databases:
             ui.set_value('download_beta_cores', str(local_store.get_download_beta_cores()).lower())
 
-        if not config.names_txt_updater:
+        if DB_ID_NAMES_TXT not in config.databases:
             ui.set_value('names_region', local_store.get_names_region())
             ui.set_value('names_char_code', local_store.get_names_char_code())
             ui.set_value('names_sort_code', local_store.get_names_sort_code())
@@ -90,7 +99,6 @@ class SettingsScreen(UiApplication, UiComponent):
         drawer_factory, theme_manager = self._settings_screen_printer.initialize_screen(screen)
         theme_manager.set_theme(ui_theme)
 
-        self._local_store = local_store
         self._theme_manager = theme_manager
         return [self], DialogSectionFactory(drawer_factory)
 
@@ -107,7 +115,7 @@ class SettingsScreen(UiApplication, UiComponent):
         effects['calculate_arcade_organizer_folders'] = lambda effect: self.calculate_arcade_organizer_folders(ui)
         effects['clean_arcade_organizer_folders'] = lambda effect: self.clean_arcade_organizer_folders(ui)
         effects['calculate_names_char_code_warning'] = lambda effect: self.calculate_names_char_code_warning(ui)
-        effects['calculate_names_txt_warning'] = lambda effect: self.calculate_names_txt_warning(ui)
+        effects['calculate_names_txt_file_warning'] = lambda effect: self.calculate_names_txt_file_warning(ui)
         effects['apply_theme'] = lambda effect: self.apply_theme(ui)
 
     def calculate_file_exists(self, ui, effect) -> None:
@@ -184,10 +192,6 @@ class SettingsScreen(UiApplication, UiComponent):
     def calculate_needs_save(self, ui: Ui) -> None:
         arcade_organizer_ini = load_ini_config_with_no_section(self._logger, self._file_system, ARCADE_ORGANIZER_INI)
 
-        ao_variables = [(variable, rename) for variable, rename in list_variables_with_group(settings_screen_model(), "ao_ini").items()]
-        ao_variables.append(('arcade_organizer', 'arcade_organizer'))
-        variable_descriptions = gather_variable_descriptions(settings_screen_model())
-
         needs_save_file_set = set()
 
         temp_config = Config()
@@ -195,11 +199,23 @@ class SettingsScreen(UiApplication, UiComponent):
         if self._downloader_ini_repository.needs_save(temp_config):
             needs_save_file_set.add("downloader.ini")
 
-        for variable, rename in ao_variables:
-            old_value = arcade_organizer_ini.get_string(rename, variable_descriptions[variable]['default']).lower()
+        for variable, description in gather_variable_declarations(settings_screen_model()).items():
+            if not variable.startswith('arcade_organizer'):
+                continue
+            rename = variable.replace('arcade_organizer_', '')
+            old_value = arcade_organizer_ini.get_string(rename, description['default']).lower()
             new_value = ui.get_value(variable).lower()
             if old_value != new_value:
                 needs_save_file_set.add("update_arcade-organizer.ini")
+
+        local_store = self._store_provider.get()
+        local_store.set_theme(ui.get_value('ui_theme'))
+        local_store.set_wait_time_for_reading(temp_config.wait_time_for_reading)
+        local_store.set_countdown_time(temp_config.countdown_time)
+        local_store.set_autoreboot(temp_config.autoreboot)
+
+        if local_store.needs_save():
+            needs_save_file_set.add(f"Internals ({', '.join(local_store.changed_fields())})")
 
         if len(needs_save_file_set) > 0:
             needs_save_file_list = "  - " + "\n  - ".join(sorted(needs_save_file_set))
@@ -219,29 +235,40 @@ class SettingsScreen(UiApplication, UiComponent):
 
         self._downloader_ini_repository.write_downloader_ini(config)
 
-        if config.jotego_updater:
-            self._local_store.set_download_beta_cores(config.download_beta_cores)
+        local_store = self._store_provider.get()
+        if DB_ID_JTCORES in config.databases:
+            local_store.set_download_beta_cores(config.download_beta_cores)
 
-        if config.names_txt_updater:
-            self._local_store.set_names_region(config.names_region)
-            self._local_store.set_names_char_code(config.names_char_code)
-            self._local_store.set_names_sort_code(config.names_sort_code)
+        if DB_ID_NAMES_TXT in config.databases:
+            local_store.set_names_region(config.names_region)
+            local_store.set_names_char_code(config.names_char_code)
+            local_store.set_names_sort_code(config.names_sort_code)
 
-        self._local_repository.save_store(self._local_store)
+        if local_store.needs_save():
+            self._local_repository.save_store(local_store)
 
     def _copy_ui_options_to_current_config(self, ui: Ui) -> None:
         self._copy_temp_save_to_config(ui, self._config_provider.get())
 
     def _copy_temp_save_to_config(self, ui, config: Config) -> None:
+        db_ids = db_ids_by_model_variables()
+        config.databases.clear()
         for variable in self._all_config_variables:
             value = dynamic_convert_string(ui.get_value(variable))
-            if not isinstance(value, type(getattr(config, variable))):
-                raise TypeError(f'{variable} can not have value {value}! (wrong type)')
-            setattr(config, variable, value)
+            if variable in db_ids:
+                if not isinstance(value, bool):
+                    raise TypeError(f'{variable} can not have value {value}! (must be true or false)')
+                if value:
+                    config.databases.add(db_ids[variable])
+            else:
+                if not isinstance(value, type(getattr(config, variable))):
+                    raise TypeError(f'{variable} can not have value {value}! (wrong type)')
+                setattr(config, variable, value)
+
 
     @cached_property
     def _all_config_variables(self):
-        return [*list_variables_with_group(settings_screen_model(), "ua_ini"), *list_variables_with_group(settings_screen_model(), "jt_ini"), *list_variables_with_group(settings_screen_model(), "names_ini")]
+        return [*gather_variable_declarations(settings_screen_model(), "ua_ini"), *gather_variable_declarations(settings_screen_model(), "jt_ini"), *gather_variable_declarations(settings_screen_model(), "names_ini")]
 
     def calculate_names_char_code_warning(self, ui: Ui) -> None:
 
@@ -255,13 +282,13 @@ class SettingsScreen(UiApplication, UiComponent):
 
         ui.set_value('names_char_code_warning', 'true' if names_char_code == 'char28' and not has_date_code_1 else 'false')
 
-    def calculate_names_txt_warning(self, ui: Ui):
+    def calculate_names_txt_file_warning(self, ui: Ui):
         if not self._file_system.is_file('names.txt'):
-            ui.set_value('names_txt_warning', 'false')
+            ui.set_value('names_txt_file_warning', 'false')
             return
 
         installed_present = self._file_system.is_file(ARCADE_ORGANIZER_INSTALLED_NAMES_TXT)
-        ui.set_value('names_txt_warning', 'false' if installed_present else 'true')
+        ui.set_value('names_txt_file_warning', 'false' if installed_present else 'true')
 
     def _read_mister_ini(self):
         if self._file_system.is_file(FILE_MiSTer_ini):
@@ -291,11 +318,11 @@ class SettingsScreen(UiApplication, UiComponent):
         ui.set_value('arcade_organizer_folders_list', '')
 
     def apply_theme(self, ui: Ui):
-        ui_theme = ui.get_value('ui_theme')
-        self._theme_manager.set_theme(ui_theme)
-        self._local_store.set_theme(ui_theme)
-        self._local_repository.save_store(self._local_store)
+        self._theme_manager.set_theme(ui.get_value('ui_theme'))
 
     def prepare_exit_dont_save_and_run(self, ui):
         self._copy_ui_options_to_current_config(ui)
-        self._config_provider.get().temporary_downloader_ini = True
+        config = self._config_provider.get()
+        config.temporary_downloader_ini = True
+        self._downloader_ini_repository.write_downloader_ini(config, FILE_downloader_temp_ini)
+        self._logger.debug(f'Written temporary {FILE_downloader_temp_ini} file.')

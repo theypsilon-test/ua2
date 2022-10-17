@@ -16,7 +16,8 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from update_all.config import ConfigProvider
+from update_all.config import Config
+from update_all.other import GenericProvider
 from update_all.constants import FILE_update_all_storage, FILE_update_all_log, FILE_update_all_ini
 from update_all.local_store import LocalStore
 from update_all.store_migrator import make_new_local_store
@@ -37,7 +38,7 @@ class LocalRepositoryProvider:
 
 class LocalRepository:
 
-    def __init__(self, config_provider: ConfigProvider, logger, file_system, store_migrator):
+    def __init__(self, config_provider: GenericProvider[Config], logger, file_system, store_migrator):
         self._config_provider = config_provider
         self._logger = logger
         self._file_system = file_system
@@ -93,6 +94,8 @@ class LocalRepository:
 
         self._file_system.make_dirs_parent(self._storage_path)
         self._file_system.save_json_on_zip(local_store, self._storage_path)
+
+        local_store_wrapper.mark_as_cleaned()
 
     def save_log_from_tmp(self, path):
         self._file_system.make_dirs_parent(self.logfile_path)

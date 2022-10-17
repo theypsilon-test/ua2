@@ -17,13 +17,13 @@
 # https://github.com/theypsilon-test/ua2
 import unittest
 
-from update_all.ui_model_utilities import gather_variable_descriptions, list_variables_with_group, \
+from update_all.ui_model_utilities import gather_variable_declarations, \
     dynamic_convert_string
 
 
 class TestUiModelsUtilities(unittest.TestCase):
     def test_gather_default_values(self):
-        default_values = {k: dynamic_convert_string(v['default']) for k, v in gather_variable_descriptions(test_model()).items()}
+        default_values = {k: dynamic_convert_string(v['default']) for k, v in gather_variable_declarations(test_model()).items()}
         expected = {
             "update_all_version": 2,
             "names_region": "US",
@@ -32,13 +32,13 @@ class TestUiModelsUtilities(unittest.TestCase):
         self.assertEqual(expected, default_values)
 
     def test_list_variables_with_group_x(self):
-        expected = {"update_all_version": "version", "arcade_offset_downloader": "aod"}
-        self.assertEqual(expected, list_variables_with_group(test_model(), 'x'))
+        expected = {"update_all_version", "arcade_offset_downloader"}
+        self.assertEqual(expected, set(gather_variable_declarations(test_model(), 'x')))
 
 
 def test_model(): return {
     "variables": {
-        "update_all_version": {"default": "2", "rename": "version", "group": "x"},
+        "update_all_version": {"default": "2", "group": "x"},
     },
     "items": {
         "names_txt_menu": {
@@ -53,7 +53,7 @@ def test_model(): return {
             "ui": "dialog_sub_menu",
             "header": "Misc | Other Settings",
             "variables": {
-                "arcade_offset_downloader": {"default": "false", "rename": "aod", "group": "x", "values": ["false", "true"]},
+                "arcade_offset_downloader": {"default": "false", "group": "x", "values": ["false", "true"]},
             },
             "entries": []
         }

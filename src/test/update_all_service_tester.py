@@ -15,14 +15,14 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from typing import Tuple, Any
+from typing import Tuple, Any, List, Set
 from unittest.mock import MagicMock
 
 from test.countdown_stub import CountdownStub
 from test.fake_filesystem import FileSystemFactory
 from test.logger_tester import NoLogger
 from test.spy_os_utils import SpyOsUtils
-from update_all.config import ConfigProvider, Config
+from update_all.config import Config
 from update_all.config_reader import ConfigReader
 from update_all.constants import KENV_COMMIT, KENV_CURL_SSL, DEFAULT_CURL_SSL_OPTIONS, DEFAULT_COMMIT, \
     KENV_LOCATION_STR, DEFAULT_LOCATION_STR
@@ -30,11 +30,13 @@ from update_all.countdown import Countdown
 from update_all.downloader_ini_repository import DownloaderIniRepository
 from update_all.file_system import FileSystem
 from update_all.local_repository import LocalRepositoryProvider, LocalRepository
+from update_all.local_store import LocalStore
 from update_all.os_utils import OsUtils
-from update_all.other import Checker
+from update_all.other import Checker, GenericProvider
 from update_all.settings_screen import SettingsScreen
 from update_all.settings_screen_printer import SettingsScreenPrinter, SettingsScreenThemeManager
-from update_all.store_migrator import StoreMigrator
+from update_all.store_migrator import StoreMigrator, make_new_local_store
+from update_all.transition_service import TransitionService
 from update_all.ui_engine import Ui
 from update_all.ui_engine_dialog_application import UiDialogDrawerFactory
 from update_all.update_all_service import UpdateAllServiceFactory, UpdateAllService
@@ -46,6 +48,9 @@ def default_env():
         KENV_COMMIT: DEFAULT_COMMIT,
         KENV_LOCATION_STR: DEFAULT_LOCATION_STR
     }
+
+def make_test_local_store():
+    return LocalStore(make_new_local_store(StoreMigratorTester()))
 
 
 class UpdateAllServiceFactoryTester(UpdateAllServiceFactory):
@@ -75,9 +80,9 @@ class StoreMigratorTester(StoreMigrator):
 
 
 class LocalRepositoryTester(LocalRepository):
-    def __init__(self, config_provider: ConfigProvider = None, file_system: FileSystem = None, store_migrator: StoreMigrator = None):
+    def __init__(self, config_provider: GenericProvider[Config]  = None, file_system: FileSystem = None, store_migrator: StoreMigrator = None):
         super().__init__(
-            config_provider=config_provider or ConfigProvider(),
+            config_provider=config_provider or GenericProvider[Config] (),
             logger=NoLogger(),
             file_system=file_system or FileSystemFactory().create_for_system_scope(),
             store_migrator=store_migrator or StoreMigratorTester()
@@ -108,8 +113,16 @@ class CheckerTester(Checker):
 
 
 class SettingsScreenTester(SettingsScreen):
-    def __init__(self, config_provider: ConfigProvider = None, file_system: FileSystem = None, downloader_ini_repository: DownloaderIniRepository = None, os_utils: OsUtils = None, settings_screen_printer: SettingsScreenPrinter = None, checker: Checker = None, local_repository: LocalRepository = None):
-        config_provider = config_provider or ConfigProvider()
+    def __init__(self, config_provider: GenericProvider[Config]  = None,
+                 file_system: FileSystem = None,
+                 downloader_ini_repository: DownloaderIniRepository = None,
+                 os_utils: OsUtils = None,
+                 settings_screen_printer: SettingsScreenPrinter = None,
+                 checker: Checker = None,
+                 local_repository: LocalRepository = None,
+                 store_provider: GenericProvider[LocalStore] = None):
+
+        config_provider = config_provider or GenericProvider[Config]()
         file_system = file_system or FileSystemFactory(config_provider=config_provider).create_for_system_scope()
         super().__init__(
             logger=NoLogger(),
@@ -119,7 +132,8 @@ class SettingsScreenTester(SettingsScreen):
             os_utils=os_utils or SpyOsUtils(),
             settings_screen_printer=settings_screen_printer or SettingsScreenPrinterStub(),
             checker=checker or CheckerTester(file_system=file_system),
-            local_repository=local_repository or LocalRepositoryTester(config_provider=config_provider, file_system=file_system)
+            local_repository=local_repository or LocalRepositoryTester(config_provider=config_provider, file_system=file_system),
+            store_provider=store_provider or GenericProvider[LocalStore]()
         )
 
 
@@ -133,26 +147,49 @@ class UiStub(Ui):
     def set_value(self, key: str, value: Any) -> None:
         self._props[key] = value
 
+    def props(self):
+        return {**self._props}
+
+
+def ensure_str_lists(this: List[any]) -> List[str]:
+    for value in this:
+        if not isinstance(this, list):
+            raise Exception(f'Value "{str(value)}" must be list, got "{str(type(value))}" instead.')
+
+    return this
+
+
+def default_databases(add: List[str] = None, sub: List[str] = None) -> Set[str]:
+    sub = ensure_str_lists(sub or [])
+    return {value for value in Config().databases if value not in sub} | set(ensure_str_lists(add or []))
+
+
+class TransitionServiceTester(TransitionService):
+    def __init__(self, file_system: FileSystem = None, os_utils: OsUtils = None, downloader_ini_repository: DownloaderIniRepository = None):
+        file_system = file_system or FileSystemFactory().create_for_system_scope()
+        super().__init__(logger=NoLogger(), file_system=file_system, os_utils=os_utils or SpyOsUtils(), downloader_ini_repository=downloader_ini_repository or DownloaderIniRepositoryTester(file_system=file_system))
+
 
 class UpdateAllServiceTester(UpdateAllService):
     def __init__(self, config_reader: ConfigReader = None,
-                 config_provider: ConfigProvider = None,
+                 config_provider: GenericProvider[Config]  = None,
                  local_repository: LocalRepository = None,
                  store_migrator: StoreMigrator = None,
                  file_system: FileSystem = None,
                  os_utils: OsUtils = None,
                  countdown: Countdown = None,
-                 downloader_ini_repository: DownloaderIniRepository = None,
-                 settings_screen: SettingsScreen = None):
+                 transition_service: TransitionService = None,
+                 settings_screen: SettingsScreen = None,
+                 store_provider: GenericProvider[LocalStore] = None):
 
-        config_provider = config_provider or ConfigProvider()
+        config_provider = config_provider or GenericProvider[Config] ()
         config_reader = config_reader or ConfigReaderTester()
         store_migrator = store_migrator or StoreMigratorTester()
         file_system = file_system or FileSystemFactory().create_for_system_scope()
         local_repository = local_repository or LocalRepositoryTester(config_provider=config_provider, file_system=file_system, store_migrator=store_migrator)
-        downloader_ini_repository = downloader_ini_repository or DownloaderIniRepositoryTester(file_system=file_system)
+        transition_service = transition_service or TransitionServiceTester(file_system=file_system)
         os_utils = os_utils or SpyOsUtils()
-        settings_screen = settings_screen or SettingsScreenTester(config_provider=config_provider, file_system=file_system, downloader_ini_repository=downloader_ini_repository, os_utils=os_utils)
+        settings_screen = settings_screen or SettingsScreenTester(config_provider=config_provider, file_system=file_system, os_utils=os_utils)
 
         super().__init__(
             config_reader=config_reader,
@@ -164,9 +201,10 @@ class UpdateAllServiceTester(UpdateAllService):
             os_utils=os_utils,
             countdown=countdown or CountdownStub(),
             settings_screen=settings_screen,
-            downloader_ini_repository=downloader_ini_repository,
-            checker=CheckerTester()
+            transition_service=transition_service,
+            checker=CheckerTester(),
+            store_provider=store_provider or GenericProvider[LocalStore]()
         )
 
     def write_downloader_ini(self, config: Config):
-        self._downloader_ini_repository.write_downloader_ini(config)
+        self._settings_screen._downloader_ini_repository.write_downloader_ini(config)

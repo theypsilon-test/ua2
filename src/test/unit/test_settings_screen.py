@@ -22,11 +22,17 @@ from unittest.mock import MagicMock
 
 from test.file_system_tester_state import FileSystemState
 from test.unit.test_update_all_service import downloader_ini
-from test.update_all_service_tester import SettingsScreenTester, UiStub
-from update_all.config import Config, ConfigProvider
+from test.update_all_service_tester import SettingsScreenTester, UiStub, default_databases, StoreMigratorTester, \
+    make_test_local_store
+from update_all.config import Config
+from update_all.local_store import LocalStore
+from update_all.other import GenericProvider
 from test.fake_filesystem import FileSystemFactory
+from update_all.databases import AllDBs, DB_ID_NAMES_TXT, DB_ID_JTCORES
 from update_all.settings_screen import SettingsScreen
-from update_all.ui_engine import Ui
+from update_all.settings_screen_model import settings_screen_model
+from update_all.store_migrator import make_new_local_store
+from update_all.ui_model_utilities import gather_variable_declarations
 
 
 class TestSettingsScreen(unittest.TestCase):
@@ -56,7 +62,7 @@ class TestSettingsScreen(unittest.TestCase):
         self.assertEqual('false', ui.get_value('needs_save'))
 
     def test_calculate_needs_save___with_bug_names_txt_updater_disabled_downloader_and_matching_options___returns_no_changes(self):
-        config = Config(download_beta_cores=True, names_txt_updater=False, bios_getter=True, unofficial_updater=True, llapi_updater=True, arcade_roms_db_downloader=True, arcade_offset_downloader=True, tty2oled_files_downloader=True, i2c2oled_files_downloader=True, mistersam_files_downloader=True)
+        config = Config(download_beta_cores=True, databases=default_databases(sub=[DB_ID_NAMES_TXT], add=[AllDBs.BIOS.db_id, AllDBs.THEYPSILON_UNOFFICIAL_DISTRIBUTION.db_id, AllDBs.LLAPI_FOLDER.db_id, AllDBs.ARCADE_ROMS.db_id, AllDBs.ARCADE_OFFSET_FOLDER.db_id, AllDBs.TTY2OLED_FILES.db_id, AllDBs.I2C2OLED_FILES.db_id, AllDBs.MISTERSAM_FILES.db_id]))
         sut, ui, _ = tester(files={
             downloader_ini: {'content': Path('test/fixtures/bug_names_txt_updater_disabled_downloader.ini').read_text()}
         }, config=config)
@@ -79,12 +85,27 @@ class TestSettingsScreen(unittest.TestCase):
         self.assertEqual('  - downloader.ini\n  - update_arcade-organizer.ini', ui.get_value('needs_save_file_list'))
         self.assertEqual('true', ui.get_value('needs_save'))
 
-def tester(files=None, config=None) -> Tuple[SettingsScreen, Ui, FileSystemState]:
+    def test_initialize_ui___fills_variables_that_are_declared_in_the_model(self):
+        _, ui, _ = tester(files={downloader_ini: {'content': default_downloader_ini_content()}}, config=Config(databases=default_databases(sub=[DB_ID_NAMES_TXT, DB_ID_JTCORES])))
+
+        declared_variables = set(gather_variable_declarations(settings_screen_model()))
+        initialized_variables = set(ui.props().keys())
+
+        intersection = declared_variables & initialized_variables
+
+        self.assertGreaterEqual(len(intersection), 5)
+        self.assertSetEqual(intersection, initialized_variables)
+
+
+
+def tester(files=None, config=None, store=None) -> Tuple[SettingsScreen, UiStub, FileSystemState]:
     ui = UiStub()
     state = FileSystemState(files=files)
-    config_provider = ConfigProvider()
+    config_provider = GenericProvider[Config]()
     config_provider.initialize(config or Config())
-    settings_screen = SettingsScreenTester(config_provider=config_provider, file_system=FileSystemFactory(state=state).create_for_system_scope())
+    store_provider = GenericProvider[LocalStore]()
+    store_provider.initialize(store or make_test_local_store())
+    settings_screen = SettingsScreenTester(config_provider=config_provider, store_provider=store_provider, file_system=FileSystemFactory(state=state).create_for_system_scope())
     settings_screen.initialize_ui(ui, screen=MagicMock())
 
     return settings_screen, ui, state

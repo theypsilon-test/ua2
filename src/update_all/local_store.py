@@ -15,54 +15,86 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from typing import Optional, Dict, Union
+from typing import Dict, Union, List
 
 
 class LocalStore:
-    def __init__(self, props: Dict[str, Union[str, bool]]):
+    def __init__(self, props: Dict[str, Union[str, int, bool]]):
         self._props = props
-        self._dirty = False
+        self._dirty = set()
 
     def set_theme(self, theme: str) -> None:
+        if theme == self._props['theme']: return
         self._props['theme'] = theme
-        self._mark_force_save()
+        self._dirty.add('theme')
 
-    def get_theme(self) -> Optional[str]:
+    def get_theme(self) -> str:
         return self._props['theme']
 
-    def set_download_beta_cores(self, download_beta_cores: bool) -> None:
-        self._props['download_beta_cores'] = download_beta_cores
-        self._mark_force_save()
+    def set_wait_time_for_reading(self, wait_time_for_reading: int) -> None:
+        if wait_time_for_reading == self._props['wait_time_for_reading']: return
+        self._props['wait_time_for_reading'] = wait_time_for_reading
+        self._dirty.add('wait_time_for_reading')
 
-    def get_download_beta_cores(self) -> Optional[bool]:
+    def get_wait_time_for_reading(self) -> int:
+        return self._props['wait_time_for_reading']
+
+    def set_countdown_time(self, countdown_time: int) -> None:
+        if countdown_time == self._props['countdown_time']: return
+        self._props['countdown_time'] = countdown_time
+        self._dirty.add('countdown_time')
+
+    def get_countdown_time(self) -> int:
+        return self._props['countdown_time']
+
+    def set_autoreboot(self, autoreboot: bool) -> None:
+        if autoreboot == self._props['autoreboot']: return
+        self._props['autoreboot'] = autoreboot
+        self._dirty.add('autoreboot')
+
+    def get_autoreboot(self) -> bool:
+        return self._props['autoreboot']
+
+    def set_download_beta_cores(self, download_beta_cores: bool) -> None:
+        if download_beta_cores == self._props['download_beta_cores']: return
+        self._props['download_beta_cores'] = download_beta_cores
+        self._dirty.add('download_beta_cores')
+
+    def get_download_beta_cores(self) -> bool:
         return self._props['download_beta_cores']
 
     def set_names_region(self, names_region: str) -> None:
+        if names_region == self._props['names_region']: return
         self._props['names_region'] = names_region
-        self._mark_force_save()
+        self._dirty.add('names_region')
 
-    def get_names_region(self) -> Optional[str]:
+    def get_names_region(self) -> str:
         return self._props['names_region']
 
     def set_names_char_code(self, names_char_code: str) -> None:
+        if names_char_code == self._props['names_char_code']: return
         self._props['names_char_code'] = names_char_code
-        self._mark_force_save()
+        self._dirty.add('names_char_code')
 
-    def get_names_char_code(self) -> Optional[str]:
+    def get_names_char_code(self) -> str:
         return self._props['names_char_code']
 
     def set_names_sort_code(self, names_sort_code: str) -> None:
+        if names_sort_code == self._props['names_sort_code']: return
         self._props['names_sort_code'] = names_sort_code
-        self._mark_force_save()
+        self._dirty.add('names_sort_code')
 
-    def get_names_sort_code(self) -> Optional[str]:
+    def get_names_sort_code(self) -> str:
         return self._props['names_sort_code']
 
     def unwrap_props(self):
         return self._props
 
-    def needs_save(self):
-        return self._dirty
+    def needs_save(self) -> bool:
+        return len(self._dirty) > 0
 
-    def _mark_force_save(self):
-        self._dirty = True
+    def changed_fields(self) -> List[str]:
+        return list(self._dirty)
+
+    def mark_as_cleaned(self) -> None:
+        self._dirty = set()

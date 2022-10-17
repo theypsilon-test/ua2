@@ -20,13 +20,17 @@ import json
 import time
 from distutils.util import strtobool
 from pathlib import Path
+from typing import List, Tuple
 
 from update_all.config import Config
 from update_all.constants import MEDIA_FAT, KENV_CURL_SSL, KENV_COMMIT, KENV_LOCATION_STR, \
     DOWNLOADER_INI_STANDARD_PATH, ARCADE_ORGANIZER_INI,MISTER_ENVIRONMENT, KENV_DEBUG
-from update_all.databases import DB_ID_JTCORES, DB_ID_NAMES_TXT, names_locale_by_db_url, config_fields_by_db_id
+from update_all.databases import DB_ID_JTCORES, DB_ID_NAMES_TXT, names_locale_by_db_url, model_variables_by_db_id, \
+    Database, db_distribution_mister_by_encc_forks, db_jtcores_by_download_beta_cores, db_names_txt_by_locale, \
+    dbs_to_model_variables_pairs
 from update_all.file_system import FileSystem
 from update_all.ini_parser import IniParser
+from update_all.local_store import LocalStore
 from update_all.logger import Logger
 
 
@@ -59,9 +63,11 @@ class ConfigReader:
             downloader_ini = self._load_ini_config_from_contents(file_system.read_file_contents(DOWNLOADER_INI_STANDARD_PATH))
             downloader_sections = set([section.lower() for section in downloader_ini.sections()])
 
-        for db_id, config_field in config_fields_by_db_id().items():
+        for db_id, variable in model_variables_by_db_id().items():
             is_present = db_id.lower() in downloader_sections
-            config.__setattr__(config_field, is_present)
+            config.__setattr__(variable, is_present)
+            if is_present:
+                config.databases.add(db_id)
 
         if DB_ID_JTCORES in downloader_sections:
             config.download_beta_cores = downloader_ini[DB_ID_JTCORES]['db_url'] == 'https://raw.githubusercontent.com/jotego/jtpremium/main/jtbindb.json.zip'
@@ -72,7 +78,7 @@ class ConfigReader:
         arcade_organizer_ini = load_ini_config_with_no_section(self._logger, file_system, ARCADE_ORGANIZER_INI)
         config.arcade_organizer = arcade_organizer_ini.get_bool('arcade_organizer', config.arcade_organizer)
 
-        self._logger.debug('config: ' + json.dumps(config, default=lambda o: str(o) if isinstance(o, Path) else o.__dict__, indent=4))
+        self._logger.debug('config: ' + json.dumps(config, default=lambda o: str(o) if isinstance(o, Path) or isinstance(o, set) else o.__dict__, indent=4))
 
     def _load_ini_config_from_contents(self, contents):
         ini_config = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
@@ -84,11 +90,38 @@ class ConfigReader:
             raise e
         return ini_config
 
+    def fill_config_with_local_store(self, config: Config, store: LocalStore):
+        config.wait_time_for_reading = store.get_wait_time_for_reading()
+        config.countdown_time = store.get_countdown_time()
+
     def _valid_max_length(self, key: str, value: str, max_limit: int) -> str:
         if len(value) <= max_limit:
             return value
 
         raise InvalidConfigParameter(f"Invalid {key} with value '{value}'. Too long string (max is {max_limit}).")
+
+
+def candidate_databases(config: Config) -> List[Tuple[str, Database]]:
+    configurable_dbs = {
+        'main_updater': db_distribution_mister_by_encc_forks(config.encc_forks),
+        'jotego_updater': db_jtcores_by_download_beta_cores(config.download_beta_cores),
+        'names_txt_updater': db_names_txt_by_locale(config.names_region, config.names_char_code, config.names_sort_code)
+    }
+    result = []
+    for variable, dbs in dbs_to_model_variables_pairs():
+        if variable in configurable_dbs:
+            result.append((variable, configurable_dbs[variable]))
+            continue
+
+        if len(dbs) != 1:
+            raise ValueError(f"Needs to be length 1, but is '{len(dbs)}', or must be contained in configurable_dbs.")
+
+        result.append((variable, dbs[0]))
+    return result
+
+
+def active_databases(config: Config) -> list[Database]:
+    return [db for var, db in candidate_databases(config) if db.db_id in config.databases]
 
 
 def load_ini_config_with_no_section(logger: Logger, file_system: FileSystem, path: str):
