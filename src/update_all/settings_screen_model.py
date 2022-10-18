@@ -487,7 +487,8 @@ def settings_screen_model(): return {
                         {
                             "type": "condition",
                             "variable": "is_test_spinner_firmware_applied",
-                            "true": [{
+                            "true": [{"type": "test_unstable_spinner_firmware"}],
+                            "false": [{
                                 "ui": "confirm",
                                 "header": "WARNING",
                                 "alert_level": "red",
@@ -500,11 +501,12 @@ def settings_screen_model(): return {
                                     "DON'T REPORT ISSUES IN ANY CORE WHILE USING THIS FIRMWARE!"
                                 ],
                                 "actions": [
-                                    {"title": "Yes", "type": "fixed", "fixed": [{"type": "test_unstable_spinner_firmware"}, {"type": "navigate", "target": "back"}]},
+                                    {"title": "Yes", "type": "fixed",
+                                     "fixed": [{"type": "test_unstable_spinner_firmware"},
+                                               {"type": "navigate", "target": "back"}]},
                                     {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
                                 ],
-                            }],
-                            "false": [{"type": "test_unstable_spinner_firmware"}]
+                            }]
                         }
                     ]}
                 },
