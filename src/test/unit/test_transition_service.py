@@ -34,7 +34,7 @@ update_arcade_organizer_ini = f'{MEDIA_FAT}/{ARCADE_ORGANIZER_INI}'
 
 def test_transition_from_update_all_1(files=None):
     config = Config()
-    fs = FileSystemState(config=config, files=files)
+    fs = FileSystemState(config=config, files=None if files is None else {filename: {'content': Path(path).read_text()} for filename, path in files.items()})
     sut = TransitionServiceTester(file_system=FileSystemFactory(state=fs).create_for_system_scope())
     sut.transition_from_update_all_1(config, local_store())
     return fs
@@ -45,34 +45,31 @@ class TestTransitionService(unittest.TestCase):
         self.assertEqual(Path('test/fixtures/downloader_ini/default_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
     def test_with_dirty_downloader_ini___writes_nothing(self):
-        fs = test_transition_from_update_all_1(files={downloader_ini: {'content': Path(
-            'test/fixtures/downloader_ini/dirty_downloader.ini').read_text()}})
+        fs = test_transition_from_update_all_1(files={downloader_ini: 'test/fixtures/downloader_ini/dirty_downloader.ini'})
         self.assertEqual(Path('test/fixtures/downloader_ini/dirty_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
-    def test_with_downloader_ini_and_other_inis___keeps_downloader_ini(self):
+    def test_with_downloader_ini_and_other_inis___writes_ao_ini_and_keeps_downloader_ini(self):
         fs = test_transition_from_update_all_1(files={
-            downloader_ini: {'content': Path('test/fixtures/downloader_ini/default_downloader.ini').read_text()},
-            update_all_ini: {'content': Path('test/fixtures/update_all_ini/complete_ua.ini').read_text()},
+            downloader_ini: 'test/fixtures/downloader_ini/default_downloader.ini',
+            update_all_ini: 'test/fixtures/update_all_ini/complete_ua.ini',
         })
-        self.assertEqual({
-            downloader_ini: {'content': Path('test/fixtures/downloader_ini/default_downloader.ini').read_text()}
+        self.assertEqualFiles({
+            downloader_ini: 'test/fixtures/downloader_ini/default_downloader.ini',
+            update_arcade_organizer_ini: 'test/fixtures/update_arcade-organizer_ini/complete_ao.ini',
         }, fs.files)
 
     def test_with_update_all_ini___keeps_downloader_ini(self):
         fs = test_transition_from_update_all_1(files={
-            update_all_ini: {'content': Path('test/fixtures/update_all_ini/complete_ua.ini').read_text()},
-            update_names_txt_ini: {'content': Path('test/fixtures/update_names-txt_ini/complete_nt.ini').read_text()},
-            update_jtcores_ini: {'content': Path('test/fixtures/update_jtcores_ini/complete_jt.ini').read_text()},
+            update_all_ini: 'test/fixtures/update_all_ini/complete_ua.ini',
+            update_names_txt_ini: 'test/fixtures/update_names-txt_ini/complete_nt.ini',
+            update_jtcores_ini: 'test/fixtures/update_jtcores_ini/complete_jt.ini',
         })
-        self.assertEqual({
-            downloader_ini: {
-                'content': Path('test/fixtures/downloader_ini/complete_downloader.ini').read_text(),
-                'hash': 'downloader.ini',
-                'size': 1
-            },
-            update_arcade_organizer_ini.lower(): {
-                'content': Path('test/fixtures/update_arcade-organizer_ini/complete_ao.ini').read_text(),
-                'hash': 'Scripts/update_arcade-organizer.ini',
-                'size': 1
-            }
+        self.assertEqualFiles({
+            downloader_ini: 'test/fixtures/downloader_ini/complete_downloader.ini',
+            update_arcade_organizer_ini: 'test/fixtures/update_arcade-organizer_ini/complete_ao.ini'
         }, fs.files)
+
+    def assertEqualFiles(self, expected, actual):
+        actual = {filename.lower(): description['content'] for filename, description in actual.items()}
+        expected = {filename.lower(): Path(path).read_text() for filename, path in expected.items()}
+        self.assertEqual(expected, actual)
