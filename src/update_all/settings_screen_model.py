@@ -43,7 +43,7 @@ def settings_screen_model(): return {
         "bios_getter": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
         "arcade_roms_db_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
         "hbmame_filter": {"group": "arcade_roms", "default": "false", "values": ["false", "true"]},
-        "names_txt_updater": {"group": ["ua_ini", "db"], "default": "true", "values": ["false", "true"]},
+        "names_txt_updater": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
         "arcade_organizer": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
 
         # Internal variables
@@ -133,7 +133,7 @@ def settings_screen_model(): return {
                     "description": "{names_txt_updater:enabled} Better core names in the menus",
                     "actions": {
                         "ok": [{"type": "navigate", "target": "names_txt_menu"}],
-                        "toggle": [{"type": "rotate_variable", "target": "names_txt_updater"}],
+                        "toggle": _try_update_names_txt(),
                     }
                 },
                 {
@@ -293,27 +293,7 @@ def settings_screen_model(): return {
                 {
                     "title": "1 {names_txt_updater:do_enable}",
                     "description": "Activated: {names_txt_updater:yesno}",
-                    "actions": {"ok": [
-                        {
-                            "type": "condition",
-                            "variable": "names_txt_updater",
-                            "true": [{"type": "rotate_variable", "target": "names_txt_updater"}],
-                            "false": [
-                                {"type": "calculate_names_txt_file_warning"},
-                                {
-                                    "type": "condition",
-                                    "variable": "names_txt_file_warning",
-                                    "true": [{
-                                        "ui": "message",
-                                        "text": ["WARNING! Your current names.txt file will be overwritten after updating"],
-                                        "alert_level": "black",
-                                        "effects": [{"type": "rotate_variable", "target": "names_txt_updater"}, {"type": "navigate", "target": "back"}],
-                                    }],
-                                    "false": [{"type": "rotate_variable", "target": "names_txt_updater"}]
-                                }
-                            ]
-                        }
-                    ]}
+                    "actions": {"ok": _try_update_names_txt()}
                 },
                 {
                     "title": "2 Region",
@@ -1066,4 +1046,27 @@ def _try_exit(): return [
         "false": [{"type": "navigate", "target": "exit_and_run"}]
     },
     {"type": "navigate", "target": "exit_and_run"}
+]
+
+
+def _try_update_names_txt(): return [
+    {
+        "type": "condition",
+        "variable": "names_txt_updater",
+        "true": [{"type": "rotate_variable", "target": "names_txt_updater"}],
+        "false": [
+            {"type": "calculate_names_txt_file_warning"},
+            {
+                "type": "condition",
+                "variable": "names_txt_file_warning",
+                "true": [{
+                    "ui": "message",
+                    "text": ["WARNING! Your current names.txt file will be overwritten after updating"],
+                    "alert_level": "black",
+                    "effects": [{"type": "rotate_variable", "target": "names_txt_updater"}, {"type": "navigate", "target": "back"}],
+                }],
+                "false": [{"type": "rotate_variable", "target": "names_txt_updater"}]
+            }
+        ]
+    }
 ]

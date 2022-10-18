@@ -49,7 +49,7 @@ def default_env():
         KENV_LOCATION_STR: DEFAULT_LOCATION_STR
     }
 
-def make_test_local_store():
+def local_store():
     return LocalStore(make_new_local_store(StoreMigratorTester()))
 
 

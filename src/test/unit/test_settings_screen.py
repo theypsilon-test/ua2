@@ -23,7 +23,7 @@ from unittest.mock import MagicMock
 from test.file_system_tester_state import FileSystemState
 from test.unit.test_update_all_service import downloader_ini
 from test.update_all_service_tester import SettingsScreenTester, UiStub, default_databases, StoreMigratorTester, \
-    make_test_local_store
+    local_store
 from update_all.config import Config
 from update_all.local_store import LocalStore
 from update_all.other import GenericProvider
@@ -50,7 +50,7 @@ class TestSettingsScreen(unittest.TestCase):
 
     def test_calculate_needs_save___with_default_downloader_ini_and_disabled_names_txt_updater___returns_downloader_ini_changes(self) -> None:
         sut, ui, _ = tester(files={downloader_ini: {'content': default_downloader_ini_content()}})
-        ui.set_value('names_txt_updater', 'false')
+        ui.set_value('names_txt_updater', 'true')
         sut.calculate_needs_save(ui)
         self.assertEqual('  - downloader.ini', ui.get_value('needs_save_file_list'))
         self.assertEqual('true', ui.get_value('needs_save'))
@@ -64,7 +64,8 @@ class TestSettingsScreen(unittest.TestCase):
     def test_calculate_needs_save___with_bug_names_txt_updater_disabled_downloader_and_matching_options___returns_no_changes(self):
         config = Config(download_beta_cores=True, databases=default_databases(sub=[DB_ID_NAMES_TXT], add=[AllDBs.BIOS.db_id, AllDBs.THEYPSILON_UNOFFICIAL_DISTRIBUTION.db_id, AllDBs.LLAPI_FOLDER.db_id, AllDBs.ARCADE_ROMS.db_id, AllDBs.ARCADE_OFFSET_FOLDER.db_id, AllDBs.TTY2OLED_FILES.db_id, AllDBs.I2C2OLED_FILES.db_id, AllDBs.MISTERSAM_FILES.db_id]))
         sut, ui, _ = tester(files={
-            downloader_ini: {'content': Path('test/fixtures/bug_names_txt_updater_disabled_downloader.ini').read_text()}
+            downloader_ini: {'content': Path(
+                'test/fixtures/downloader_ini/bug_names_txt_updater_disabled_downloader.ini').read_text()}
         }, config=config)
         sut.calculate_needs_save(ui)
         self.assertEqual('', ui.get_value('needs_save_file_list'))
@@ -80,7 +81,7 @@ class TestSettingsScreen(unittest.TestCase):
     def test_calculate_needs_save___with_ao_region_disabled_and_names_txt_disabled___returns_downloader_and_arcade_organizer_ini_changes(self):
         sut, ui, _ = tester(files={downloader_ini: {'content': default_downloader_ini_content()}})
         ui.set_value('arcade_organizer_region_dir', 'false')
-        ui.set_value('names_txt_updater', 'false')
+        ui.set_value('names_txt_updater', 'true')
         sut.calculate_needs_save(ui)
         self.assertEqual('  - downloader.ini\n  - update_arcade-organizer.ini', ui.get_value('needs_save_file_list'))
         self.assertEqual('true', ui.get_value('needs_save'))
@@ -104,7 +105,7 @@ def tester(files=None, config=None, store=None) -> Tuple[SettingsScreen, UiStub,
     config_provider = GenericProvider[Config]()
     config_provider.initialize(config or Config())
     store_provider = GenericProvider[LocalStore]()
-    store_provider.initialize(store or make_test_local_store())
+    store_provider.initialize(store or local_store())
     settings_screen = SettingsScreenTester(config_provider=config_provider, store_provider=store_provider, file_system=FileSystemFactory(state=state).create_for_system_scope())
     settings_screen.initialize_ui(ui, screen=MagicMock())
 
@@ -112,4 +113,4 @@ def tester(files=None, config=None, store=None) -> Tuple[SettingsScreen, UiStub,
 
 
 def default_downloader_ini_content():
-    return Path('test/fixtures/default_downloader.ini').read_text()
+    return Path('test/fixtures/downloader_ini/default_downloader.ini').read_text()

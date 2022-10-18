@@ -63,10 +63,10 @@ class TransitionService:
             self._downloader_ini_repository.write_arcade_organizer_active_at_arcade_organizer_ini(config)
             changes.append(f'File "{ARCADE_ORGANIZER_INI}" now includes variable "ARCADE_ORGANIZER" previously found in "{FILE_update_all_ini}". It indicates whether the Arcade Organizer is enabled in Update All.')
 
-        for file in [FILE_update_all_ini, FILE_update_jtcores_ini, FILE_update_names_txt_ini, FILE_update_jtcores_sh, FILE_update_names_txt_sh]:
+        for file in [FILE_update_all_ini, FILE_update_jtcores_ini, FILE_update_names_txt_ini, FILE_update_names_txt_sh]:
             if self._file_system.is_file(file):
                 self._file_system.unlink(file, verbose=False)
-                changes.append(f'File "{file}" removed.')
+                changes.append(f'Obsolete file "{file}" removed.')
 
         if len(changes) >= 1:
             coming_from_update_all_1 = len(changes) >= 2 or 'downloader.ini' not in changes[0]
@@ -107,10 +107,12 @@ class TransitionService:
             if string_value is None:
                 string_value = description['default']
             else:
-                string_value = dynamic_convert_string(self._ensure_string_value_is_possible(string_value, description['values']))
+                string_value = self._ensure_string_value_is_possible(string_value, description['values'])
 
-            setattr(config, variable, string_value)
-            if variable in db_ids:
+            value = dynamic_convert_string(string_value)
+
+            setattr(config, variable, value)
+            if variable in db_ids and value:
                 config.databases.add(db_ids[variable])
 
         return ini_content
@@ -122,6 +124,6 @@ class TransitionService:
 
         for pb in possible_values:
             if pb.lower() == string_value.lower():
-                return string_value
+                return pb
 
         raise ValueError(f'Value {string_value} is not among the possible values: {", ".join(possible_values)}')

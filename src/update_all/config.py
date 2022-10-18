@@ -20,7 +20,7 @@ from enum import unique, IntEnum
 from typing import Set
 
 from update_all.constants import DEFAULT_CURL_SSL_OPTIONS, DEFAULT_COMMIT, MEDIA_FAT
-from update_all.databases import DB_ID_DISTRIBUTION_MISTER, DB_ID_JTCORES, DB_ID_NAMES_TXT, AllDBs
+from update_all.databases import DB_ID_DISTRIBUTION_MISTER, DB_ID_JTCORES, AllDBs
 
 
 @dataclass
@@ -40,7 +40,7 @@ class Config:
     temporary_downloader_ini: bool = False
 
     # Global Updating Toggles
-    databases: Set[str] = field(default_factory=lambda: {DB_ID_DISTRIBUTION_MISTER, DB_ID_JTCORES, DB_ID_NAMES_TXT, AllDBs.COIN_OP_COLLECTION.db_id})
+    databases: Set[str] = field(default_factory=lambda: {DB_ID_DISTRIBUTION_MISTER, DB_ID_JTCORES, AllDBs.COIN_OP_COLLECTION.db_id})
     arcade_organizer: bool = True
 
     # Specific Updating Toggles
