@@ -268,7 +268,12 @@ class SettingsScreen(UiApplication, UiComponent):
 
     @cached_property
     def _all_config_variables(self):
-        return [*gather_variable_declarations(settings_screen_model(), "ua_ini"), *gather_variable_declarations(settings_screen_model(), "jt_ini"), *gather_variable_declarations(settings_screen_model(), "names_ini")]
+        return [
+            *gather_variable_declarations(settings_screen_model(), "ua_ini"),
+            *gather_variable_declarations(settings_screen_model(), "jt_ini"),
+            *gather_variable_declarations(settings_screen_model(), "names_ini"),
+            *gather_variable_declarations(settings_screen_model(), "arcade_roms"),
+        ]
 
     def calculate_names_char_code_warning(self, ui: Ui) -> None:
 

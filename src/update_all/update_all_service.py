@@ -120,10 +120,10 @@ class UpdateAllService:
         config = Config()
         self._config_reader.fill_config_with_environment(config)
         self._config_provider.initialize(config)
-        self._transition_service.transition_from_update_all_1(config)
-        self._config_reader.fill_config_with_ini_files(config, self._file_system)
         local_store = self._local_repository.load_store()
         self._store_provider.initialize(local_store)
+        self._transition_service.transition_from_update_all_1(config, local_store)
+        self._config_reader.fill_config_with_ini_files(config, self._file_system)
         self._config_reader.fill_config_with_local_store(config, local_store)
 
     def _show_intro(self) -> None:

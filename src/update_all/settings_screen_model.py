@@ -19,6 +19,7 @@
 def settings_screen_model(): return {
     "formatters": {
         "yesno": {"false": "No", "true": "Yes"},
+        "yesno_reverse": {"false": "Yes", "true": "No"},
         "enabled": {"false": "Disabled.", "true": "Enabled. "},
         "do_enable": {"false": "Enable", "true": "Disable"},
         "encc_forks": {"false": "MiSTer-devel", "true": "MiSTer-DB9"},
@@ -41,6 +42,7 @@ def settings_screen_model(): return {
         "llapi_updater": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
         "bios_getter": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
         "arcade_roms_db_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+        "hbmame_filter": {"group": "arcade_roms", "default": "false", "values": ["false", "true"]},
         "names_txt_updater": {"group": ["ua_ini", "db"], "default": "true", "values": ["false", "true"]},
         "arcade_organizer": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
 
@@ -241,6 +243,34 @@ def settings_screen_model(): return {
                     "description": "Activated: {arcade_roms_db_downloader:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "arcade_roms_db_downloader"}]}
                 },
+                {
+                    "title": "2 Include HBMAME ROMs",
+                    "description": "{hbmame_filter:yesno_reverse}",
+                    "actions": {"ok": [
+                        {
+                            "type": "condition",
+                            "variable": "hbmame_filter",
+                            "true": [{"type": "rotate_variable", "target": "hbmame_filter"}],
+                            "false": [
+                                {
+                                    "ui": "confirm",
+                                    "header": "Filtering out HBMAME ROMs!",
+                                    "text": [
+                                        "Do you really want to exclude HBMAME ROMs from the installation process?",
+                                        " ",
+                                        "This means that some alternative MRAs will not work correctly."
+                                    ],
+                                    "alert_level": "black",
+                                    "preselected_action": "No",
+                                    "actions": [
+                                        {"title": "Yes", "type": "fixed", "fixed": [{"type": "rotate_variable", "target": "hbmame_filter"}, {"type": "navigate", "target": "back"}]},
+                                        {"title": "No", "type": "fixed", "fixed": [{"type": "navigate", "target": "back"}]}
+                                    ],
+                                },
+                            ]
+                        }
+                    ]}
+                },
             ]
         },
         "names_txt_menu": {
@@ -351,9 +381,9 @@ def settings_screen_model(): return {
                 "i2c2oled_files_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
                 "mistersam_files_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
 
-                "autoreboot": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
-                "wait_time_for_reading": {"group": "ua_ini", "default": "2", "values": ["2", "0", "30"]},
-                "countdown_time": {"group": "ua_ini", "default": "15", "values": ["15", "4", "60"]},
+                "autoreboot": {"group": ["ua_ini", "store"], "default": "true", "values": ["false", "true"]},
+                "wait_time_for_reading": {"group": ["ua_ini", "store"], "default": "2", "values": ["2", "0", "30"]},
+                "countdown_time": {"group": ["ua_ini", "store"], "default": "15", "values": ["15", "4", "60"]},
             },
             "entries": [
                 {
@@ -443,7 +473,7 @@ def settings_screen_model(): return {
             },
             "variables": {
                 "is_test_spinner_firmware_applied": {"default": "false", "values": ["false", "true"]},
-                "ui_theme": {"default": "Blue Installer", "values": ["Blue Installer", "Cyan Night"]},
+                "ui_theme": {"group": "store", "default": "Blue Installer", "values": ["Blue Installer", "Cyan Night"]},
                 "firmware_needs_reboot": {"default": "false", "values": ["false", "true"]},
             },
             "entries": [

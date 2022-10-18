@@ -27,7 +27,7 @@ from update_all.constants import MEDIA_FAT, KENV_CURL_SSL, KENV_COMMIT, KENV_LOC
     DOWNLOADER_INI_STANDARD_PATH, ARCADE_ORGANIZER_INI,MISTER_ENVIRONMENT, KENV_DEBUG
 from update_all.databases import DB_ID_JTCORES, DB_ID_NAMES_TXT, names_locale_by_db_url, model_variables_by_db_id, \
     Database, db_distribution_mister_by_encc_forks, db_jtcores_by_download_beta_cores, db_names_txt_by_locale, \
-    dbs_to_model_variables_pairs
+    dbs_to_model_variables_pairs, AllDBs
 from update_all.file_system import FileSystem
 from update_all.ini_parser import IniParser
 from update_all.local_store import LocalStore
@@ -75,6 +75,9 @@ class ConfigReader:
         if DB_ID_NAMES_TXT in downloader_sections:
             config.names_region, config.names_char_code, config.names_sort_code = names_locale_by_db_url(downloader_ini[DB_ID_NAMES_TXT]['db_url'])
 
+        if AllDBs.ARCADE_ROMS.db_id in downloader_sections and 'filter' in downloader_ini[AllDBs.ARCADE_ROMS.db_id]:
+            config.hbmame_filter = '!hbmame' in downloader_ini[AllDBs.ARCADE_ROMS.db_id]['filter']
+
         arcade_organizer_ini = load_ini_config_with_no_section(self._logger, file_system, ARCADE_ORGANIZER_INI)
         config.arcade_organizer = arcade_organizer_ini.get_bool('arcade_organizer', config.arcade_organizer)
 
@@ -93,6 +96,7 @@ class ConfigReader:
     def fill_config_with_local_store(self, config: Config, store: LocalStore):
         config.wait_time_for_reading = store.get_wait_time_for_reading()
         config.countdown_time = store.get_countdown_time()
+        config.autoreboot = store.get_autoreboot()
 
     def _valid_max_length(self, key: str, value: str, max_limit: int) -> str:
         if len(value) <= max_limit:

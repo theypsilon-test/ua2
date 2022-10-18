@@ -24,6 +24,7 @@ from typing import Optional
 from update_all.config import Config
 from update_all.config_reader import candidate_databases, active_databases
 from update_all.constants import DOWNLOADER_INI_STANDARD_PATH, ARCADE_ORGANIZER_INI
+from update_all.databases import AllDBs
 from update_all.file_system import FileSystem
 from update_all.logger import Logger
 from update_all.os_utils import OsUtils
@@ -94,6 +95,30 @@ class DownloaderIniRepository:
                 ini[db_id]['db_url'] = db.db_url
             elif db_id in ini:
                 del ini[db_id]
+
+        mister_filter = ini['mister']['filter'].strip().lower() if 'mister' in ini and 'filter' in ini['mister'] else ''
+
+        for db_id, filter_addition, filter_active in [(AllDBs.ARCADE_ROMS.db_id, '!hbmame', config.hbmame_filter)]:
+            if db_id not in config.databases:
+                continue
+
+            if filter_active:
+                arcade_roms_filter = ini[db_id]['filter'].strip().lower() if 'filter' in ini[db_id] else ''
+
+                if len(arcade_roms_filter) == 0:
+                    filter_result = f'{mister_filter} {filter_addition}'
+                else:
+                    filter_result = f'{arcade_roms_filter.replace(filter_addition, "")} {filter_addition}'
+
+                ini[db_id]['filter'] = ' '.join(filter_result.split()).strip()
+
+            elif 'filter' in ini[db_id]:
+                filter_result = ini[db_id]['filter'].replace(filter_addition, "").replace(mister_filter, "")
+
+                ini[db_id]['filter'] = ' '.join(filter_result.split()).strip()
+
+                if len(ini[db_id]['filter']) == 0:
+                    del ini[db_id]['filter']
 
     def _build_new_downloader_ini_contents(self, config: Config) -> Optional[str]:
         ini: dict[str, dict[str, str]] = self._internal_read_downloader_ini()
