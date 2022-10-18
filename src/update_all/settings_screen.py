@@ -24,7 +24,7 @@ from update_all.config import Config
 from update_all.config_reader import load_ini_config_with_no_section
 from update_all.constants import ARCADE_ORGANIZER_INI, FILE_MiSTer, \
     TEST_UNSTABLE_SPINNER_FIRMWARE_MD5, DOWNLOADER_URL, FILE_MiSTer_ini, ARCADE_ORGANIZER_URL, \
-    ARCADE_ORGANIZER_INSTALLED_NAMES_TXT, STANDARD_UI_THEME, FILE_downloader_temp_ini
+    ARCADE_ORGANIZER_INSTALLED_NAMES_TXT, STANDARD_UI_THEME, FILE_downloader_temp_ini, FILE_MiSTer_delme
 from update_all.databases import db_ids_by_model_variables, DB_ID_JTCORES, DB_ID_NAMES_TXT
 from update_all.downloader_ini_repository import DownloaderIniRepository
 from update_all.file_system import FileSystem
@@ -148,12 +148,13 @@ class SettingsScreen(UiApplication, UiComponent):
     def test_unstable_spinner_firmware(self, ui: Ui) -> None:
         is_test_firmware, firmware_md5 = self._is_test_firmware()
         if is_test_firmware:
-            content = self._os_utils.download("https://raw.githubusercontent.com/MiSTer-devel/Distribution_MiSTer/main/MiSTer")
-            self._file_system.write_file_bytes(FILE_MiSTer, content)
+            url = "https://raw.githubusercontent.com/MiSTer-devel/Distribution_MiSTer/main/MiSTer"
         else:
-            content = self._os_utils.download("https://raw.githubusercontent.com/theypsilon/Main_MiSTer/test-unstable-taito-spinner-firmware/bin")
-            self._file_system.write_file_bytes(FILE_MiSTer, content)
+            url = "https://raw.githubusercontent.com/theypsilon/Main_MiSTer/test-unstable-taito-spinner-firmware/bin"
 
+        content = self._os_utils.download(url)
+        self._file_system.write_file_bytes(FILE_MiSTer_delme, content)
+        self._file_system.move(FILE_MiSTer_delme, FILE_MiSTer)
         self._set_spinner_options(ui)
 
     def _set_spinner_options(self, ui: Ui):
