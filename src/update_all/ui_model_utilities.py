@@ -15,24 +15,42 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from typing import Set
+from typing import Callable, Any, TypeVar, Dict
+
+
+def expand_type(data, base_types):
+    if 'type' not in data and 'ui' in data:
+        data['type'] = 'ui'
+
+    if 'type' not in data:
+        return
+
+    while data['type'] in base_types:
+        base_type = base_types[data['type']]
+
+        for key, content in base_type.items():
+            if type(content) in (str, int, float, bool):
+                data[key] = base_type[key]
+            elif isinstance(content, list):
+                data[key] = [*data.get(key, []), *base_type.get(key, [])]
+            elif isinstance(content, dict):
+                data[key] = {**data.get(key, []), **base_type.get(key, [])}
+            else:
+                raise ValueError(f'Can not inherit field {key} with content of type: {str(type(content))}')
 
 
 def gather_variable_declarations(model, group = None):
     group = {} if group is None else {group}
     result = {}
-    if 'variables' in model:
-        _add_variables_default_values(result, model['variables'], group)
-    if 'items' in model:
-        for item in model['items'].values():
-            if 'variables' in item:
-                _add_variables_default_values(result, item['variables'], group)
-
+    search_in_model(result, model.get('base_types', {}), model, lambda r, v: _add_variables_descriptions(r, v, group))
     return result
 
 
-def _add_variables_default_values(result, variables, group):
-    for variable, description in variables.items():
+def _add_variables_descriptions(result, item, group):
+    if 'variables' not in item:
+        return
+
+    for variable, description in  item['variables'].items():
         if len(group) > 0:
             if 'group' not in description:
                 continue
@@ -43,35 +61,32 @@ def _add_variables_default_values(result, variables, group):
         result[variable] = description
 
 
-def gather_target_variables(model) -> Set[str]:
-    result = set()
-    if 'items' in model:
-        for item in model['items'].values():
-            _add_target_variables(result, item)
-    return result
+TResult = TypeVar('TResult')
+def search_in_model(result: TResult, base_types: Dict[str, Any], item, cb: Callable[[TResult, Any], None]) -> None:
+    expand_type(item, base_types)
+    cb(result, item)
 
-
-def _add_target_variables(result: Set[str], item) -> None:
     if 'actions' in item:
         if isinstance(item['actions'], dict):
             for action_chain in item['actions'].values():
                 for action in action_chain:
-                    _add_target_variables(result, action)
+                    search_in_model(result, base_types, action, cb)
 
         elif isinstance(item['actions'], list):
             for action in item['actions']:
-                _add_target_variables(result, action)
+                search_in_model(result, base_types, action, cb)
 
     if 'entries' in item:
         for entry in item['entries']:
-            _add_target_variables(result, entry)
+            search_in_model(result, base_types, entry, cb)
 
     if 'effects' in item:
         for effect in item['effects']:
-            _add_target_variables(result, effect)
+            search_in_model(result, base_types, effect, cb)
 
-    if 'header' in item:
-        result.update(_extract_variables_from_text(item['header']))
+    if 'items' in item:
+        for item in item['items'].values():
+            search_in_model(result, base_types, item, cb)
 
     if 'type' not in item:
         return
@@ -79,48 +94,14 @@ def _add_target_variables(result: Set[str], item) -> None:
     node_type = item['type']
     if node_type == 'fixed':
         for fixed in item['fixed']:
-            _add_target_variables(result, fixed)
-
-    elif node_type == 'rotate_variable':
-        result.add(item['target'])
+            search_in_model(result, base_types, fixed, cb)
 
     elif node_type == 'condition':
-        result.add(item['variable'])
-
         for true in item['true']:
-            _add_target_variables(result, true)
+            search_in_model(result, base_types, true, cb)
 
         for false in item['false']:
-            _add_target_variables(result, false)
-
-
-def _extract_variables_from_text(text: str) -> Set[str]:
-    result = set()
-
-    reading_state = 0
-    reading_value = ''
-    for character in text:
-        if reading_state == 0:
-            if character == '{':
-                reading_state = 1
-                reading_value = ''
-
-        elif reading_state == 1:
-            if character == ':':
-                reading_state = 2
-                result.add(reading_value)
-            elif character == '}':
-                reading_state = 0
-                result.add(reading_value)
-            else:
-                reading_value += character
-
-        if reading_state == 2:
-            if character == '}':
-                reading_state = 0
-                result.add(reading_value)
-
-    return result
+            search_in_model(result, base_types, false, cb)
 
 
 def dynamic_convert_string(value):

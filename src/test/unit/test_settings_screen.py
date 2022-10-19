@@ -21,17 +21,16 @@ from typing import Tuple
 from unittest.mock import MagicMock
 
 from test.file_system_tester_state import FileSystemState
+from test.ui_model_test_utils import gather_used_effects
 from test.unit.test_update_all_service import downloader_ini
-from test.update_all_service_tester import SettingsScreenTester, UiStub, default_databases, StoreMigratorTester, \
-    local_store
+from test.update_all_service_tester import SettingsScreenTester, UiStub, default_databases, local_store
 from update_all.config import Config
 from update_all.local_store import LocalStore
 from update_all.other import GenericProvider
 from test.fake_filesystem import FileSystemFactory
-from update_all.databases import AllDBs, DB_ID_NAMES_TXT, DB_ID_JTCORES
+from update_all.databases import AllDBs, DB_ID_NAMES_TXT
 from update_all.settings_screen import SettingsScreen
 from update_all.settings_screen_model import settings_screen_model
-from update_all.store_migrator import make_new_local_store
 from update_all.ui_model_utilities import gather_variable_declarations
 
 
@@ -87,16 +86,24 @@ class TestSettingsScreen(unittest.TestCase):
         self.assertEqual('true', ui.get_value('needs_save'))
 
     def test_initialize_ui___fills_variables_that_are_declared_in_the_model(self):
-        _, ui, _ = tester(files={downloader_ini: {'content': default_downloader_ini_content()}}, config=Config(databases=default_databases(sub=[DB_ID_NAMES_TXT, DB_ID_JTCORES])))
+        _, ui, _ = tester()
 
         declared_variables = set(gather_variable_declarations(settings_screen_model()))
-        initialized_variables = set(ui.props().keys())
+        initialized_variables = set(ui.variables.keys())
 
         intersection = declared_variables & initialized_variables
 
         self.assertGreaterEqual(len(intersection), 5)
         self.assertSetEqual(intersection, initialized_variables)
 
+    def test_initialize_ui___fills_effects_that_are_used_in_the_model(self):
+        _, ui, _ = tester()
+
+        used_effects = set(gather_used_effects(settings_screen_model()))
+        initialized_effects = set(ui.effects.keys())
+
+        self.assertGreaterEqual(len(initialized_effects), 5)
+        self.assertEqual(used_effects, initialized_effects)
 
 
 def tester(files=None, config=None, store=None) -> Tuple[SettingsScreen, UiStub, FileSystemState]:

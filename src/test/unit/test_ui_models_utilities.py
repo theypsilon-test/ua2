@@ -47,7 +47,6 @@ def test_model(): return {
             "variables": {
                 "names_region": {"default": "US", "values": ["US", "EU", "JP"]},
             },
-            "entries": []
         },
         "misc_menu": {
             "ui": "dialog_sub_menu",
@@ -55,7 +54,6 @@ def test_model(): return {
             "variables": {
                 "arcade_offset_downloader": {"default": "false", "group": "x", "values": ["false", "true"]},
             },
-            "entries": []
         }
     }
 }

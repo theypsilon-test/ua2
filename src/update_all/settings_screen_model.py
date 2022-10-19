@@ -53,6 +53,7 @@ def settings_screen_model(): return {
     },
     "base_types": {
         "dialog_sub_menu": {
+            "type": "ui",
             "ui": "menu",
             "hotkeys": [{"keys": [27], "action": [{"type": "navigate", "target": "back"}]}],
             "actions": [
@@ -169,7 +170,7 @@ def settings_screen_model(): return {
             ]
         },
         "main_distribution_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Main Distribution Settings",
             "entries": [
                 {
@@ -185,7 +186,7 @@ def settings_screen_model(): return {
             ]
         },
         "jtcores_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "JTCORES Settings",
             "entries": [
                 {
@@ -201,7 +202,7 @@ def settings_screen_model(): return {
             ]
         },
         "theypsilon_unofficial_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "theypsilon Unofficial Distribution Settings",
             "entries": [
                 {
@@ -212,7 +213,7 @@ def settings_screen_model(): return {
             ]
         },
         "llapi_folder_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "LLAPI Folder Settings",
             "entries": [
                 {
@@ -223,7 +224,7 @@ def settings_screen_model(): return {
             ]
         },
         "bios_database_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "BIOS Database Settings",
             "entries": [
                 {
@@ -234,7 +235,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_roms_database_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Arcade ROMs Database Settings",
             "variables": {
                 "hbmame_filter": {"group": "arcade_roms", "default": "false", "values": ["false", "true"]}
@@ -276,7 +277,7 @@ def settings_screen_model(): return {
             ]
         },
         "names_txt_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Names TXT Settings",
             "variables": {
                 "names_region": {"group": "names_ini", "default": "US", "values": ["US", "EU", "JP"]},
@@ -354,7 +355,7 @@ def settings_screen_model(): return {
             ]
         },
         "misc_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Misc | Other Settings",
             "variables": {
                 "arcade_offset_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
@@ -536,7 +537,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Settings",
             "variables": {
                 "arcade_organizer_orgdir": {"rename": "orgdir", "group": "ao_ini", "default": "/media/fat/_Arcade/_Organized", "values": ["/media/fat/_Arcade/_Organized", "/media/fat/_Arcade", "/media/fat/_Arcade Organized"]},
@@ -627,7 +628,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_alphabetic_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Alphabetic Options",
             "variables": {
                 "arcade_organizer_az_dir": {"rename": "az_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -641,7 +642,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_region_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Region Options",
             "variables": {
                 "arcade_organizer_region_dir": {"rename": "region_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -670,7 +671,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_collections_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Collections Options",
             "variables": {
                 "arcade_organizer_platform_dir": {"rename": "platform_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -719,7 +720,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_year_options_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Year Options",
             "variables": {
                 "arcade_organizer_year_dir": {"rename": "year_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -739,7 +740,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_video_input_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Video & Inputs Options",
             "variables": {
                 "arcade_organizer_move_inputs": {"rename": "move_inputs", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -793,7 +794,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_resolution_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Resolution Options",
             "variables": {
                 "arcade_organizer_resolution_dir": {"rename": "resolution_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -825,7 +826,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_rotation_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Rotation Options",
             "variables": {
                 "arcade_organizer_rotation_dir": {"rename": "rotation_dir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
@@ -869,7 +870,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_extra_software_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Extra Software Options",
             "variables": {
                 "arcade_organizer_homebrew": {"rename": "homebrew", "group": "ao_ini", "default": "1", "values": ["1", "0", "2"]},
@@ -901,7 +902,7 @@ def settings_screen_model(): return {
             ]
         },
         "arcade_organizer_advanced_menu": {
-            "ui": "dialog_sub_menu",
+            "type": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Advanced Options",
             "entries": [
                 {

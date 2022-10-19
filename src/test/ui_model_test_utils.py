@@ -16,101 +16,205 @@
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
 import copy
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Set
 
-from update_all.ui_engine import expand_ui_type
+from update_all.ui_model_utilities import search_in_model
 
 
 def basic_types(): return 'menu', 'confirm', 'message'
 def special_navigate_targets(): return 'back', 'abort', 'exit_and_run'
 
 
-def all_nodes(model: Dict[str, Any]) -> List[Tuple[str, Dict[str, Any]]]:
-    return list_nodes_in_model(expand_model_types(model))
+# Second wave
+def ensure_node_is_correct(item):
+    if 'actions' in item:
+        _ensure_field_least_length_1(item['actions'], item)
+
+    if 'entries' in item:
+        _ensure_field_least_length_1(item['entries'], item)
+
+    if 'effects' in item:
+        _ensure_field_least_length_1(item['effects'], item)
+
+    if 'items' in item:
+        _ensure_field_least_length_1(item['items'], item)
+
+    if 'type' not in item:
+        return item
+
+    node_type = item['type']
+    if node_type == 'fixed':
+        _ensure_field_least_length_1(item['fixed'], item)
+
+    elif node_type == 'condition':
+        _ensure_field_least_length_1(item['true'] + item['false'], item)
+
+    return item
 
 
-def expand_model_types(model: Dict[str, Any]) -> Dict[str, Any]:
-    model = copy.deepcopy(model)
-    for _, node in list_nodes_in_model(model):
-        if 'ui' not in node:
-            continue
-        node['type'] = 'ui'
-        expand_ui_type(node, model)
-    return model
+def _ensure_field_least_length_1(collection, ctx):
+    if len(collection) == 0:
+        raise Exception(f'_ensure_field_least_length_1 did not pass.', ctx)
 
 
-def list_nodes_in_model(model: Dict[str, Any]) -> List[Tuple[str, Dict[str, Any]]]:
+def gather_all_nodes(model):
     result = []
-    for key, item in model['items'].items():
-        result.extend(list_nodes(key, item))
+    search_in_model(result, model.get('base_types', {}), model, lambda r, item: r.append(item))
+    return [item for item in result if len(item) > 0]
+
+
+def gather_section_names(model):
+    result = set()
+    search_in_model(result, model.get('base_types', {}), model, _add_section_name)
     return result
 
 
-def list_nodes(key, item) -> List[Tuple[str, Dict[str, Any]]]:
-    result = [(key, item)]
-    result.extend(list_hotkeys_nodes(key, item))
-    result.extend(list_action_nodes(key, item))
-    result.extend(list_entries_nodes(key, item))
-    result.extend(list_effects_nodes(key, item))
+def _add_section_name(result, item):
+    if 'items' in item:
+        for item in item['items']:
+            result.add(item)
+
+
+def gather_navigate_targets(model):
+    result = set()
+    search_in_model(result, model.get('base_types', {}), model, _add_navigate_targets)
     return result
 
 
-def list_hotkeys_nodes(key, node):
-    if 'hotkeys' not in node:
-        return []
-    result = []
-    for i_hk, hotkey in enumerate(node['hotkeys']):
-        result.extend(list_actions(f'{key}.hotkeys[{i_hk}]', hotkey['action']))
+def _add_navigate_targets(result, item):
+    if 'type' not in item or item['type'] != 'navigate':
+        return
+
+    result.add(item['target'])
+
+
+def gather_formatter_declarations(model):
+    result = set()
+    search_in_model(result, model.get('base_types', {}), model, _add_formatter_declarations)
     return result
 
 
-def list_action_nodes(key, node):
-    if 'actions' not in node:
-        return []
+def _add_formatter_declarations(result, item):
+    if 'formatters' not in item:
+        return
 
-    result = []
-    for i_a, action in enumerate(node['actions']):
-        if action['type'] == 'fixed':
-            result.extend(list_actions(f'{key}.actions[{i_a}].fixed', action['fixed']))
+    for formatter in  item['formatters']:
+        result.add(formatter)
+
+
+def gather_target_formatters(model):
+    result = set()
+    search_in_model(result, model.get('base_types', {}), model, _add_target_formatters)
     return result
 
 
-def list_entries_nodes(key, node):
-    if 'entries' not in node:
-        return []
+def _add_target_formatters(result, item):
+    if 'header' in item:
+        result.update(extract_interpolations_from_text(item['header'])[1])
 
+    if 'texts' in item:
+        for text in item['texts']:
+            result.update(extract_interpolations_from_text(text)[1])
+
+    if 'title' in item:
+        result.update(extract_interpolations_from_text(item['title'])[1])
+
+    if 'description' in item:
+        result.update(extract_interpolations_from_text(item['description'])[1])
+
+
+def gather_used_effects(model):
     result = []
-    for i_e, entry in enumerate(node['entries']):
-        if 'actions' in entry:
-            for symbol, action in entry['actions'].items():
-                result.extend(list_actions(f'{key}.entries[{i_e}].actions[{symbol}]', action))
+    search_in_model(result, model.get('base_types', {}), model, _add_used_effects)
     return result
 
 
-def list_effects_nodes(key, node):
-    result = []
-    if 'effects' in node:
-        result.extend(list_actions(f'{key}.effects', node['effects']))
+def _add_used_effects(result: List[str], item: Dict[str, Any]):
+    if 'type' not in item:
+        return
+
+    if item['type'] not in ['ui', 'rotate_variable', 'fixed', 'symbol', 'navigate', 'condition']:
+        result.append(item['type'])
+
+
+def gather_target_variables(model) -> Set[str]:
+    result = set()
+    search_in_model(result, model.get('base_types', {}), model, _add_target_variables)
     return result
 
 
-def list_actions(key, actions) -> List[Tuple[str, Dict[str, Any]]]:
-    result = []
-    for i_a, action in enumerate(actions):
-        if 'ui' in action:
-            action['type'] = 'ui'
-        if action['type'] == 'condition':
-            result.extend(list_actions(f'{key}.action[{i_a}].true', action['true']))
-            result.extend(list_actions(f'{key}.action[{i_a}].false', action['false']))
+def _add_target_variables(result: Set[str], item: Dict[str, Any]) -> None:
+    if 'header' in item:
+        result.update(extract_interpolations_from_text(item['header'])[0])
+
+    if 'type' not in item:
+        return
+
+    node_type = item['type']
+    if node_type == 'rotate_variable':
+        result.add(item['target'])
+
+    elif node_type == 'condition':
+        result.add(item['variable'])
+
+
+def extract_interpolations_from_text(text: str) -> Tuple[Set[str], Set[str]]:
+    variables = set()
+    formatters = set()
+
+    reading_state = 0
+    reading_value = ''
+    reading_modifier = ''
+
+    for character in text:
+        if reading_state == 0:
+            if character == '{':
+                reading_state = 1
+                reading_value = ''
+
+        elif reading_state == 1:
+            if character == '}':
+                reading_state = 0
+                variables.add(reading_value)
+            elif character == ':':
+                reading_state = 2
+                reading_modifier = ''
+                variables.add(reading_value)
+            else:
+                reading_value += character
+
+        elif reading_state == 2:
+            if character == '=':
+                reading_state = 3
+                formatters.add(reading_modifier)
+            elif character == '}':
+                reading_state = 0
+                formatters.add(reading_modifier)
+            else:
+                reading_modifier += character
+
+        elif reading_state == 3:
+            if character == '}':
+                reading_state = 0
+
         else:
-            result.append((f'{key}.{action["type"]}', action))
+            raise NotImplementedError(reading_state)
 
+    for v in variables:
+        _ensure_field_least_length_1(v, text)
+
+    for f in formatters:
+        _ensure_field_least_length_1(f, text)
+
+    return variables, formatters
+
+
+def expand_model_base_types(model):
+    result = {}
+    search_in_model(result, model.get('base_types', {}), model, _add_expanded_node)
     return result
 
 
-def all_navigate_nodes(model) -> List[Tuple[str, Dict[str, Any]]]:
-    return [(key, node) for key, node in all_nodes(model) if node['type'] == 'navigate']
+def _add_expanded_node(result, item):
+    pass
 
-
-def all_nodes_of_type(model, *args) -> List[Tuple[str, Dict[str, Any]]]:
-    return [(key, node) for key, node in all_nodes(model) if node['type'] in [*args]]

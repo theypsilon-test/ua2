@@ -19,7 +19,7 @@ import abc
 import curses
 from typing import Dict, Callable, Any, Union, Optional, List
 
-from update_all.ui_model_utilities import gather_variable_declarations
+from update_all.ui_model_utilities import gather_variable_declarations, expand_type
 
 
 class Ui(abc.ABC):
@@ -182,7 +182,7 @@ class _UiRuntime:
         return self._section_states[self._section]
 
     def _make_section_state(self, data):
-        expand_ui_type(data, self._model)
+        expand_type(data, self._model.get('base_types', {}))
 
         for field in ['formatters', 'variables']:
             data[field] = data.get(field, {})
@@ -231,24 +231,6 @@ class _UiSectionProcessor:
 
     def clear(self):
         self._ui_section.clear()
-
-
-def expand_ui_type(data, model):
-    data['type'] = 'ui'
-    while data['ui'] in model['base_types']:
-        base_type = model['base_types'][data['ui']]
-        if 'ui' not in base_type:
-            raise ValueError('There must always be a type property within the base_types.')
-
-        for key, content in base_type.items():
-            if type(content) in (str, int, float, bool):
-                data[key] = base_type[key]
-            elif isinstance(content, list):
-                data[key] = [*data.get(key, []), *base_type.get(key, [])]
-            elif isinstance(content, dict):
-                data[key] = {**data.get(key, []), **base_type.get(key, [])}
-            else:
-                raise ValueError(f'Can not inherit field {key} with content of type: {str(type(content))}')
 
 
 class _Interpolator(Interpolator):
@@ -310,7 +292,7 @@ class _Interpolator(Interpolator):
 
         return text
 
-    def _call_formatter(self, reading_modifier: str, reading_value: str, reading_arguments: List[str] = None):
+    def _call_formatter(self, reading_modifier: str, reading_value: str, reading_arguments: List[str] = None) -> str:
         if reading_modifier not in self._formatters:
             raise ValueError(f'Formatter "{reading_modifier}" called for value "{reading_value}" does not exit.')
 

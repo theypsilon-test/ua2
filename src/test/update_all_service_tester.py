@@ -15,7 +15,7 @@
 
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
-from typing import Tuple, Any, List, Set
+from typing import Tuple, Any, List, Set, Dict, Callable
 from unittest.mock import MagicMock
 
 from test.countdown_stub import CountdownStub
@@ -139,16 +139,22 @@ class SettingsScreenTester(SettingsScreen):
 
 class UiStub(Ui):
     def __init__(self):
-        self._props = {}
+        self.variables = {}
+        self.effects = {}
+        self.formatters = {}
 
     def get_value(self, key: str) -> str:
-        return self._props[key]
+        return self.variables[key]
 
     def set_value(self, key: str, value: Any) -> None:
-        self._props[key] = value
+        self.variables[key] = value
 
-    def props(self):
-        return {**self._props}
+    def add_custom_effects(self, effects: Dict[str, Callable[[], None]]):
+        self.effects = effects
+
+    def add_custom_formatters(self, formatters: Dict[str, Callable[[str], str]]):
+        self.formatters = formatters
+
 
 
 def ensure_str_lists(this: List[any]) -> List[str]:
