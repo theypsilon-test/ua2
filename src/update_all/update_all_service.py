@@ -106,8 +106,8 @@ class UpdateAllService:
     def full_run(self) -> int:
         self._read_config()
         self._show_intro()
-        self._run_settings_screen_countdown()
-        self._tweak_not_mister_config()
+        self._countdown_for_settings_screen()
+        self._pre_run_tweaks()
         self._run_downloader()
         self._run_arcade_organizer()
         self._run_linux_update()
@@ -150,7 +150,7 @@ class UpdateAllService:
         self._logger.print('Reading downloader.ini')
         self._logger.print()
 
-    def _run_settings_screen_countdown(self) -> None:
+    def _countdown_for_settings_screen(self) -> None:
         self._print_sequence()
         outcome = self._countdown.execute_count(self._store_provider.get().get_countdown_time())
         if outcome == CountdownOutcome.SETTINGS_SCREEN:
@@ -162,8 +162,12 @@ class UpdateAllService:
         else:
             raise NotImplementedError('No possible countdown outcome')
 
-    def _tweak_not_mister_config(self):
+    def _pre_run_tweaks(self):
         config = self._config_provider.get()
+
+        self._logger.bench("Time reset on pre-run stage")
+        config.start_time = time.time()
+
         if config.not_mister:
             self._logger.debug('Not MiSTer environment!')
             config.arcade_organizer = False
