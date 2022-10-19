@@ -18,7 +18,6 @@
 import curses
 import hashlib
 from functools import cached_property
-from typing import Dict, Callable, List, Tuple
 
 from update_all.config import Config
 from update_all.config_reader import load_ini_config_with_no_section
@@ -35,12 +34,12 @@ from update_all.logger import Logger
 from update_all.os_utils import OsUtils
 from update_all.settings_screen_model import settings_screen_model
 from update_all.settings_screen_printer import SettingsScreenPrinter
-from update_all.ui_engine import run_ui_engine, Ui, UiComponent, UiApplication, UiSectionFactory
+from update_all.ui_engine import run_ui_engine, Ui, UiApplication, UiSectionFactory
 from update_all.ui_engine_dialog_application import DialogSectionFactory
 from update_all.ui_model_utilities import gather_variable_declarations, dynamic_convert_string
 
 
-class SettingsScreen(UiApplication, UiComponent):
+class SettingsScreen(UiApplication):
     def __init__(self, logger: Logger, config_provider: GenericProvider[Config], file_system: FileSystem,
                  downloader_ini_repository: DownloaderIniRepository, os_utils: OsUtils, settings_screen_printer: SettingsScreenPrinter, checker: Checker, local_repository: LocalRepository, store_provider: GenericProvider[LocalStore]):
         self._logger = logger
@@ -58,7 +57,7 @@ class SettingsScreen(UiApplication, UiComponent):
     def load_main_menu(self) -> None:
         run_ui_engine('main_menu', settings_screen_model(), self)
 
-    def initialize_ui(self, ui: Ui, screen: curses.window) -> Tuple[List[UiComponent], UiSectionFactory]:
+    def initialize_ui(self, ui: Ui, screen: curses.window) -> UiSectionFactory:
         ui.set_value('needs_save', 'false')
 
         db_ids = db_ids_by_model_variables()
@@ -99,24 +98,24 @@ class SettingsScreen(UiApplication, UiComponent):
         drawer_factory, theme_manager = self._settings_screen_printer.initialize_screen(screen)
         theme_manager.set_theme(ui_theme)
 
-        self._theme_manager = theme_manager
-        return [self], DialogSectionFactory(drawer_factory)
+        ui.add_custom_effects({
+            'calculate_needs_save': lambda effect: self.calculate_needs_save(ui),
+            'calculate_has_right_available_code': lambda effect: self.calculate_has_right_available_code(ui),
+            'calculate_is_test_spinner_firmware_applied': lambda effect: self.calculate_is_test_spinner_firmware_applied(ui),
+            'test_unstable_spinner_firmware': lambda effect: self.test_unstable_spinner_firmware(ui),
+            'play_bad_apple': lambda effect: self.play_bad_apple(ui), 'save': lambda effect: self.save(ui),
+            'prepare_exit_dont_save_and_run': lambda effect: self.prepare_exit_dont_save_and_run(ui),
+            'calculate_file_exists': lambda effect: self.calculate_file_exists(ui, effect),
+            'remove_file': lambda effect: self.remove_file(ui, effect),
+            'calculate_arcade_organizer_folders': lambda effect: self.calculate_arcade_organizer_folders(ui),
+            'clean_arcade_organizer_folders': lambda effect: self.clean_arcade_organizer_folders(ui),
+            'calculate_names_char_code_warning': lambda effect: self.calculate_names_char_code_warning(ui),
+            'calculate_names_txt_file_warning': lambda effect: self.calculate_names_txt_file_warning(ui),
+            'apply_theme': lambda effect: self.apply_theme(ui),
+        })
 
-    def initialize_effects(self, ui: Ui, effects: Dict[str, Callable[[], None]]) -> None:
-        effects['calculate_needs_save'] = lambda effect: self.calculate_needs_save(ui)
-        effects['calculate_has_right_available_code'] = lambda effect: self.calculate_has_right_available_code(ui)
-        effects['calculate_is_test_spinner_firmware_applied'] = lambda effect: self.calculate_is_test_spinner_firmware_applied(ui)
-        effects['test_unstable_spinner_firmware'] = lambda effect: self.test_unstable_spinner_firmware(ui)
-        effects['play_bad_apple'] = lambda effect: self.play_bad_apple(ui)
-        effects['save'] = lambda effect: self.save(ui)
-        effects['prepare_exit_dont_save_and_run'] = lambda effect: self.prepare_exit_dont_save_and_run(ui)
-        effects['calculate_file_exists'] = lambda effect: self.calculate_file_exists(ui, effect)
-        effects['remove_file'] = lambda effect: self.remove_file(ui, effect)
-        effects['calculate_arcade_organizer_folders'] = lambda effect: self.calculate_arcade_organizer_folders(ui)
-        effects['clean_arcade_organizer_folders'] = lambda effect: self.clean_arcade_organizer_folders(ui)
-        effects['calculate_names_char_code_warning'] = lambda effect: self.calculate_names_char_code_warning(ui)
-        effects['calculate_names_txt_file_warning'] = lambda effect: self.calculate_names_txt_file_warning(ui)
-        effects['apply_theme'] = lambda effect: self.apply_theme(ui)
+        self._theme_manager = theme_manager
+        return DialogSectionFactory(drawer_factory)
 
     def calculate_file_exists(self, ui, effect) -> None:
         ui.set_value('file_exists', 'true' if self._file_system.is_file(effect['target']) else 'false')

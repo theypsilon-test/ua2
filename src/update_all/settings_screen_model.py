@@ -539,9 +539,9 @@ def settings_screen_model(): return {
             "ui": "dialog_sub_menu",
             "header": "Arcade Organizer 2.0 Settings",
             "variables": {
-                "arcade_organizer_orgdir": {"rename": "orgdir", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
+                "arcade_organizer_orgdir": {"rename": "orgdir", "group": "ao_ini", "default": "/media/fat/_Arcade/_Organized", "values": ["/media/fat/_Arcade/_Organized", "/media/fat/_Arcade", "/media/fat/_Arcade Organized"]},
                 "arcade_organizer_mad_db_description": {"rename": "mad_db_description", "group": "ao_ini", "default": "https://raw.githubusercontent.com/Toryalai1/MiSTer_ArcadeDatabase/db/mad_db.json.zip", "values": ["https://raw.githubusercontent.com/Toryalai1/MiSTer_ArcadeDatabase/db/mad_db.json.zip", "https://raw.githubusercontent.com/theypsilon/MAD_Database_MiSTer/db/mad_db.json.zip"]},
-                "arcade_organizer_topdir": {"rename": "topdir", "group": "ao_ini", "default": "", "values": ["", "platform", "core", "year"]},
+                "arcade_organizer_topdir": {"rename": "topdir", "group": "ao_ini", "default": "platform", "values": ["platform", "core", "year", ""]},
                 "arcade_organizer_skipalts": {"rename": "skipalts", "group": "ao_ini", "default": "true", "values": ["false", "true"]},
                 "arcade_organizer_prepend_year": {"rename": "prepend_year", "group": "ao_ini", "default": "false", "values": ["false", "true"]},
                 "arcade_organizer_verbose": {"rename": "verbose", "group": "ao_ini", "default": "false", "values": ["false", "true"]},
@@ -550,7 +550,13 @@ def settings_screen_model(): return {
                 "mad_db_name_formatter": {
                     "https://raw.githubusercontent.com/Toryalai1/MiSTer_ArcadeDatabase/db/mad_db.json.zip": "Toryalai1/MiSTer_ArcadeDatabase",
                     "https://raw.githubusercontent.com/theypsilon/MAD_Database_MiSTer/db/mad_db.json.zip": "theypsilon/Incomplete_MAD_DB_Generator",
-                }
+                },
+                'orgdir_description': {
+                    "/media/fat/_Arcade/_Organized": "On the 'Organized' sub folder under 'Arcade'",
+                    "/media/fat/_Arcade": "Directly on 'Arcade' folder",
+                    "/media/fat/_Arcade Organized": "On new folder 'Arcade Organized'",
+                },
+                'capitalize': lambda string_value: string_value.capitalize(),
             },
             "entries": [
                 {
@@ -559,8 +565,8 @@ def settings_screen_model(): return {
                     "actions": {"ok": [{"type": "rotate_variable", "target": "arcade_organizer"}]}
                 },
                 {
-                    "title": "2 Organized Folders",
-                    "description": "{arcade_organizer_orgdir}",
+                    "title": "2 Arcade Organizer Folders",
+                    "description": "{arcade_organizer_orgdir:orgdir_description}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "arcade_organizer_orgdir"}]}
                 },
                 {
@@ -570,7 +576,7 @@ def settings_screen_model(): return {
                 },
                 {
                     "title": "4 Top additional folders",
-                    "description": "{arcade_organizer_topdir}",
+                    "description": "{arcade_organizer_topdir:capitalize}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "arcade_organizer_topdir"}]}
                 },
                 {
@@ -642,6 +648,9 @@ def settings_screen_model(): return {
                 "arcade_organizer_region_main_description": {"rename": "region_main_description", "group": "ao_ini", "default": "DEV PREFERRED", "values": ["DEV PREFERRED", "Japan", "World", "USA", "Asia", "Europe", "Hispanic", "Spain", "Argentina", "Italy", "Brazil", "France", "Germany"]},
                 "arcade_organizer_region_others": {"rename": "region_others", "group": "ao_ini", "default": "1", "values": ["1", "0", "2"]},
             },
+            "formatters": {
+                "arcade_organizer_region_main_description_formatter": {"DEV PREFERRED" : "Region chosen by the MRA maintainer"}
+            },
             "entries": [
                 {
                     "title": "1 Region folders",
@@ -650,7 +659,7 @@ def settings_screen_model(): return {
                 },
                 {
                     "title": "2 Main region",
-                    "description": "{arcade_organizer_region_main_description}",
+                    "description": "{arcade_organizer_region_main_description:arcade_organizer_region_main_description_formatter}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "arcade_organizer_region_main_description"}]}
                 },
                 {

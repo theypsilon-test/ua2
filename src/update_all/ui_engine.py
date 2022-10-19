@@ -17,7 +17,7 @@
 # https://github.com/theypsilon-test/ua2
 import abc
 import curses
-from typing import Dict, Callable, List, Any, Union, Optional, Tuple
+from typing import Dict, Callable, Any, Union, Optional, List
 
 from update_all.ui_model_utilities import gather_variable_declarations
 
@@ -29,10 +29,11 @@ class Ui(abc.ABC):
     def set_value(self, key: str, value: Any) -> None:
         """Sets value as string for variable on the given key"""
 
+    def add_custom_effects(self, effects: Dict[str, Callable[[], None]]):
+        """Add effects during initialization"""
 
-class UiComponent(abc.ABC):
-    def initialize_effects(self, ui: Ui, effects: Dict[str, Callable[[], None]]):
-        """Initializes the effects dictionary if necessary"""
+    def add_custom_formatters(self, formatters: Dict[str, Callable[[str], str]]):
+        """Add callable formatters during initialization"""
 
 
 class Interpolator(abc.ABC):
@@ -40,11 +41,10 @@ class Interpolator(abc.ABC):
         """Interpolates any value inside a string into another string according to the formatters"""
 
 
+Effect = Dict[str, Any]
 class EffectChain:
-    def __init__(self, chain):
+    def __init__(self, chain: List[Effect]):
         self.chain = chain
-
-
 ProcessKeyResult = Union[int, EffectChain]
 
 
@@ -64,7 +64,7 @@ class UiSectionFactory(abc.ABC):
 
 
 class UiApplication(abc.ABC):
-    def initialize_ui(self, ui: Ui, screen: curses.window) -> Tuple[List[UiComponent], UiSectionFactory]:
+    def initialize_ui(self, ui: Ui, screen: curses.window) -> UiSectionFactory:
         """Initializes the theme at the start"""
 
 
@@ -83,6 +83,9 @@ class _UiSystem(Ui):
         self._model = model
         self._ui_application = ui_application
         self._values = {}
+        self._custom_effects = {}
+        self._custom_formatters = {}
+        self._is_initializing = False
 
     def get_value(self, key: str) -> str:
         return self._values[key]
@@ -93,21 +96,46 @@ class _UiSystem(Ui):
     def execute(self):
         self._values.update({k: v['default'] for k, v in gather_variable_declarations(self._model).items()})
 
-        ui_components, ui_section_factory = self._ui_application.initialize_ui(self, self._screen)
+        self._is_initializing = True
 
-        runtime = _UiRuntime(self._model, self._entrypoint, self, ui_components, ui_section_factory)
+        ui_section_factory = self._ui_application.initialize_ui(self, self._screen)
+
+        self._is_initializing = False
+
+        runtime = _UiRuntime(self._model, self._entrypoint, self, ui_section_factory)
         runtime.run()
+
+    def add_custom_effects(self, effects: Dict[str, Callable[[], None]]):
+        self._ensure_is_initializing('add_custom_effects')
+
+        self._custom_effects = effects
+
+    def add_custom_formatters(self, formatters: Dict[str, Callable[[str], str]]):
+        self._ensure_is_initializing('add_custom_formatters')
+
+        self._custom_formatters = formatters
+
+    def custom_effects(self) -> Dict[str, Callable[[], None]]:
+        return self._custom_effects
+
+    def custom_formatters(self) ->  Dict[str, Callable[[str], str]]:
+        return self._custom_formatters
+
+    def _ensure_is_initializing(self, topic):
+        if self._is_initializing:
+            return
+
+        raise Exception(f'{topic} should only be used within the execution of UiApplication.initialize_ui.')
 
 
 class _UiRuntime:
-    def __init__(self, model, entrypoint, ui: Ui, ui_components: List[UiComponent], ui_section_factory: UiSectionFactory):
+    def __init__(self, model, entrypoint, ui_system: _UiSystem, ui_section_factory: UiSectionFactory):
         self._model = model
         self._section = entrypoint
         self._items = self._model['items']
         self._section_states = {}
         self._history = []
-        self._ui = ui
-        self._ui_components = ui_components
+        self._ui_system = ui_system
         self._ui_section_factory = ui_section_factory
 
     def run(self):
@@ -162,15 +190,15 @@ class _UiRuntime:
             for section in self._history:
                 data[field].update(self._items[section].get(field, {}))
 
+        data['formatters'].update(self._ui_system.custom_formatters())
+
         hotkeys = {}
         for hk in data.get('hotkeys', []):
             for key in hk['keys']:
                 hotkeys[key] = hk['action']
 
-        interpolator = _Interpolator(data, self._ui)
-        effect_resolver = _EffectResolver(self._ui, data)
-        for component in self._ui_components:
-            effect_resolver.add_ui_component(component)
+        interpolator = _Interpolator(data['formatters'], self._ui_system)
+        effect_resolver = _EffectResolver(self._ui_system, data, self._ui_system.custom_effects())
 
         ui_type = data['ui'] if 'ui' in data else None
         if ui_type is None:
@@ -224,8 +252,8 @@ def expand_ui_type(data, model):
 
 
 class _Interpolator(Interpolator):
-    def __init__(self, data, ui: Ui):
-        self._data = data
+    def __init__(self, formatters: Dict[str, Union[Dict[str, str], Callable[[str], str]]], ui: Ui):
+        self._formatters = formatters
         self._ui = ui
 
     def interpolate(self, text):
@@ -245,11 +273,7 @@ class _Interpolator(Interpolator):
             elif reading_state == 1:
                 if character == '}':
                     reading_state = 0
-                    if reading_value in self._data['formatters']:
-                        variable_type = self._data['formatters'][reading_value]
-                        values[reading_value] = variable_type[self._ui.get_value(reading_value)]
-                    else:
-                        values[reading_value] = self._ui.get_value(reading_value)
+                    values[reading_value] = self._call_formatter(reading_value, reading_value) if reading_value in self._formatters else self._ui.get_value(reading_value)
                 elif character == ':':
                     reading_state = 2
                     reading_modifier = ''
@@ -258,24 +282,12 @@ class _Interpolator(Interpolator):
 
             elif reading_state == 2:
                 if character == '=':
-                    if reading_modifier not in self._data['formatters']:
-                        raise NotImplementedError(f'Modifier "{reading_modifier}" is not in formatters.')
-
                     reading_arguments = []
                     reading_current_argument = ''
                     reading_state = 3
                 elif character == '}':
                     reading_state = 0
-                    if reading_modifier == 'bool':
-                        values[reading_value + ':bool'] = 'true' if bool(self._ui.get_value(reading_value)) else 'false'
-                    elif reading_modifier in self._data['formatters']:
-                        variable_type = self._data['formatters'][reading_modifier]
-                        try:
-                            values[reading_value + ':' + reading_modifier] = variable_type[self._ui.get_value(reading_value)]
-                        except Exception as e:
-                            raise ValueError(reading_value, reading_modifier, variable_type, e)
-                    else:
-                        raise NotImplementedError(f'Modifier "{reading_modifier}" does not exit.')
+                    values[reading_value + ':' + reading_modifier] = self._call_formatter(reading_modifier, reading_value)
                 else:
                     reading_modifier += character
 
@@ -283,11 +295,7 @@ class _Interpolator(Interpolator):
                 if character == '}':
                     reading_arguments.append(reading_current_argument)
                     reading_state = 0
-                    variable_type = self._data['formatters'][reading_modifier]
-                    try:
-                        values[reading_value + ':' + reading_modifier + '=' + ','.join(reading_arguments)] = variable_type[self._ui.get_value(reading_value)].format(*reading_arguments)
-                    except Exception as e:
-                        raise ValueError(reading_value, reading_modifier, variable_type, reading_arguments, e)
+                    values[reading_value + ':' + reading_modifier + '=' + ','.join(reading_arguments)] = self._call_formatter(reading_modifier, reading_value, reading_arguments)
                 elif character == ',':
                     reading_arguments.append(reading_current_argument)
                     reading_current_argument = ''
@@ -299,19 +307,37 @@ class _Interpolator(Interpolator):
 
         for var_name, var_value in values.items():
             text = text.replace("{" + var_name + "}", str(var_value))
+
         return text
+
+    def _call_formatter(self, reading_modifier: str, reading_value: str, reading_arguments: List[str] = None):
+        if reading_modifier not in self._formatters:
+            raise ValueError(f'Formatter "{reading_modifier}" called for value "{reading_value}" does not exit.')
+
+        formatter = self._formatters[reading_modifier]
+        try:
+            variable_value = self._ui.get_value(reading_value)
+            if callable(formatter):
+                result = formatter(variable_value)
+            else:
+                result = formatter[variable_value] if variable_value in formatter else variable_value
+
+            if reading_arguments is None:
+                return result
+            else:
+                return result.format(*reading_arguments)
+
+        except Exception as e:
+            raise ValueError(reading_value, reading_modifier, formatter, e)
 
 
 class _EffectResolver:
-    def __init__(self, ui, data):
+    def __init__(self, ui, data, additional_effects: Dict[str, Callable[[Effect], None]]):
         self._ui = ui
         self._data = data
-        self._additional_effects = {}
+        self._additional_effects = additional_effects
 
-    def add_ui_component(self, ui_component):
-        ui_component.initialize_effects(self._ui, self._additional_effects)
-
-    def resolve_effect_chain(self, chain):
+    def resolve_effect_chain(self, chain: List[Effect]):
         result = None
         for effect in chain:
             if 'ui' in effect:
