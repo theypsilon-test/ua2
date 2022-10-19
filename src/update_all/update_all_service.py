@@ -22,9 +22,8 @@ from typing import List
 
 from update_all.cli_output_formatting import CLEAR_SCREEN
 from update_all.config import Config
-from update_all.constants import UPDATE_ALL_VERSION, DOWNLOADER_INI_STANDARD_PATH, \
-    DOWNLOADER_URL, ARCADE_ORGANIZER_URL, FILE_update_all_log, FILE_mister_downloader_needs_reboot, MEDIA_FAT, \
-    ARCADE_ORGANIZER_INI, MISTER_DOWNLOADER_VERSION, FILE_downloader_temp_ini
+from update_all.constants import UPDATE_ALL_VERSION, DOWNLOADER_URL, ARCADE_ORGANIZER_URL, FILE_update_all_log,\
+    FILE_mister_downloader_needs_reboot, MEDIA_FAT, ARCADE_ORGANIZER_INI, MISTER_DOWNLOADER_VERSION
 from update_all.countdown import Countdown, CountdownImpl, CountdownOutcome
 from update_all.downloader_ini_repository import DownloaderIniRepository
 from update_all.local_store import LocalStore
