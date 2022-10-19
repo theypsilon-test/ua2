@@ -195,7 +195,7 @@ class UpdateAllService:
             update_linux = False
 
         env = {
-            'DOWNLOADER_INI_PATH': FILE_downloader_temp_ini if config.temporary_downloader_ini else DOWNLOADER_INI_STANDARD_PATH,
+            'DOWNLOADER_INI_PATH': self._file_system.download_target_path(FILE_downloader_temp_ini if config.temporary_downloader_ini else DOWNLOADER_INI_STANDARD_PATH),
             'ALLOW_REBOOT': '0',
             'CURL_SSL': self._config_provider.get().curl_ssl,
             'UPDATE_LINUX': 'true' if update_linux else 'false',
@@ -250,7 +250,7 @@ class UpdateAllService:
 
         temp_file = self._file_system.temp_file_by_id('downloader.sh')
         return_code = self._os_utils.execute_process(temp_file.name, {
-            'DOWNLOADER_INI_PATH': FILE_downloader_temp_ini if config.temporary_downloader_ini else DOWNLOADER_INI_STANDARD_PATH,
+            'DOWNLOADER_INI_PATH': self._file_system.download_target_path(FILE_downloader_temp_ini if config.temporary_downloader_ini else DOWNLOADER_INI_STANDARD_PATH),
             'ALLOW_REBOOT': '0',
             'CURL_SSL': config.curl_ssl,
             'UPDATE_LINUX': 'only',
