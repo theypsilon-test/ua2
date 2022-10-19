@@ -285,6 +285,7 @@ class UpdateAllService:
 
         self._logger.print()
         self._logger.print(f"Run time: {run_time}s")
+        self._logger.debug(f"Date: {datetime.datetime.utcnow()}")
         self._logger.print()
         self._logger.print(f"Full log for more details: {FILE_update_all_log}")
         self._logger.print()
