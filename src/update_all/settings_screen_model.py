@@ -546,6 +546,12 @@ def settings_screen_model(): return {
                 "arcade_organizer_prepend_year": {"rename": "prepend_year", "group": "ao_ini", "default": "false", "values": ["false", "true"]},
                 "arcade_organizer_verbose": {"rename": "verbose", "group": "ao_ini", "default": "false", "values": ["false", "true"]},
             },
+            "formatters": {
+                "mad_db_name_formatter": {
+                    "https://raw.githubusercontent.com/Toryalai1/MiSTer_ArcadeDatabase/db/mad_db.json.zip": "Toryalai1/MiSTer_ArcadeDatabase",
+                    "https://raw.githubusercontent.com/theypsilon/MAD_Database_MiSTer/db/mad_db.json.zip": "theypsilon/Incomplete_MAD_DB_Generator",
+                }
+            },
             "entries": [
                 {
                     "title": "1 {arcade_organizer:do_enable}",
@@ -559,7 +565,7 @@ def settings_screen_model(): return {
                 },
                 {
                     "title": "3 Selected Database",
-                    "description": "{arcade_organizer_mad_db_description}",
+                    "description": "{arcade_organizer_mad_db_description:mad_db_name_formatter}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "arcade_organizer_mad_db_description"}]}
                 },
                 {
