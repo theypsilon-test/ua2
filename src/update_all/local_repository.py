@@ -18,7 +18,8 @@
 # https://github.com/theypsilon-test/ua2
 from update_all.config import Config
 from update_all.other import GenericProvider
-from update_all.constants import FILE_update_all_storage, FILE_update_all_log, FILE_update_all_ini
+from update_all.constants import FILE_update_all_storage, FILE_update_all_log, FILE_update_all_ini, \
+    FILE_downloader_temp_ini, DOWNLOADER_INI_STANDARD_PATH
 from update_all.local_store import LocalStore
 from update_all.store_migrator import make_new_local_store
 
@@ -64,6 +65,10 @@ class LocalRepository:
         if self._logfile_path_value is None:
             self._logfile_path_value = f'{self._config_provider.get().base_path}/{FILE_update_all_log}'
         return self._logfile_path_value
+
+    @property
+    def downloader_ini_path(self):
+        return self._file_system.download_target_path(FILE_downloader_temp_ini if self._config_provider.get().temporary_downloader_ini else DOWNLOADER_INI_STANDARD_PATH)
 
     def set_logfile_path(self, value):
         self._logfile_path_value = value
