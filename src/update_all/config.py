@@ -34,6 +34,9 @@ class Config:
 
     # General options
     base_path: str = MEDIA_FAT
+    base_system_path: str = MEDIA_FAT
+    paths_from_downloader_ini: bool = False
+
     update_linux: bool = True
     not_mister: bool = False
     verbose: bool = False

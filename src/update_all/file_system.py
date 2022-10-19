@@ -26,7 +26,7 @@ import zipfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 from update_all.config import AllowDelete
-from update_all.constants import K_ALLOW_DELETE
+from update_all.constants import K_ALLOW_DELETE, FOLDER_scripts_config_lc
 from update_all.other import ClosableValue
 
 
@@ -374,11 +374,16 @@ class _FileSystem(FileSystem):
         if path[0] == '/':
             return path
 
+        first_part = self._config.get().base_path
+
         path_lower = path.lower()
         if path_lower in self._path_dictionary:
-            return '%s/%s' % (self._path_dictionary[path_lower], path)
+            first_part = self._path_dictionary[path_lower]
 
-        return '%s/%s' % (self._config.get().base_path, path)
+        if path_lower.startswith(FOLDER_scripts_config_lc):
+            first_part = self._config.get().base_system_path
+
+        return '%s/%s' % (first_part, path)
 
 
 class InvalidFileResolution(Exception):

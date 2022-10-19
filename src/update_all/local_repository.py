@@ -18,8 +18,7 @@
 # https://github.com/theypsilon-test/ua2
 from update_all.config import Config
 from update_all.other import GenericProvider
-from update_all.constants import FILE_update_all_storage, FILE_update_all_log, FILE_update_all_ini, \
-    FILE_downloader_temp_ini, DOWNLOADER_INI_STANDARD_PATH
+from update_all.constants import FILE_update_all_storage, FILE_update_all_log, FILE_downloader_temp_ini, DOWNLOADER_INI_STANDARD_PATH
 from update_all.local_store import LocalStore
 from update_all.store_migrator import make_new_local_store
 
@@ -44,41 +43,17 @@ class LocalRepository:
         self._logger = logger
         self._file_system = file_system
         self._store_migrator = store_migrator
-        self._storage_path_value = None
-        self._logfile_path_value = None
-        self._update_all_ini_path_value = None
-
-    @property
-    def _storage_path(self):
-        if self._storage_path_value is None:
-            self._storage_path_value = f'{self._config_provider.get().base_path}/{FILE_update_all_storage}'
-        return self._storage_path_value
-
-    @property
-    def _update_all_ini_path(self):
-        if self._update_all_ini_path_value is None:
-            self._update_all_ini_path_value = f'{self._config_provider.get().base_path}/{FILE_update_all_ini}'
-        return self._update_all_ini_path_value
-
-    @property
-    def logfile_path(self):
-        if self._logfile_path_value is None:
-            self._logfile_path_value = f'{self._config_provider.get().base_path}/{FILE_update_all_log}'
-        return self._logfile_path_value
 
     @property
     def downloader_ini_path(self):
         return self._file_system.download_target_path(FILE_downloader_temp_ini if self._config_provider.get().temporary_downloader_ini else DOWNLOADER_INI_STANDARD_PATH)
 
-    def set_logfile_path(self, value):
-        self._logfile_path_value = value
-
     def load_store(self) -> LocalStore:
         self._logger.bench('Loading store...')
 
-        if self._file_system.is_file(self._storage_path):
+        if self._file_system.is_file(FILE_update_all_storage):
             try:
-                local_store_props = self._file_system.load_dict_from_file(self._storage_path)
+                local_store_props = self._file_system.load_dict_from_file(FILE_update_all_storage)
             except Exception as e:
                 self._logger.debug(e)
                 self._logger.print('Could not load store')
@@ -97,14 +72,14 @@ class LocalRepository:
 
         local_store = local_store_wrapper.unwrap_props()
 
-        self._file_system.make_dirs_parent(self._storage_path)
-        self._file_system.save_json_on_zip(local_store, self._storage_path)
+        self._file_system.make_dirs_parent(FILE_update_all_storage)
+        self._file_system.save_json_on_zip(local_store, FILE_update_all_storage)
 
         local_store_wrapper.mark_as_cleaned()
 
     def save_log_from_tmp(self, path):
-        self._file_system.make_dirs_parent(self.logfile_path)
-        self._file_system.copy(path, self.logfile_path)
+        self._file_system.make_dirs_parent(FILE_update_all_log)
+        self._file_system.copy(path, FILE_update_all_log)
 
 
 class LocalRepositoryProviderException(Exception):

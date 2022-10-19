@@ -38,15 +38,25 @@ class ConfigReader:
     def __init__(self, logger: Logger, env: dict[str, str]):
         self._logger = logger
         self._env = env
+        self._downloader_ini = {}
 
-    def fill_config_with_environment(self, config: Config) -> None:
-        config.base_path = str(calculate_base_path(self._env))
+    def fill_config_with_environment_and_mister_section(self, config: Config):
+        self._initialize_downloader_ini()
+        if 'mister' in self._downloader_ini:
+            mister_section = self._downloader_ini['mister']
+            config.base_path = mister_section.get_string('base_path', config.base_path)
+            config.base_system_path = mister_section.get_string('base_system_path', config.base_path)
+            config.paths_from_downloader_ini = mister_section.has('base_path')
+            config.verbose = mister_section.get_bool('verbose', False)
+        else:
+            config.base_path = str(calculate_base_path(self._env))
+            config.base_system_path = config.base_path
 
         if is_debug_enabled(self._env):
             config.verbose = True
 
-        config.curl_ssl = self._valid_max_length(KENV_CURL_SSL, self._env[KENV_CURL_SSL], 50)
-        config.commit = self._valid_max_length(KENV_COMMIT, self._env[KENV_COMMIT], 50)
+        config.curl_ssl = valid_max_length(KENV_CURL_SSL, self._env[KENV_CURL_SSL], 50)
+        config.commit = valid_max_length(KENV_COMMIT, self._env[KENV_COMMIT], 50)
         config.start_time = time.time()
 
         self._logger.configure(config)
@@ -57,52 +67,52 @@ class ConfigReader:
         self._logger.debug('env: ' + json.dumps(self._env, indent=4))
 
     def fill_config_with_ini_files(self, config: Config, file_system: FileSystem) -> None:
-        downloader_ini = None
-        downloader_sections = set()
-        if file_system.is_file(DOWNLOADER_INI_STANDARD_PATH):
-            downloader_ini = self._load_ini_config_from_contents(file_system.read_file_contents(DOWNLOADER_INI_STANDARD_PATH))
-            downloader_sections = set([section.lower() for section in downloader_ini.sections()])
+        self._initialize_downloader_ini()
 
         for db_id, variable in model_variables_by_db_id().items():
-            is_present = db_id.lower() in downloader_sections
+            is_present = db_id.lower() in self._downloader_ini
             config.__setattr__(variable, is_present)
             if is_present:
                 config.databases.add(db_id)
 
-        if DB_ID_JTCORES in downloader_sections:
-            config.download_beta_cores = downloader_ini[DB_ID_JTCORES]['db_url'] == 'https://raw.githubusercontent.com/jotego/jtpremium/main/jtbindb.json.zip'
+        if DB_ID_JTCORES in self._downloader_ini:
+            config.download_beta_cores = self._downloader_ini[DB_ID_JTCORES].get_string('db_url', AllDBs.JTSTABLE_JTCORES.db_url) == 'https://raw.githubusercontent.com/jotego/jtpremium/main/jtbindb.json.zip'
 
-        if DB_ID_NAMES_TXT in downloader_sections:
-            config.names_region, config.names_char_code, config.names_sort_code = names_locale_by_db_url(downloader_ini[DB_ID_NAMES_TXT]['db_url'])
+        if DB_ID_NAMES_TXT in self._downloader_ini:
+            config.names_region, config.names_char_code, config.names_sort_code = names_locale_by_db_url(self._downloader_ini[DB_ID_NAMES_TXT].get_string('db_url', AllDBs.NAMES_CHAR18_COMMON_JP_TXT.db_url))
 
-        if AllDBs.ARCADE_ROMS.db_id in downloader_sections and 'filter' in downloader_ini[AllDBs.ARCADE_ROMS.db_id]:
-            config.hbmame_filter = '!hbmame' in downloader_ini[AllDBs.ARCADE_ROMS.db_id]['filter']
+        if AllDBs.ARCADE_ROMS.db_id in self._downloader_ini and 'filter' in self._downloader_ini[AllDBs.ARCADE_ROMS.db_id]:
+            config.hbmame_filter = '!hbmame' in self._downloader_ini[AllDBs.ARCADE_ROMS.db_id].get_string('filter', '')
 
         arcade_organizer_ini = load_ini_config_with_no_section(self._logger, file_system, ARCADE_ORGANIZER_INI)
         config.arcade_organizer = arcade_organizer_ini.get_bool('arcade_organizer', config.arcade_organizer)
 
         self._logger.debug('config: ' + json.dumps(config, default=lambda o: str(o) if isinstance(o, Path) or isinstance(o, set) else o.__dict__, indent=4))
 
-    def _load_ini_config_from_contents(self, contents):
-        ini_config = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
-        try:
-            ini_config.read_string(contents)
-        except Exception as e:
-            self._logger.debug('Could not read ini file: %s' % contents)
-            self._logger.debug(e)
-            raise e
-        return ini_config
-
     def fill_config_with_local_store(self, config: Config, store: LocalStore):
         config.wait_time_for_reading = store.get_wait_time_for_reading()
         config.countdown_time = store.get_countdown_time()
         config.autoreboot = store.get_autoreboot()
 
-    def _valid_max_length(self, key: str, value: str, max_limit: int) -> str:
-        if len(value) <= max_limit:
-            return value
+    def _initialize_downloader_ini(self):
+        if len(self._downloader_ini) > 0:
+            """It should be initialized only once"""
+            return
 
-        raise InvalidConfigParameter(f"Invalid {key} with value '{value}'. Too long string (max is {max_limit}).")
+        downloader_ini = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
+        try:
+            downloader_ini.read_string(Path(f'{str(calculate_base_path(self._env))}/{DOWNLOADER_INI_STANDARD_PATH}').read_text())
+        except Exception as _:
+            return
+
+        self._downloader_ini = {section.lower(): IniParser(downloader_ini[section]) for section in downloader_ini.sections()}
+
+
+def valid_max_length( key: str, value: str, max_limit: int) -> str:
+    if len(value) <= max_limit:
+        return value
+
+    raise InvalidConfigParameter(f"Invalid {key} with value '{value}'. Too long string (max is {max_limit}).")
 
 
 def candidate_databases(config: Config) -> List[Tuple[str, Database]]:

@@ -21,7 +21,7 @@ from pathlib import Path
 
 from test.file_system_tester_state import FileSystemState
 from update_all.config import Config
-from update_all.constants import K_BASE_PATH, K_ALLOW_DELETE
+from update_all.constants import K_BASE_PATH, K_ALLOW_DELETE, FOLDER_scripts_config_lc
 from update_all.file_system import FileSystemFactory as ProductionFileSystemFactory, FileSystem as ProductionFileSystem, \
     absolute_parent_folder
 from update_all.other import ClosableValue, UnreachableException
@@ -98,7 +98,7 @@ class _FileSystem(ProductionFileSystem):
         return data
 
     def _fix_paths(self, paths):
-        return [p.replace(self._base_path(p) + '/', '') for p in paths]
+        return [p.replace(self._config.base_path + '/', '') for p in paths]
 
     def temp_file(self):
         result = fake_temp_file + str(self._current_temp_file_index)
@@ -321,13 +321,15 @@ class _FileSystem(ProductionFileSystem):
         if path[0] == '/':
             return path
 
+        first_part = self._config.base_path
+
         if path in self._state.path_dictionary:
-            return '%s/%s' % (self._state.path_dictionary[path], path)
+            first_part = self._state.path_dictionary[path]
 
-        return ('%s/%s' % (self._base_path(path), path))
+        if path.startswith(FOLDER_scripts_config_lc):
+            first_part = self._config.base_system_path
 
-    def _base_path(self, path):
-        return self._config.base_path
+        return '%s/%s' % (first_part, path)
 
 
 class _Record:

@@ -39,6 +39,7 @@ FILE_MiSTer = 'MiSTer'
 FILE_MiSTer_delme = '.MiSTer.delme'
 FILE_MiSTer_ini = 'MiSTer.ini'
 FOLDER_scripts = 'Scripts'
+FOLDER_scripts_config_lc = 'scripts/.config'
 FILE_downloader_temp_ini = '/tmp/downloader_temp.ini'
 
 # Reboot files

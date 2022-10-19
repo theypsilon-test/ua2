@@ -22,7 +22,7 @@ import distutils.util
 
 class IniParser:
     def __init__(self, ini_args):
-        self._ini_args = ini_args
+        self._ini_args = {k.lower(): v for k, v in ini_args}
 
     def get_string(self, key, default):
         result = self._ini_args.get(key, default)
@@ -39,20 +39,6 @@ class IniParser:
             return default
 
         return to_int(result, default)
-
-    def get_str_list(self, key, default):
-        result = [s for s in [s.strip('"\' ') for s in self.get_string(key, '')] if s != '']
-        if len(result) > 0:
-            return result
-        else:
-            return default
-
-    def get_int_list(self, key, default):
-        result = [s for s in [to_int(s, None) for s in self.get_str_list(key, [])] if s is not None]
-        if len(result) > 0:
-            return result
-        else:
-            return default
 
     def has(self, key):
         return self._ini_args.get(key) is not None

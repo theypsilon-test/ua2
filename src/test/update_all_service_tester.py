@@ -63,7 +63,10 @@ class ConfigReaderTester(ConfigReader):
         self._config = config
         super().__init__(NoLogger(), default_env())
 
-    def fill_config_with_environment(self, config) -> None:
+    def _initialize_downloader_ini(self):
+        pass
+
+    def fill_config_with_environment_and_mister_section(self, config) -> None:
         if self._config is not None:
             for k, v in self._config.__dict__.items():
                 if k.startswith('_'):
@@ -71,7 +74,7 @@ class ConfigReaderTester(ConfigReader):
                 config.__setattr__(k, v)
             return
 
-        super().fill_config_with_environment(config)
+        super().fill_config_with_environment_and_mister_section(config)
 
 
 class StoreMigratorTester(StoreMigrator):

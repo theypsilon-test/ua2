@@ -78,8 +78,7 @@ class DownloaderIniRepository:
             ini_contents = self._file_system.read_file_contents(DOWNLOADER_INI_STANDARD_PATH)
             parser = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
             parser.read_string(ini_contents)
-            return {header.lower(): {k.lower(): v for k, v in section.items()} for header, section in parser.items() if
-                   header.lower() != 'default'}
+            return {header.lower(): {k.lower(): v for k, v in section.items()} for header, section in parser.items() if header.lower() != 'default'}
         except Exception as e:
             self._logger.debug(f'Could not read ini file {DOWNLOADER_INI_STANDARD_PATH}')
             self._logger.debug(e)

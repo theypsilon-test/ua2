@@ -22,8 +22,9 @@ from typing import List
 
 from update_all.cli_output_formatting import CLEAR_SCREEN
 from update_all.config import Config
-from update_all.constants import UPDATE_ALL_VERSION, DOWNLOADER_URL, ARCADE_ORGANIZER_URL, FILE_update_all_log,\
-    FILE_mister_downloader_needs_reboot, MEDIA_FAT, ARCADE_ORGANIZER_INI, MISTER_DOWNLOADER_VERSION
+from update_all.constants import UPDATE_ALL_VERSION, DOWNLOADER_URL, ARCADE_ORGANIZER_URL, FILE_update_all_log, \
+    FILE_mister_downloader_needs_reboot, MEDIA_FAT, ARCADE_ORGANIZER_INI, MISTER_DOWNLOADER_VERSION, \
+    DOWNLOADER_INI_STANDARD_PATH
 from update_all.countdown import Countdown, CountdownImpl, CountdownOutcome
 from update_all.downloader_ini_repository import DownloaderIniRepository
 from update_all.local_store import LocalStore
@@ -47,9 +48,9 @@ class UpdateAllServiceFactory:
         self._local_repository_provider = local_repository_provider
 
     def create(self, env: dict[str, str]):
-        config_reader = ConfigReader(self._logger, env)
         config_provider = GenericProvider[Config]()
         store_provider = GenericProvider[LocalStore]()
+        config_reader = ConfigReader(self._logger, env)
         store_migrator = StoreMigrator(migrations(), self._logger)
         file_system = FileSystemFactory(config_provider, {}, self._logger).create_for_system_scope()
         local_repository = LocalRepository(config_provider, self._logger, file_system, store_migrator)
@@ -117,7 +118,7 @@ class UpdateAllService:
 
     def _read_config(self) -> None:
         config = Config()
-        self._config_reader.fill_config_with_environment(config)
+        self._config_reader.fill_config_with_environment_and_mister_section(config)
         self._config_provider.initialize(config)
         local_store = self._local_repository.load_store()
         self._store_provider.initialize(local_store)
@@ -146,7 +147,7 @@ class UpdateAllService:
             self._logger.print("                    ╚═══════════════════════════════════════╝                   ")
 
         self._logger.print()
-        self._logger.print('Reading downloader.ini')
+        self._logger.print(f'Reading MiSTer section from {self._file_system.download_target_path(DOWNLOADER_INI_STANDARD_PATH)}')
         self._logger.print()
 
     def _countdown_for_settings_screen(self) -> None:
@@ -198,12 +199,12 @@ class UpdateAllService:
             'ALLOW_REBOOT': '0',
             'CURL_SSL': self._config_provider.get().curl_ssl,
             'UPDATE_LINUX': 'true' if update_linux else 'false',
-            'LOGFILE': f'{self._config_provider.get().base_path}/Scripts/.config/downloader/downloader1.log'
+            'LOGFILE': f'{self._config_provider.get().base_system_path}/Scripts/.config/downloader/downloader1.log'
         }
 
-        base_path = self._config_provider.get().base_path
-        if base_path != MEDIA_FAT:
-            env['DEFAULT_BASE_PATH'] = base_path
+        config = self._config_provider.get()
+        if not config.paths_from_downloader_ini and config.base_path != MEDIA_FAT:
+            env['DEFAULT_BASE_PATH'] = config.base_path
 
         return_code = self._os_utils.execute_process(temp_file.name, env)
 
@@ -253,7 +254,7 @@ class UpdateAllService:
             'ALLOW_REBOOT': '0',
             'CURL_SSL': config.curl_ssl,
             'UPDATE_LINUX': 'only',
-            'LOGFILE': f'{config.base_path}/Scripts/.config/downloader/downloader2.log'
+            'LOGFILE': f'{config.base_system_path}/Scripts/.config/downloader/downloader2.log'
         })
 
         if return_code != 0:
