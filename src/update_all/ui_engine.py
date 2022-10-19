@@ -19,6 +19,8 @@ import abc
 import curses
 from typing import Dict, Callable, List, Any, Union, Optional, Tuple
 
+from update_all.ui_model_utilities import gather_variable_declarations
+
 
 class Ui(abc.ABC):
     def get_value(self, key: str) -> str:
@@ -89,10 +91,7 @@ class _UiSystem(Ui):
         self._values[key] = value
 
     def execute(self):
-        self._values.update({k: v['default'] for k, v in self._model.get('variables', {}).items()})
-
-        for item in self._model['items'].values():
-            self._values.update({k: v['default'] for k, v in item.get('variables', {}).items()})
+        self._values.update({k: v['default'] for k, v in gather_variable_declarations(self._model).items()})
 
         ui_components, ui_section_factory = self._ui_application.initialize_ui(self, self._screen)
 
@@ -157,8 +156,11 @@ class _UiRuntime:
     def _make_section_state(self, data):
         expand_ui_type(data, self._model)
 
-        data['formatters'] = {**data.get('formatters', {}), **self._model.get('formatters', {})}
-        data['variables'] = {**data.get('variables', {}), **self._model.get('variables', {})}
+        for field in ['formatters', 'variables']:
+            data[field] = data.get(field, {})
+            data[field].update(self._model.get(field, {}))
+            for section in self._history:
+                data[field].update(self._items[section].get(field, {}))
 
         hotkeys = {}
         for hk in data.get('hotkeys', []):

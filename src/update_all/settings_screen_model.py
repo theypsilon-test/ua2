@@ -42,7 +42,6 @@ def settings_screen_model(): return {
         "llapi_updater": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
         "bios_getter": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
         "arcade_roms_db_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
-        "hbmame_filter": {"group": "arcade_roms", "default": "false", "values": ["false", "true"]},
         "names_txt_updater": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
         "arcade_organizer": {"group": "ua_ini", "default": "true", "values": ["false", "true"]},
 
@@ -237,6 +236,9 @@ def settings_screen_model(): return {
         "arcade_roms_database_menu": {
             "ui": "dialog_sub_menu",
             "header": "Arcade ROMs Database Settings",
+            "variables": {
+                "hbmame_filter": {"group": "arcade_roms", "default": "false", "values": ["false", "true"]}
+            },
             "entries": [
                 {
                     "title": "1 {arcade_roms_db_downloader:do_enable}",
