@@ -310,6 +310,7 @@ class UpdateAllService:
 
         self._logger.print()
         self._logger.print(f"Full log for more details: {FILE_update_all_log}")
+        self._logger.print()
 
     def _reboot_if_needed(self) -> None:
         if self._config_provider.get().not_mister:
