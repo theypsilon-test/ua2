@@ -91,16 +91,16 @@ class TransitionService:
         config.arcade_roms_db_downloader = config.arcade_roms_db_downloader or mame_getter or hbmame_getter
         if mame_getter and not hbmame_getter:
             config.hbmame_filter = True
-            self._logger.debug('config.hbmame_filter = True')
+            self._logger.debug('hbmame_filter=true')
 
         for variable in gather_variable_declarations(settings_screen_model(), 'store'):
             if hasattr(config, variable):
                 value = getattr(config, variable)
                 store.generic_set(variable, value)
-                self._logger.debug(f'Added to store: {variable}')
+                self._logger.debug(f'{variable}={str(value)}')
 
     def _fill_config_with_ini_file(self, config: Config, ini_file, ini_group):
-        self._logger.debug(f'Opening {ini_file}')
+        self._logger.debug(f'\nOpening {ini_file}')
 
         ini_content = self._ini_repository.read_old_ini_file(ini_file)
         db_ids = db_ids_by_model_variables()
