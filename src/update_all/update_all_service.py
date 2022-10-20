@@ -287,6 +287,12 @@ class UpdateAllService:
 
     def _show_outro(self) -> None:
         self._draw_separator()
+        config = self._config_provider.get()
+
+        run_time = str(datetime.timedelta(seconds=time.time() - config.start_time))[0:-4]
+        self._logger.print(f"Update All {UPDATE_ALL_VERSION} ({config.commit}) by theypsilon. Run time: {run_time}s")
+        self._logger.debug(f"Date: {datetime.datetime.utcnow()}")
+        self._logger.print()
 
         if len(self._error_reports):
             self._logger.print("There were some errors in the Updaters.")
@@ -300,16 +306,10 @@ class UpdateAllService:
             self._logger.print("Maybe a network problem?")
             self._logger.print("Check your connection and then run this script again.")
         else:
-            self._logger.print(f"Update All {UPDATE_ALL_VERSION} by theypsilon. Your MiSTer has been updated successfully!")
+            self._logger.print('Your MiSTer has been updated successfully!')
 
-        run_time = str(datetime.timedelta(seconds=time.time() - self._config_provider.get().start_time))[0:-4]
-
-        self._logger.print()
-        self._logger.print(f"Run time: {run_time}s")
-        self._logger.debug(f"Date: {datetime.datetime.utcnow()}")
         self._logger.print()
         self._logger.print(f"Full log for more details: {FILE_update_all_log}")
-        self._logger.print()
 
     def _reboot_if_needed(self) -> None:
         if self._config_provider.get().not_mister:
