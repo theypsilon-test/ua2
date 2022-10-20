@@ -21,7 +21,8 @@ from typing import Tuple
 from unittest.mock import MagicMock
 
 from test.file_system_tester_state import FileSystemState
-from test.testing_objects import downloader_ini, update_arcade_organizer_ini, default_downloader_ini_content
+from test.testing_objects import downloader_ini, update_arcade_organizer_ini, default_downloader_ini_content, \
+    store_json_zip
 from test.ui_model_test_utils import gather_used_effects
 from test.update_all_service_tester import SettingsScreenTester, UiStub, default_databases, local_store
 from update_all.config import Config
@@ -45,6 +46,7 @@ class TestSettingsScreen(unittest.TestCase):
 
     def test_save___on_no_files_setup___creates_default_downloader_ini(self) -> None:
         sut, ui, fs = tester()
+        sut.calculate_needs_save(ui)
         sut.save(ui)
         self.assertEqual(default_downloader_ini_content(), fs.files[downloader_ini]['content'])
 
@@ -125,6 +127,7 @@ class TestSettingsScreen(unittest.TestCase):
 
         ui.set_value('arcade_organizer_topdir', 'core')
 
+        sut.calculate_needs_save(ui)
         sut.save(ui)
 
         self.assertEqual(Path('test/fixtures/update_arcade-organizer_ini/disabled_topdir_core_ao.ini').read_text(), fs.files[update_arcade_organizer_ini.lower()]['content'])
@@ -136,6 +139,7 @@ class TestSettingsScreen(unittest.TestCase):
 
         ui.set_value('arcade_organizer_topdir', 'core')
 
+        sut.calculate_needs_save(ui)
         sut.save(ui)
 
         self.assertEqual(Path('test/fixtures/update_arcade-organizer_ini/enabled_topdir_core_ao.ini').read_text(), fs.files[update_arcade_organizer_ini.lower()]['content'])
@@ -156,11 +160,25 @@ class TestSettingsScreen(unittest.TestCase):
         for variable, _ in db_ids_to_model_variable_pairs():
             ui.set_value(variable, 'true')
 
+        sut.calculate_needs_save(ui)
         sut.save(ui)
 
         ini_sections = len(read_ini_contents(fs.files[downloader_ini.lower()]['content']).sections())
         self.assertEqual(len(db_ids_to_model_variable_pairs()), ini_sections)
         self.assertGreaterEqual(ini_sections, 10)
+
+
+    def test_save__when_selecting_theme___writes_changes_on_local_store(self):
+        sut, ui, fs = tester(files={downloader_ini: {'content': default_downloader_ini_content()}})
+
+        ui.set_value('wait_time_for_reading', '69')
+        ui.set_value('ui_theme', 'Cyan Night')
+
+        sut.calculate_needs_save(ui)
+        sut.save(ui)
+
+        self.assertEqual(69, fs.files[store_json_zip.lower()]['unzipped_json']['wait_time_for_reading'])
+        self.assertEqual('Cyan Night', fs.files[store_json_zip.lower()]['unzipped_json']['theme'])
 
 
 def tester(files=None, config=None, store=None) -> Tuple[SettingsScreen, UiStub, FileSystemState]:
