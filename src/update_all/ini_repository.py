@@ -116,6 +116,7 @@ class IniRepository:
         if target_path is None:
             target_path = downloader_ini_path
 
+        self._file_system.make_dirs_parent(target_path)
         self._file_system.write_file_contents(target_path, new_ini_contents)
 
         if target_path == downloader_ini_path:
@@ -132,6 +133,7 @@ class IniRepository:
         contents += f'ARCADE_ORGANIZER={str(config.arcade_organizer).lower()}\n'
         contents += '\n'
 
+        self._file_system.make_dirs_parent(ARCADE_ORGANIZER_INI)
         self._file_system.write_file_contents(ARCADE_ORGANIZER_INI, contents)
         self._arcade_organizer_ini = None
 
