@@ -189,8 +189,6 @@ class SettingsScreen(UiApplication):
         curses.initscr()
 
     def calculate_needs_save(self, ui: Ui) -> None:
-        arcade_organizer_ini = self._ini_repository.get_arcade_organizer_ini()
-
         needs_save_file_set = set()
 
         temp_config = Config()
@@ -198,15 +196,8 @@ class SettingsScreen(UiApplication):
         if self._ini_repository.does_downloader_ini_need_save(temp_config):
             needs_save_file_set.add("downloader.ini")
 
-        for variable, description in gather_variable_declarations(settings_screen_model()).items():
-            if not variable.startswith('arcade_organizer'):
-                continue
-            rename = variable.replace('arcade_organizer_', '')
-            old_value = arcade_organizer_ini.get_string(rename, description['default']).lower()
-            new_value = ui.get_value(variable).lower()
-            if old_value != new_value:
-                needs_save_file_set.add("update_arcade-organizer.ini")
-                break
+        if self._does_arcade_oganizer_need_save(ui):
+            needs_save_file_set.add("update_arcade-organizer.ini")
 
         local_store = self._store_provider.get()
         local_store.set_theme(ui.get_value('ui_theme'))
@@ -229,29 +220,18 @@ class SettingsScreen(UiApplication):
         self._copy_ui_options_to_current_config(ui)
 
         config = self._config_provider.get()
-        old_ao_ini = self._ini_repository.get_arcade_organizer_ini()
-        new_ao_ini = {}
 
-        ao_needs_save = False
-        for variable, description in gather_variable_declarations(settings_screen_model()).items():
-            if not variable.startswith('arcade_organizer'):
-                continue
-            rename = variable.replace('arcade_organizer_', '')
-            default = description['default']
-            value = ui.get_value(variable)
+        if self._does_arcade_oganizer_need_save(ui):
+            new_ao_ini = {}
+            for variable, description in gather_variable_declarations(settings_screen_model()).items():
+                if not variable.startswith('arcade_organizer'):
+                    continue
+                variable = variable.replace('arcade_organizer_', '')
+                value = ui.get_value(variable)
 
-            if value != default:
-                new_ao_ini[rename] = value
+                if value != description['default']:
+                    new_ao_ini[variable] = value
 
-            if ao_needs_save:
-                continue
-
-            old_value = old_ao_ini.get_string(rename, description['default']).lower()
-            new_value = value.lower()
-            if old_value != new_value:
-                ao_needs_save = True
-
-        if ao_needs_save:
             self._ini_repository.write_arcade_organizer(new_ao_ini)
         elif config.arcade_organizer != Config().arcade_organizer:
             self._ini_repository.write_arcade_organizer_active_at_arcade_organizer_ini(config)
@@ -269,6 +249,20 @@ class SettingsScreen(UiApplication):
 
         if local_store.needs_save():
             self._local_repository.save_store(local_store)
+
+    def _does_arcade_oganizer_need_save(self, ui: Ui):
+        arcade_organizer_ini = self._ini_repository.get_arcade_organizer_ini()
+
+        for variable, description in gather_variable_declarations(settings_screen_model()).items():
+            if not variable.startswith('arcade_organizer'):
+                continue
+            variable = variable.replace('arcade_organizer_', '')
+            old_value = arcade_organizer_ini.get_string(variable, description['default']).lower()
+            new_value = ui.get_value(variable).lower()
+            if old_value != new_value:
+                return True
+
+        return False
 
     def _copy_ui_options_to_current_config(self, ui: Ui) -> None:
         self._copy_temp_save_to_config(ui, self._config_provider.get())
