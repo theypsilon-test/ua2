@@ -106,7 +106,7 @@ def settings_screen_model(): return {
                     "title": "4 BIOS Database",
                     "description": "{bios_getter:enabled} BIOS files for your systems",
                     "actions": {
-                        "ok": [{"type": "navigate", "target": "bios_database_menu"}],
+                        "ok": [{"type": "rotate_variable", "target": "bios_getter"}],
                         "toggle": [{"type": "rotate_variable", "target": "bios_getter"}],
                     }
                 },
@@ -196,17 +196,6 @@ def settings_screen_model(): return {
                     "title": "2 Install Premium Cores",
                     "description": "{download_beta_cores:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "download_beta_cores"}]}
-                },
-            ]
-        },
-        "bios_database_menu": {
-            "type": "dialog_sub_menu",
-            "header": "BIOS Database Settings",
-            "entries": [
-                {
-                    "title": "1 {bios_getter:do_enable}",
-                    "description": "Activated: {bios_getter:yesno}",
-                    "actions": {"ok": [{"type": "rotate_variable", "target": "bios_getter"}]}
                 },
             ]
         },
