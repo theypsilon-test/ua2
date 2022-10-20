@@ -22,7 +22,8 @@ from pathlib import Path
 
 from update_all.config import Config
 from update_all.constants import MEDIA_FAT, KENV_CURL_SSL, KENV_COMMIT, KENV_LOCATION_STR, MISTER_ENVIRONMENT, KENV_DEBUG
-from update_all.databases import DB_ID_JTCORES, DB_ID_NAMES_TXT, names_locale_by_db_url, model_variables_by_db_id, AllDBs
+from update_all.databases import DB_ID_JTCORES, DB_ID_NAMES_TXT, names_locale_by_db_url, model_variables_by_db_id, \
+    AllDBs, DB_ID_DISTRIBUTION_MISTER
 from update_all.ini_repository import IniRepository
 from update_all.ini_parser import IniParser
 from update_all.local_store import LocalStore
@@ -71,9 +72,13 @@ class ConfigReader:
             if is_present:
                 config.databases.add(db_id)
 
+        if DB_ID_DISTRIBUTION_MISTER in downloader_ini:
+            parser = IniParser(downloader_ini[DB_ID_DISTRIBUTION_MISTER])
+            config.encc_forks = parser.get_string('db_url', AllDBs.MISTER_DEVEL_DISTRIBUTION_MISTER.db_url) == AllDBs.MISTER_DB9_DISTRIBUTION_MISTER.db_url
+
         if DB_ID_JTCORES in downloader_ini:
             parser = IniParser(downloader_ini[DB_ID_JTCORES])
-            config.download_beta_cores = parser.get_string('db_url', AllDBs.JTSTABLE_JTCORES.db_url) == 'https://raw.githubusercontent.com/jotego/jtpremium/main/jtbindb.json.zip'
+            config.download_beta_cores = parser.get_string('db_url', AllDBs.JTREGULAR_JTCORES.db_url) == AllDBs.JTPREMIUM_JTCORES.db_url
 
         if DB_ID_NAMES_TXT in downloader_ini:
             parser = IniParser(downloader_ini[DB_ID_NAMES_TXT])
@@ -83,8 +88,7 @@ class ConfigReader:
             parser = IniParser(downloader_ini[AllDBs.ARCADE_ROMS.db_id])
             config.hbmame_filter = '!hbmame' in parser.get_string('filter', '')
 
-        arcade_organizer_ini = self._ini_repository.get_arcade_organizer_ini()
-        config.arcade_organizer = arcade_organizer_ini.get_bool('arcade_organizer', config.arcade_organizer)
+        config.arcade_organizer = self._ini_repository.get_arcade_organizer_ini().get_bool('arcade_organizer', config.arcade_organizer)
 
         self._logger.debug('config: ' + json.dumps(config, default=lambda o: str(o) if isinstance(o, Path) or isinstance(o, set) else o.__dict__, indent=4))
 
@@ -92,6 +96,8 @@ class ConfigReader:
         config.wait_time_for_reading = store.get_wait_time_for_reading()
         config.countdown_time = store.get_countdown_time()
         config.autoreboot = store.get_autoreboot()
+
+        self._logger.debug('store: ' + json.dumps(store.unwrap_props(), indent=4))
 
 
 def valid_max_length( key: str, value: str, max_limit: int) -> str:

@@ -38,8 +38,8 @@ class AllDBs:
     MISTER_DB9_DISTRIBUTION_MISTER = Database(db_id=DB_ID_DISTRIBUTION_MISTER, db_url='https://raw.githubusercontent.com/MiSTer-DB9/Distribution_MiSTer/main/dbencc.json.zip', title='Main Distribution: DB9 / SNAC8')
 
     # JTCORES
-    JTBIN_JTCORES = Database(db_id=DB_ID_JTCORES, db_url='https://raw.githubusercontent.com/jotego/jtpremium/main/jtbindb.json.zip', title='JTCORES for MiSTer (jtpremium)')
-    JTSTABLE_JTCORES = Database(db_id=DB_ID_JTCORES, db_url='https://raw.githubusercontent.com/jotego/jtcores_mister/main/jtbindb.json.zip', title='JTCORES for MiSTer')
+    JTPREMIUM_JTCORES = Database(db_id=DB_ID_JTCORES, db_url='https://raw.githubusercontent.com/jotego/jtpremium/main/jtbindb.json.zip', title='JTCORES for MiSTer (jtpremium)')
+    JTREGULAR_JTCORES = Database(db_id=DB_ID_JTCORES, db_url='https://raw.githubusercontent.com/jotego/jtcores_mister/main/jtbindb.json.zip', title='JTCORES for MiSTer')
 
     # UNOFFICIAL CORES
     THEYPSILON_UNOFFICIAL_DISTRIBUTION = Database(db_id='theypsilon_unofficial_distribution', db_url='https://raw.githubusercontent.com/theypsilon/Distribution_Unofficial_MiSTer/main/unofficialdb.json.zip', title='theypsilon Unofficial Distribution')
@@ -128,7 +128,7 @@ def db_distribution_mister_by_encc_forks(encc_forks: bool) -> Database:
 
 
 def db_jtcores_by_download_beta_cores(download_beta_cores: bool) -> Database:
-    return AllDBs.JTBIN_JTCORES if download_beta_cores else AllDBs.JTSTABLE_JTCORES
+    return AllDBs.JTPREMIUM_JTCORES if download_beta_cores else AllDBs.JTREGULAR_JTCORES
 
 
 def db_names_txt_by_locale(region: str, char_code: str, sort_code: str) -> Database:

@@ -41,7 +41,7 @@ class IniRepository:
         self._downloader_ini = None
         self._arcade_organizer_ini = None
 
-    def initialize_downloader_ini_base_path(self, base_path):
+    def initialize_downloader_ini_base_path(self, base_path: str) -> None:
         self._base_path = base_path
 
     def get_downloader_ini(self, cached: bool = True) -> Dict[str, Dict[str, str]]:
@@ -76,7 +76,7 @@ class IniRepository:
 
         return {header.lower(): {k.lower(): v for k, v in section.items()} for header, section in parser.items() if header.lower() != 'default'}
 
-    def read_old_ini_file(self, path) -> IniParser:
+    def read_old_ini_file(self, path: str) -> IniParser:
         if not self._file_system.is_file(path):
             return IniParser({})
 
@@ -93,18 +93,18 @@ class IniRepository:
         return IniParser(parser['default'])
 
     @staticmethod
-    def _read_ini_contents(contents):
+    def _read_ini_contents(contents: str):
         parser = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
         parser.read_string(contents)
         return parser
 
-    def downloader_ini_standard_path(self):
+    def downloader_ini_standard_path(self) -> str:
         if self._base_path is None:
             raise Exception("DownloaderIniRepository needs to be initialized.")
 
         return f'{self._base_path}/{DOWNLOADER_INI_STANDARD_PATH}'
 
-    def downloader_ini_path_tweaked_by_config(self, config: Config):
+    def downloader_ini_path_tweaked_by_config(self, config: Config) -> str:
         return FILE_downloader_temp_ini if config.temporary_downloader_ini else self.downloader_ini_standard_path()
 
     def write_downloader_ini(self, config: Config, target_path: str = None) -> None:
@@ -121,7 +121,7 @@ class IniRepository:
         if target_path == downloader_ini_path:
             self._downloader_ini = None
 
-    def write_arcade_organizer_active_at_arcade_organizer_ini(self, config: Config):
+    def write_arcade_organizer_active_at_arcade_organizer_ini(self, config: Config) -> None:
         contents = ''
         if self._file_system.is_file(ARCADE_ORGANIZER_INI):
             contents = self._file_system.read_file_contents(ARCADE_ORGANIZER_INI).strip()
@@ -149,7 +149,7 @@ class IniRepository:
         current_ini_contents = self._file_system.read_file_contents(self.downloader_ini_standard_path()).strip().lower()
         return new_ini_contents != current_ini_contents
 
-    def _add_new_downloader_ini_changes(self, ini, config: Config):
+    def _add_new_downloader_ini_changes(self, ini, config: Config) -> None:
         for _, db in candidate_databases(config):
             db_id = db.db_id.lower()
             if db in active_databases(config):
