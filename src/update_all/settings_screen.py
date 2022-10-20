@@ -20,12 +20,11 @@ import hashlib
 from functools import cached_property
 
 from update_all.config import Config
-from update_all.config_reader import load_ini_config_with_no_section
 from update_all.constants import ARCADE_ORGANIZER_INI, FILE_MiSTer, \
     TEST_UNSTABLE_SPINNER_FIRMWARE_MD5, DOWNLOADER_URL, FILE_MiSTer_ini, ARCADE_ORGANIZER_URL, \
     ARCADE_ORGANIZER_INSTALLED_NAMES_TXT, STANDARD_UI_THEME, FILE_downloader_temp_ini, FILE_MiSTer_delme
 from update_all.databases import db_ids_by_model_variables, DB_ID_JTCORES, DB_ID_NAMES_TXT
-from update_all.downloader_ini_repository import DownloaderIniRepository
+from update_all.ini_repository import IniRepository
 from update_all.file_system import FileSystem
 from update_all.local_repository import LocalRepository
 from update_all.local_store import LocalStore
@@ -41,11 +40,11 @@ from update_all.ui_model_utilities import gather_variable_declarations, dynamic_
 
 class SettingsScreen(UiApplication):
     def __init__(self, logger: Logger, config_provider: GenericProvider[Config], file_system: FileSystem,
-                 downloader_ini_repository: DownloaderIniRepository, os_utils: OsUtils, settings_screen_printer: SettingsScreenPrinter, checker: Checker, local_repository: LocalRepository, store_provider: GenericProvider[LocalStore]):
+                 ini_repository: IniRepository, os_utils: OsUtils, settings_screen_printer: SettingsScreenPrinter, checker: Checker, local_repository: LocalRepository, store_provider: GenericProvider[LocalStore]):
         self._logger = logger
         self._config_provider = config_provider
         self._file_system = file_system
-        self._downloader_ini_repository = downloader_ini_repository
+        self._ini_repository = ini_repository
         self._os_utils = os_utils
         self._settings_screen_printer = settings_screen_printer
         self._checker = checker
@@ -71,7 +70,7 @@ class SettingsScreen(UiApplication):
             else:
                 ui.set_value(variable, 'true' if db_ids[variable] in config.databases else 'false')
 
-        arcade_organizer_ini = load_ini_config_with_no_section(self._logger, self._file_system, ARCADE_ORGANIZER_INI)
+        arcade_organizer_ini = self._ini_repository.get_arcade_organizer_ini()
 
         ao_variables = gather_variable_declarations(settings_screen_model(), "ao_ini")
 
@@ -190,13 +189,13 @@ class SettingsScreen(UiApplication):
         curses.initscr()
 
     def calculate_needs_save(self, ui: Ui) -> None:
-        arcade_organizer_ini = load_ini_config_with_no_section(self._logger, self._file_system, ARCADE_ORGANIZER_INI)
+        arcade_organizer_ini = self._ini_repository.get_arcade_organizer_ini()
 
         needs_save_file_set = set()
 
         temp_config = Config()
         self._copy_temp_save_to_config(ui, temp_config)
-        if self._downloader_ini_repository.needs_save(temp_config):
+        if self._ini_repository.does_downloader_ini_need_save(temp_config):
             needs_save_file_set.add("downloader.ini")
 
         for variable, description in gather_variable_declarations(settings_screen_model()).items():
@@ -231,9 +230,9 @@ class SettingsScreen(UiApplication):
         config = self._config_provider.get()
         if config.arcade_organizer != Config().arcade_organizer:
             self._file_system.make_dirs_parent(ARCADE_ORGANIZER_INI)
-            self._downloader_ini_repository.write_arcade_organizer_active_at_arcade_organizer_ini(config)
+            self._ini_repository.write_arcade_organizer_active_at_arcade_organizer_ini(config)
 
-        self._downloader_ini_repository.write_downloader_ini(config)
+        self._ini_repository.write_downloader_ini(config)
 
         local_store = self._store_provider.get()
         if DB_ID_JTCORES in config.databases:
@@ -329,5 +328,5 @@ class SettingsScreen(UiApplication):
         self._copy_ui_options_to_current_config(ui)
         config = self._config_provider.get()
         config.temporary_downloader_ini = True
-        self._downloader_ini_repository.write_downloader_ini(config, FILE_downloader_temp_ini)
+        self._ini_repository.write_downloader_ini(config, FILE_downloader_temp_ini)
         self._logger.debug(f'Written temporary {FILE_downloader_temp_ini} file.')

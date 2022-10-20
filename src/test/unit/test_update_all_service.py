@@ -56,8 +56,8 @@ class TestUpdateAllService(unittest.TestCase):
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/downloader_ini/dirty_downloader.ini').read_text()}
         }, config=config)
-        sut.write_downloader_ini(config)
-        sut.full_run()
+        sut.ini_repository.write_downloader_ini(config)
+        #sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/changed_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
     def test_write_downloader_ini___over_bug_duplications_downloader_ini_after_changing_some_options___writes_changed_downloader(self):
@@ -65,17 +65,16 @@ class TestUpdateAllService(unittest.TestCase):
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/downloader_ini/bug_duplications_downloader.ini').read_text()}
         }, config=config)
-        sut.write_downloader_ini(config)
+        sut.ini_repository.write_downloader_ini(config)
         sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/bug_duplications_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
     def test_write_downloader_ini___over_bug_names_txt_updater_disabled_downloader_ini_after_changing_some_options___writes_changed_downloader(self):
         config = Config(download_beta_cores=True, databases=default_databases(sub=[DB_ID_NAMES_TXT], add=[AllDBs.BIOS.db_id, AllDBs.THEYPSILON_UNOFFICIAL_DISTRIBUTION.db_id, AllDBs.LLAPI_FOLDER.db_id, AllDBs.ARCADE_ROMS.db_id, AllDBs.ARCADE_OFFSET_FOLDER.db_id, AllDBs.TTY2OLED_FILES.db_id, AllDBs.I2C2OLED_FILES.db_id, AllDBs.MISTERSAM_FILES.db_id]))
         sut, fs = tester(files={
-            downloader_ini: {'content': Path(
-                'test/fixtures/downloader_ini/bug_names_txt_updater_disabled_downloader.ini').read_text()}
+            downloader_ini: {'content': Path('test/fixtures/downloader_ini/bug_names_txt_updater_disabled_downloader.ini').read_text()}
         }, config=config)
-        sut.write_downloader_ini(config)
+        sut.ini_repository.write_downloader_ini(config)
         sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/bug_names_txt_updater_disabled_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
@@ -84,7 +83,7 @@ class TestUpdateAllService(unittest.TestCase):
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/downloader_ini/coin_op_lowercase_downloader.ini').read_text()}
         }, config=config)
-        sut.write_downloader_ini(config)
+        sut.ini_repository.write_downloader_ini(config)
         sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/coin_op_uppercase_plus_names_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
@@ -93,7 +92,7 @@ class TestUpdateAllService(unittest.TestCase):
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/downloader_ini/default_downloader.ini').read_text()}
         }, config=config)
-        sut.write_downloader_ini(config)
+        sut.ini_repository.write_downloader_ini(config)
         sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/filtered_hbmame_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
@@ -102,7 +101,7 @@ class TestUpdateAllService(unittest.TestCase):
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/downloader_ini/filtered_hbmame_downloader.ini').read_text()}
         }, config=config)
-        sut.write_downloader_ini(config)
+        sut.ini_repository.write_downloader_ini(config)
         sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/filtered_hbmame_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
@@ -111,7 +110,7 @@ class TestUpdateAllService(unittest.TestCase):
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/downloader_ini/filtered_hbmame_downloader.ini').read_text()}
         }, config=config)
-        sut.write_downloader_ini(config)
+        sut.ini_repository.write_downloader_ini(config)
         sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/arcade_roms_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
@@ -119,7 +118,7 @@ class TestUpdateAllService(unittest.TestCase):
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/downloader_ini/filtered_hbmame_downloader.ini').read_text()}
         })
-        sut.write_downloader_ini(Config())
+        sut.ini_repository.write_downloader_ini(Config())
         sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/default_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
@@ -128,7 +127,7 @@ class TestUpdateAllService(unittest.TestCase):
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/downloader_ini/mister_filtered_downloader.ini').read_text()}
         }, config=config)
-        sut.write_downloader_ini(config)
+        sut.ini_repository.write_downloader_ini(config)
         sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/mister_filtered_plus_hbmame_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
@@ -138,7 +137,7 @@ class TestUpdateAllService(unittest.TestCase):
             downloader_ini: {'content': Path(
                 'test/fixtures/downloader_ini/mister_filtered_plus_hbmame_downloader.ini').read_text()}
         }, config=config)
-        sut.write_downloader_ini(config)
+        sut.ini_repository.write_downloader_ini(config)
         sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/mister_filtered_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
@@ -147,7 +146,7 @@ class TestUpdateAllService(unittest.TestCase):
         sut, fs = tester(files={
             downloader_ini: {'content': Path('test/fixtures/downloader_ini/heavily_filtered_downloader.ini').read_text()}
         }, config=config)
-        sut.write_downloader_ini(config)
+        sut.ini_repository.write_downloader_ini(config)
         sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/heavily_filtered_plus_hbmame_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
@@ -157,6 +156,6 @@ class TestUpdateAllService(unittest.TestCase):
             downloader_ini: {'content': Path(
                 'test/fixtures/downloader_ini/heavily_filtered_plus_hbmame_downloader.ini').read_text()}
         }, config=config)
-        sut.write_downloader_ini(config)
+        sut.ini_repository.write_downloader_ini(config)
         sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/heavily_filtered_downloader.ini').read_text(), fs.files[downloader_ini]['content'])

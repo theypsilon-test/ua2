@@ -25,11 +25,11 @@ from test.spy_os_utils import SpyOsUtils
 from update_all.config import Config
 from update_all.config_reader import ConfigReader
 from update_all.constants import KENV_COMMIT, KENV_CURL_SSL, DEFAULT_CURL_SSL_OPTIONS, DEFAULT_COMMIT, \
-    KENV_LOCATION_STR, DEFAULT_LOCATION_STR
+    KENV_LOCATION_STR, DEFAULT_LOCATION_STR, MEDIA_FAT, DOWNLOADER_INI_STANDARD_PATH
 from update_all.countdown import Countdown
-from update_all.downloader_ini_repository import DownloaderIniRepository
+from update_all.ini_repository import IniRepository
 from update_all.file_system import FileSystem
-from update_all.local_repository import LocalRepositoryProvider, LocalRepository
+from update_all.local_repository import LocalRepository
 from update_all.local_store import LocalStore
 from update_all.os_utils import OsUtils
 from update_all.other import Checker, GenericProvider
@@ -55,13 +55,13 @@ def local_store():
 
 class UpdateAllServiceFactoryTester(UpdateAllServiceFactory):
     def __init__(self):
-        super().__init__(NoLogger(), LocalRepositoryProvider())
+        super().__init__(NoLogger(), GenericProvider[LocalRepository]())
 
 
 class ConfigReaderTester(ConfigReader):
-    def __init__(self, config: Config = None):
+    def __init__(self, config: Config = None, downloaer_ini_repository: IniRepository = None):
         self._config = config
-        super().__init__(NoLogger(), default_env())
+        super().__init__(NoLogger(), default_env(), downloaer_ini_repository or IniRepositoryTester())
 
     def _initialize_downloader_ini(self):
         pass
@@ -92,13 +92,19 @@ class LocalRepositoryTester(LocalRepository):
         )
 
 
-class DownloaderIniRepositoryTester(DownloaderIniRepository):
+class IniRepositoryTester(IniRepository):
     def __init__(self, file_system: FileSystem = None, os_utils: OsUtils = None):
         super().__init__(
             logger=NoLogger(),
             file_system=file_system or FileSystemFactory().create_for_system_scope(),
             os_utils=os_utils or SpyOsUtils()
         )
+
+    def downloader_ini_standard_path(self):
+        try:
+            return super().downloader_ini_standard_path()
+        except:
+            return f'{MEDIA_FAT}/{DOWNLOADER_INI_STANDARD_PATH}'
 
 
 class SettingsScreenPrinterStub(SettingsScreenPrinter):
@@ -118,7 +124,7 @@ class CheckerTester(Checker):
 class SettingsScreenTester(SettingsScreen):
     def __init__(self, config_provider: GenericProvider[Config]  = None,
                  file_system: FileSystem = None,
-                 downloader_ini_repository: DownloaderIniRepository = None,
+                 ini_repository: IniRepository = None,
                  os_utils: OsUtils = None,
                  settings_screen_printer: SettingsScreenPrinter = None,
                  checker: Checker = None,
@@ -131,7 +137,7 @@ class SettingsScreenTester(SettingsScreen):
             logger=NoLogger(),
             config_provider=config_provider,
             file_system=file_system,
-            downloader_ini_repository=downloader_ini_repository or DownloaderIniRepositoryTester(file_system=file_system),
+            ini_repository=ini_repository or IniRepositoryTester(file_system=file_system),
             os_utils=os_utils or SpyOsUtils(),
             settings_screen_printer=settings_screen_printer or SettingsScreenPrinterStub(),
             checker=checker or CheckerTester(file_system=file_system),
@@ -174,9 +180,9 @@ def default_databases(add: List[str] = None, sub: List[str] = None) -> Set[str]:
 
 
 class TransitionServiceTester(TransitionService):
-    def __init__(self, file_system: FileSystem = None, os_utils: OsUtils = None, downloader_ini_repository: DownloaderIniRepository = None):
+    def __init__(self, file_system: FileSystem = None, os_utils: OsUtils = None, ini_repository: IniRepository = None):
         file_system = file_system or FileSystemFactory().create_for_system_scope()
-        super().__init__(logger=NoLogger(), file_system=file_system, os_utils=os_utils or SpyOsUtils(), downloader_ini_repository=downloader_ini_repository or DownloaderIniRepositoryTester(file_system=file_system))
+        super().__init__(logger=NoLogger(), file_system=file_system, os_utils=os_utils or SpyOsUtils(), ini_repository=ini_repository or IniRepositoryTester(file_system=file_system))
 
 
 class UpdateAllServiceTester(UpdateAllService):
@@ -189,7 +195,8 @@ class UpdateAllServiceTester(UpdateAllService):
                  countdown: Countdown = None,
                  transition_service: TransitionService = None,
                  settings_screen: SettingsScreen = None,
-                 store_provider: GenericProvider[LocalStore] = None):
+                 store_provider: GenericProvider[LocalStore] = None,
+                 ini_repository: IniRepository = None):
 
         config_provider = config_provider or GenericProvider[Config] ()
         config_reader = config_reader or ConfigReaderTester()
@@ -199,6 +206,7 @@ class UpdateAllServiceTester(UpdateAllService):
         transition_service = transition_service or TransitionServiceTester(file_system=file_system)
         os_utils = os_utils or SpyOsUtils()
         settings_screen = settings_screen or SettingsScreenTester(config_provider=config_provider, file_system=file_system, os_utils=os_utils)
+        self.ini_repository = ini_repository or IniRepositoryTester(file_system=file_system, os_utils=os_utils)
 
         super().__init__(
             config_reader=config_reader,
@@ -212,8 +220,6 @@ class UpdateAllServiceTester(UpdateAllService):
             settings_screen=settings_screen,
             transition_service=transition_service,
             checker=CheckerTester(),
-            store_provider=store_provider or GenericProvider[LocalStore]()
+            store_provider=store_provider or GenericProvider[LocalStore](),
+            ini_repository=self.ini_repository
         )
-
-    def write_downloader_ini(self, config: Config):
-        self._settings_screen._downloader_ini_repository.write_downloader_ini(config)

@@ -23,10 +23,9 @@ from typing import List
 from update_all.cli_output_formatting import CLEAR_SCREEN
 from update_all.config import Config
 from update_all.constants import UPDATE_ALL_VERSION, DOWNLOADER_URL, ARCADE_ORGANIZER_URL, FILE_update_all_log, \
-    FILE_mister_downloader_needs_reboot, MEDIA_FAT, ARCADE_ORGANIZER_INI, MISTER_DOWNLOADER_VERSION, \
-    DOWNLOADER_INI_STANDARD_PATH
+    FILE_mister_downloader_needs_reboot, MEDIA_FAT, ARCADE_ORGANIZER_INI, MISTER_DOWNLOADER_VERSION
 from update_all.countdown import Countdown, CountdownImpl, CountdownOutcome
-from update_all.downloader_ini_repository import DownloaderIniRepository
+from update_all.ini_repository import IniRepository, active_databases
 from update_all.local_store import LocalStore
 from update_all.other import Checker, GenericProvider
 from update_all.logger import Logger
@@ -36,34 +35,34 @@ from update_all.settings_screen_standard_printer import SettingsScreenStandardPr
 from update_all.settings_screen_trivial_printer import SettingsScreenTrivialPrinter
 from update_all.store_migrator import StoreMigrator
 from update_all.migrations import migrations
-from update_all.local_repository import LocalRepository, LocalRepositoryProvider
+from update_all.local_repository import LocalRepository
 from update_all.file_system import FileSystemFactory, FileSystem
-from update_all.config_reader import ConfigReader, active_databases
+from update_all.config_reader import ConfigReader
 from update_all.transition_service import TransitionService
 
 
 class UpdateAllServiceFactory:
-    def __init__(self, logger: Logger, local_repository_provider: LocalRepositoryProvider):
+    def __init__(self, logger: Logger, local_repository_provider: GenericProvider[LocalRepository]):
         self._logger = logger
         self._local_repository_provider = local_repository_provider
 
     def create(self, env: dict[str, str]):
         config_provider = GenericProvider[Config]()
         store_provider = GenericProvider[LocalStore]()
-        config_reader = ConfigReader(self._logger, env)
-        store_migrator = StoreMigrator(migrations(), self._logger)
         file_system = FileSystemFactory(config_provider, {}, self._logger).create_for_system_scope()
+        os_utils = LinuxOsUtils(config_provider=config_provider, logger=self._logger)
+        ini_repository = IniRepository(self._logger, file_system=file_system, os_utils=os_utils)
+        config_reader = ConfigReader(self._logger, env, ini_repository=ini_repository)
+        store_migrator = StoreMigrator(migrations(), self._logger)
         local_repository = LocalRepository(config_provider, self._logger, file_system, store_migrator)
         self._local_repository_provider.initialize(local_repository)
-        os_utils = LinuxOsUtils(config_provider=config_provider, logger=self._logger)
-        downloader_ini_repository = DownloaderIniRepository(self._logger, file_system=file_system, os_utils=os_utils)
         checker = Checker(file_system=file_system)
-        transition_service = TransitionService(logger=self._logger, file_system=file_system, os_utils=os_utils, downloader_ini_repository=downloader_ini_repository)
+        transition_service = TransitionService(logger=self._logger, file_system=file_system, os_utils=os_utils, ini_repository=ini_repository)
         settings_screen = SettingsScreen(
             logger=self._logger,
             config_provider=config_provider,
             file_system=file_system,
-            downloader_ini_repository=downloader_ini_repository,
+            ini_repository=ini_repository,
             os_utils=os_utils,
             settings_screen_printer=SettingsScreenStandardPrinter(),
             checker=checker,
@@ -82,12 +81,25 @@ class UpdateAllServiceFactory:
             CountdownImpl(),
             settings_screen,
             checker=checker,
-            store_provider=store_provider
+            store_provider=store_provider,
+            ini_repository=ini_repository
         )
 
 
 class UpdateAllService:
-    def __init__(self, config_reader: ConfigReader, config_provider: GenericProvider[Config], transition_service: TransitionService, logger: Logger, local_repository: LocalRepository, store_migrator: StoreMigrator, file_system: FileSystem, os_utils: OsUtils, countdown: Countdown, settings_screen: SettingsScreen, checker: Checker, store_provider: GenericProvider[LocalStore]):
+    def __init__(self, config_reader: ConfigReader,
+                 config_provider: GenericProvider[Config],
+                 transition_service: TransitionService,
+                 logger: Logger,
+                 local_repository: LocalRepository,
+                 store_migrator: StoreMigrator,
+                 file_system: FileSystem,
+                 os_utils: OsUtils,
+                 countdown: Countdown,
+                 settings_screen: SettingsScreen,
+                 checker: Checker,
+                 store_provider: GenericProvider[LocalStore],
+                 ini_repository: IniRepository):
         self._config_reader = config_reader
         self._config_provider = config_provider
         self._transition_service = transition_service
@@ -100,6 +112,7 @@ class UpdateAllService:
         self._settings_screen = settings_screen
         self._checker = checker
         self._store_provider = store_provider
+        self._ini_repository = ini_repository
         self._exit_code = 0
         self._error_reports: List[str] = []
 
@@ -123,7 +136,7 @@ class UpdateAllService:
         local_store = self._local_repository.load_store()
         self._store_provider.initialize(local_store)
         self._transition_service.transition_from_update_all_1(config, local_store)
-        self._config_reader.fill_config_with_ini_files(config, self._file_system)
+        self._config_reader.fill_config_with_ini_files(config)
         self._config_reader.fill_config_with_local_store(config, local_store)
 
     def _show_intro(self) -> None:
@@ -147,7 +160,7 @@ class UpdateAllService:
             self._logger.print("                    ╚═══════════════════════════════════════╝                   ")
 
         self._logger.print()
-        self._logger.print(f'Reading MiSTer section from {self._file_system.download_target_path(DOWNLOADER_INI_STANDARD_PATH)}')
+        self._logger.print(f'Reading sections from {self._ini_repository.downloader_ini_standard_path()}')
         self._logger.print()
 
     def _countdown_for_settings_screen(self) -> None:
@@ -195,7 +208,7 @@ class UpdateAllService:
             update_linux = False
 
         env = {
-            'DOWNLOADER_INI_PATH': self._local_repository.downloader_ini_path,
+            'DOWNLOADER_INI_PATH': self._ini_repository.downloader_ini_path_tweaked_by_config(self._config_provider.get()),
             'ALLOW_REBOOT': '0',
             'CURL_SSL': self._config_provider.get().curl_ssl,
             'UPDATE_LINUX': 'true' if update_linux else 'false',
@@ -205,6 +218,9 @@ class UpdateAllService:
         config = self._config_provider.get()
         if not config.paths_from_downloader_ini and config.base_path != MEDIA_FAT:
             env['DEFAULT_BASE_PATH'] = config.base_path
+
+        if config.not_mister:
+            env['DEBUG'] = 'true'
 
         return_code = self._os_utils.execute_process(temp_file.name, env)
 
@@ -248,14 +264,19 @@ class UpdateAllService:
         self._logger.print('Running Linux Update')
         self._logger.print()
 
-        temp_file = self._file_system.temp_file_by_id('downloader.sh')
-        return_code = self._os_utils.execute_process(temp_file.name, {
-            'DOWNLOADER_INI_PATH': self._local_repository.downloader_ini_path,
+        env = {
+            'DOWNLOADER_INI_PATH': self._ini_repository.downloader_ini_path_tweaked_by_config(self._config_provider.get()),
             'ALLOW_REBOOT': '0',
             'CURL_SSL': config.curl_ssl,
             'UPDATE_LINUX': 'only',
             'LOGFILE': f'{config.base_system_path}/Scripts/.config/downloader/downloader2.log'
-        })
+        }
+
+        if config.not_mister:
+            env['DEBUG'] = 'true'
+
+        temp_file = self._file_system.temp_file_by_id('downloader.sh')
+        return_code = self._os_utils.execute_process(temp_file.name, env)
 
         if return_code != 0:
             self._exit_code = 1

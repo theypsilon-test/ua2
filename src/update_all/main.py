@@ -18,13 +18,14 @@
 # https://github.com/theypsilon-test/ua2
 
 import traceback
-from update_all.local_repository import LocalRepositoryProvider
+from update_all.local_repository import LocalRepository
 from update_all.logger import FileLoggerDecorator, PrintLogger
+from update_all.other import GenericProvider
 from update_all.update_all_service import UpdateAllServiceFactory
 
 
 def main(env):
-    local_repository_provider = LocalRepositoryProvider()
+    local_repository_provider = GenericProvider[LocalRepository]()
     logger = FileLoggerDecorator(PrintLogger(), local_repository_provider)
     # noinspection PyBroadException
     try:

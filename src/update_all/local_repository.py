@@ -18,22 +18,9 @@
 # https://github.com/theypsilon-test/ua2
 from update_all.config import Config
 from update_all.other import GenericProvider
-from update_all.constants import FILE_update_all_storage, FILE_update_all_log, FILE_downloader_temp_ini, DOWNLOADER_INI_STANDARD_PATH
+from update_all.constants import FILE_update_all_storage, FILE_update_all_log
 from update_all.local_store import LocalStore
 from update_all.store_migrator import make_new_local_store
-
-
-class LocalRepositoryProvider:
-    def __init__(self):
-        self._local_repository = None
-
-    def initialize(self, local_repository):
-        assert(self._local_repository is None)
-        self._local_repository = local_repository
-
-    def get(self):
-        assert(self._local_repository is not None)
-        return self._local_repository
 
 
 class LocalRepository:
@@ -43,10 +30,6 @@ class LocalRepository:
         self._logger = logger
         self._file_system = file_system
         self._store_migrator = store_migrator
-
-    @property
-    def downloader_ini_path(self):
-        return self._file_system.download_target_path(FILE_downloader_temp_ini if self._config_provider.get().temporary_downloader_ini else DOWNLOADER_INI_STANDARD_PATH)
 
     def load_store(self) -> LocalStore:
         self._logger.bench('Loading store...')
@@ -81,6 +64,3 @@ class LocalRepository:
         self._file_system.make_dirs_parent(FILE_update_all_log)
         self._file_system.copy(path, FILE_update_all_log)
 
-
-class LocalRepositoryProviderException(Exception):
-    pass

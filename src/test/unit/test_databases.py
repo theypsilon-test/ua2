@@ -19,7 +19,7 @@ import unittest
 
 from update_all.config import Config
 from update_all.databases import all_dbs_list
-from update_all.downloader_ini_repository import candidate_databases
+from update_all.ini_repository import candidate_databases
 
 
 class TestDatabases(unittest.TestCase):

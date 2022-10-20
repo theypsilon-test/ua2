@@ -22,7 +22,7 @@ import distutils.util
 
 class IniParser:
     def __init__(self, ini_args):
-        self._ini_args = {k.lower(): v for k, v in ini_args}
+        self._ini_args = {k.lower(): v for k, v in ini_args.items()}
 
     def get_string(self, key, default):
         result = self._ini_args.get(key, default)
