@@ -2,6 +2,5 @@ downloader.ini
 delme
 .venv
 .idea
-venv
 __pycache__
 mister.ip
