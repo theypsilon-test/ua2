@@ -128,7 +128,6 @@ class TestSettingsScreen(unittest.TestCase):
 
         self.assertEqual(Path('test/fixtures/update_arcade-organizer_ini/disabled_topdir_core_ao.ini').read_text(), fs.files[update_arcade_organizer_ini.lower()]['content'])
 
-
     def test_save___on_complete_ao_with_arcade_organizer_changes___writes_expected_arcade_organizer_ini(self):
         sut, ui, fs = tester(files={
             update_arcade_organizer_ini: {'content': Path('test/fixtures/update_arcade-organizer_ini/complete_ao.ini').read_text()}
@@ -139,6 +138,16 @@ class TestSettingsScreen(unittest.TestCase):
         sut.save(ui)
 
         self.assertEqual(Path('test/fixtures/update_arcade-organizer_ini/enabled_topdir_core_ao.ini').read_text(), fs.files[update_arcade_organizer_ini.lower()]['content'])
+
+    def test_calculate_needs_save__when_selecting_wizzo_mrext___returns_changes_on_downloader_ini(self):
+        sut, ui, _ = tester(files={downloader_ini: {'content': default_downloader_ini_content()}})
+
+        ui.set_value('mrext/all', 'true')
+
+        sut.calculate_needs_save(ui)
+
+        self.assertEqual('  - downloader.ini', ui.get_value('needs_save_file_list'))
+        self.assertEqual('true', ui.get_value('needs_save'))
 
 
 def tester(files=None, config=None, store=None) -> Tuple[SettingsScreen, UiStub, FileSystemState]:

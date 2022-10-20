@@ -63,9 +63,10 @@ class TestSettingsScreenModel(unittest.TestCase):
 
         default_model_main_values = {variable: dynamic_convert_string(description['default']) for variable, description in main_variables.items()}
 
-        self.assertNotEqual({}, default_config_values)
-        self.assertNotEqual({}, default_model_main_values)
-        self.assertEqual(default_config_values, default_model_main_values)
+        intersection = set(default_config_values) & set(default_model_main_values)
+
+        self.assertGreaterEqual(len(intersection), 5)
+        self.assertEqual({k: v for k, v in default_config_values.items() if k in intersection}, default_model_main_values)
 
     def test_all_database_variables_are_declared_in_the_model(self):
         db_variables = set(db_ids_by_model_variables())
@@ -112,3 +113,16 @@ class TestSettingsScreenModel(unittest.TestCase):
     def test_all_nodes_are_correct(self):
         nodes = [ensure_node_is_correct(n) for n in gather_all_nodes(self.model)]
         self.assertGreaterEqual(len(nodes), 5)
+
+    def test_all_db_variables_have_boolean_values(self):
+        db_variables = gather_variable_declarations(self.model, "db")
+        self.assertGreaterEqual(len(db_variables), 5)
+
+        values = set()
+        for variable, description in db_variables.items():
+            values.add(description['default'])
+            self.assertEqual(2, len(description['values']), variable)
+            for v in description['values']:
+                values.add(v)
+
+        self.assertEqual({'true', 'false'}, values)

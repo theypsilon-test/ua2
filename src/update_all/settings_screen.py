@@ -67,8 +67,9 @@ class SettingsScreen(UiApplication):
                 if not isinstance(value, str):
                     value = str(value).lower()
                 ui.set_value(variable, value)
-            else:
-                ui.set_value(variable, 'true' if db_ids[variable] in config.databases else 'false')
+
+        for variable in gather_variable_declarations(settings_screen_model(), "db"):
+            ui.set_value(variable, 'true' if db_ids[variable] in config.databases else 'false')
 
         arcade_organizer_ini = self._ini_repository.get_arcade_organizer_ini()
 
@@ -226,11 +227,11 @@ class SettingsScreen(UiApplication):
             for variable, description in gather_variable_declarations(settings_screen_model()).items():
                 if not variable.startswith('arcade_organizer'):
                     continue
-                variable = variable.replace('arcade_organizer_', '')
+                rename = variable.replace('arcade_organizer_', '')
                 value = ui.get_value(variable)
 
                 if value != description['default']:
-                    new_ao_ini[variable] = value
+                    new_ao_ini[rename] = value
 
             self._ini_repository.write_arcade_organizer(new_ao_ini)
         elif config.arcade_organizer != Config().arcade_organizer:
@@ -256,8 +257,8 @@ class SettingsScreen(UiApplication):
         for variable, description in gather_variable_declarations(settings_screen_model()).items():
             if not variable.startswith('arcade_organizer'):
                 continue
-            variable = variable.replace('arcade_organizer_', '')
-            old_value = arcade_organizer_ini.get_string(variable, description['default']).lower()
+            rename = variable.replace('arcade_organizer_', '')
+            old_value = arcade_organizer_ini.get_string(rename, description['default']).lower()
             new_value = ui.get_value(variable).lower()
             if old_value != new_value:
                 return True
@@ -267,21 +268,23 @@ class SettingsScreen(UiApplication):
     def _copy_ui_options_to_current_config(self, ui: Ui) -> None:
         self._copy_temp_save_to_config(ui, self._config_provider.get())
 
-    def _copy_temp_save_to_config(self, ui, config: Config) -> None:
+    def _copy_temp_save_to_config(self, ui: Ui, config: Config) -> None:
         db_ids = db_ids_by_model_variables()
         config.databases.clear()
         for variable in self._all_config_variables:
             value = dynamic_convert_string(ui.get_value(variable))
             if variable in db_ids:
-                if not isinstance(value, bool):
-                    raise TypeError(f'{variable} can not have value {value}! (must be true or false)')
-                if value:
-                    config.databases.add(db_ids[variable])
+                continue
             else:
                 if not isinstance(value, type(getattr(config, variable))):
                     raise TypeError(f'{variable} can not have value {value}! (wrong type)')
                 setattr(config, variable, value)
 
+        for variable in gather_variable_declarations(settings_screen_model(), "db"):
+            if ui.get_value(variable) == 'false':
+                continue
+
+            config.databases.add(db_ids[variable])
 
     @cached_property
     def _all_config_variables(self):

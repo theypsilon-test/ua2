@@ -38,8 +38,6 @@ def settings_screen_model(): return {
         "encc_forks": {"group": "ua_ini", "default": "false", "values": ["false", "true"]},
         "jotego_updater": {"group": ["ua_ini", "db"], "default": "true", "values": ["false", "true"]},
         "download_beta_cores": {"group": "jt_ini", "default": "false", "values": ["false", "true"]},
-        "unofficial_updater": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
-        "llapi_updater": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
         "bios_getter": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
         "arcade_roms_db_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
         "names_txt_updater": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
@@ -97,39 +95,7 @@ def settings_screen_model(): return {
                     }
                 },
                 {
-                    "title": "3 theypsilon Unofficial",
-                    "description": "{unofficial_updater:enabled} Some unofficial cores",
-                    "actions": {
-                        "ok": [{"type": "navigate", "target": "theypsilon_unofficial_menu"}],
-                        "toggle": [{"type": "rotate_variable", "target": "unofficial_updater"}],
-                    }
-                },
-                {
-                    "title": "4 LLAPI Folder",
-                    "description": "{llapi_updater:enabled} Forks adapted to LLAPI",
-                    "actions": {
-                        "ok": [{"type": "navigate", "target": "llapi_folder_menu"}],
-                        "toggle": [{"type": "rotate_variable", "target": "llapi_updater"}],
-                    }
-                },
-                {
-                    "title": "5 BIOS Database",
-                    "description": "{bios_getter:enabled} BIOS files for your systems",
-                    "actions": {
-                        "ok": [{"type": "navigate", "target": "bios_database_menu"}],
-                        "toggle": [{"type": "rotate_variable", "target": "bios_getter"}],
-                    }
-                },
-                {
-                    "title": "6 Arcade ROMs Database",
-                    "description": "{arcade_roms_db_downloader:enabled} ROMs for Arcades Cores",
-                    "actions": {
-                        "ok": [{"type": "navigate", "target": "arcade_roms_database_menu"}],
-                        "toggle": [{"type": "rotate_variable", "target": "arcade_roms_db_downloader"}],
-                    }
-                },
-                {
-                    "title": "7 Names TXT",
+                    "title": "3 Names TXT",
                     "description": "{names_txt_updater:enabled} Better core names in the menus",
                     "actions": {
                         "ok": [{"type": "navigate", "target": "names_txt_menu"}],
@@ -137,7 +103,23 @@ def settings_screen_model(): return {
                     }
                 },
                 {
-                    "title": "8 Arcade Organizer",
+                    "title": "4 BIOS Database",
+                    "description": "{bios_getter:enabled} BIOS files for your systems",
+                    "actions": {
+                        "ok": [{"type": "navigate", "target": "bios_database_menu"}],
+                        "toggle": [{"type": "rotate_variable", "target": "bios_getter"}],
+                    }
+                },
+                {
+                    "title": "5 Arcade ROMs Database",
+                    "description": "{arcade_roms_db_downloader:enabled} ROMs for Arcades Cores",
+                    "actions": {
+                        "ok": [{"type": "navigate", "target": "arcade_roms_database_menu"}],
+                        "toggle": [{"type": "rotate_variable", "target": "arcade_roms_db_downloader"}],
+                    }
+                },
+                {
+                    "title": "6 Arcade Organizer",
                     "description": "{arcade_organizer:enabled} Creates folder for easy navigation",
                     "actions": {
                         "ok": [{"type": "navigate", "target": "arcade_organizer_menu"}],
@@ -145,8 +127,24 @@ def settings_screen_model(): return {
                     }
                 },
                 {
-                    "title": "9 Misc",
-                    "description": "",
+                    "title": "7 Unofficial Cores",
+                    "description": "atrac17 Cores, LLAPI Forks, etc...",
+                    "actions": {
+                        "ok": [{"type": "navigate", "target": "unofficial_cores_menu"}],
+                        "toggle": [{"type": "navigate", "target": "unofficial_cores_menu"}],
+                    }
+                },
+                {
+                    "title": "8 Unofficial Scripts",
+                    "description": "MiSTerSAM, MiSTer Extensions (wizzo), *-2oled",
+                    "actions": {
+                        "ok": [{"type": "navigate", "target": "unofficial_scripts_menu"}],
+                        "toggle":  [{"type": "navigate", "target": "unofficial_scripts_menu"}],
+                    }
+                },
+                {
+                    "title": "9 Misc Menu",
+                    "description": "Other Settings",
                     "actions": {
                         "ok": [{"type": "navigate", "target": "misc_menu"}],
                         "toggle": [{"type": "navigate", "target": "misc_menu"}],
@@ -154,7 +152,7 @@ def settings_screen_model(): return {
                 },
                 {
                     "title": "0 Patrons Menu",
-                    "description": "Last updated: 2022.10.14",
+                    "description": "Last updated: 2022.10.21",
                     "actions": {"ok": _try_access_patrons_menu(), "toggle": _try_access_patrons_menu()}
                 },
                 {
@@ -198,28 +196,6 @@ def settings_screen_model(): return {
                     "title": "2 Install Premium Cores",
                     "description": "{download_beta_cores:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "download_beta_cores"}]}
-                },
-            ]
-        },
-        "theypsilon_unofficial_menu": {
-            "type": "dialog_sub_menu",
-            "header": "theypsilon Unofficial Distribution Settings",
-            "entries": [
-                {
-                    "title": "1 {unofficial_updater:do_enable}",
-                    "description": "Activated: {unofficial_updater:yesno}",
-                    "actions": {"ok": [{"type": "rotate_variable", "target": "unofficial_updater"}]}
-                },
-            ]
-        },
-        "llapi_folder_menu": {
-            "type": "dialog_sub_menu",
-            "header": "LLAPI Folder Settings",
-            "entries": [
-                {
-                    "title": "1 {llapi_updater:do_enable}",
-                    "description": "Activated: {llapi_updater:yesno}",
-                    "actions": {"ok": [{"type": "rotate_variable", "target": "llapi_updater"}]}
                 },
             ]
         },
@@ -354,30 +330,57 @@ def settings_screen_model(): return {
                 },
             ]
         },
-        "misc_menu": {
+        "unofficial_cores_menu": {
             "type": "dialog_sub_menu",
-            "header": "Misc | Other Settings",
+            "header": "Unofficial Cores Settings",
             "variables": {
-                "arcade_offset_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
                 "coin_op_collection_downloader": {"group": ["ua_ini", "db"], "default": "true", "values": ["false", "true"]},
-                "tty2oled_files_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
-                "i2c2oled_files_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
-                "mistersam_files_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
-
-                "autoreboot": {"group": ["ua_ini", "store"], "default": "true", "values": ["false", "true"]},
-                "wait_time_for_reading": {"group": ["ua_ini", "store"], "default": "2", "values": ["2", "0", "30"]},
-                "countdown_time": {"group": ["ua_ini", "store"], "default": "15", "values": ["15", "4", "60"]},
+                "arcade_offset_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+                "llapi_updater": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+                "unofficial_updater": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
             },
             "entries": [
                 {
-                    "title": "1 Arcade Offset folder",
+                    "title": "1 Coin-Op Collection (atrac17, Darren)",
+                    "description": "{coin_op_collection_downloader:yesno}",
+                    "actions": {"ok": [{"type": "rotate_variable", "target": "coin_op_collection_downloader"}]}
+                },
+                {
+                    "title": "2 Arcade Offset folder (atrac17)",
                     "description": "{arcade_offset_downloader:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "arcade_offset_downloader"}]}
                 },
                 {
-                    "title": "2 Coin-Op Collection",
-                    "description": "{coin_op_collection_downloader:yesno}",
-                    "actions": {"ok": [{"type": "rotate_variable", "target": "coin_op_collection_downloader"}]}
+                    "title": "3 LLAPI Forks Folder",
+                    "description": "{llapi_updater:yesno}",
+                    "actions": {"ok": [{"type": "rotate_variable", "target": "llapi_updater"}]}
+                },
+                {
+                    "title": "4 theypsilon Unofficial Distribution",
+                    "description": "{unofficial_updater:yesno}",
+                    "actions": {"ok": [{"type": "rotate_variable", "target": "unofficial_updater"}]}
+                },
+            ]
+        },
+        "unofficial_scripts_menu": {
+            "type": "dialog_sub_menu",
+            "header": "Unofficial Scripts Settings",
+            "variables": {
+                "mistersam_files_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+                "mrext/all": {"group": "db", "default": "false", "values": ["false", "true"]},
+                "tty2oled_files_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+                "i2c2oled_files_downloader": {"group": ["ua_ini", "db"], "default": "false", "values": ["false", "true"]},
+            },
+            "entries": [
+                {
+                    "title": "1 MiSTer SAM files",
+                    "description": "{mistersam_files_downloader:yesno}",
+                    "actions": {"ok": [{"type": "rotate_variable", "target": "mistersam_files_downloader"}]}
+                },
+                {
+                    "title": "2 MiSTer Extensions (wizzo)",
+                    "description": "{mrext/all:yesno}",
+                    "actions": {"ok": [{"type": "rotate_variable", "target": "mrext/all"}]}
                 },
                 {
                     "title": "3 tty2oled files",
@@ -388,24 +391,30 @@ def settings_screen_model(): return {
                     "title": "4 i2c2oled files",
                     "description": "{i2c2oled_files_downloader:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "i2c2oled_files_downloader"}]}
-                },
+                }
+            ]
+        },
+        "misc_menu": {
+            "type": "dialog_sub_menu",
+            "header": "Misc | Other Settings",
+            "variables": {
+                "autoreboot": {"group": ["ua_ini", "store"], "default": "true", "values": ["false", "true"]},
+                "wait_time_for_reading": {"group": ["ua_ini", "store"], "default": "2", "values": ["2", "0", "30"]},
+                "countdown_time": {"group": ["ua_ini", "store"], "default": "15", "values": ["15", "4", "60"]},
+            },
+            "entries": [
                 {
-                    "title": "5 MiSTer SAM files",
-                    "description": "{mistersam_files_downloader:yesno}",
-                    "actions": {"ok": [{"type": "rotate_variable", "target": "mistersam_files_downloader"}]}
-                },
-                {
-                    "title": "6 Autoreboot (if needed)",
+                    "title": "1 Autoreboot (if needed)",
                     "description": "{autoreboot:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "autoreboot"}]}
                 },
                 {
-                    "title": "7 Pause (between updaters)",
+                    "title": "2 Pause (between updaters)",
                     "description": "{wait_time_for_reading}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "wait_time_for_reading"}]}
                 },
                 {
-                    "title": "8 Countdown Timer",
+                    "title": "3 Countdown Timer",
                     "description": "{countdown_time}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "countdown_time"}]}
                 },
