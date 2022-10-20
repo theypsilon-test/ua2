@@ -91,12 +91,17 @@ class TransitionService:
         config.arcade_roms_db_downloader = config.arcade_roms_db_downloader or mame_getter or hbmame_getter
         if mame_getter and not hbmame_getter:
             config.hbmame_filter = True
+            self._logger.debug('config.hbmame_filter = True')
 
         for variable in gather_variable_declarations(settings_screen_model(), 'store'):
             if hasattr(config, variable):
-                store.generic_set(variable, getattr(config, variable))
+                value = getattr(config, variable)
+                store.generic_set(variable, value)
+                self._logger.debug(f'Added to store: {variable}')
 
     def _fill_config_with_ini_file(self, config: Config, ini_file, ini_group):
+        self._logger.debug(f'Opening {ini_file}')
+
         ini_content = self._ini_repository.read_old_ini_file(ini_file)
         db_ids = db_ids_by_model_variables()
 
@@ -106,12 +111,14 @@ class TransitionService:
                 string_value = description['default']
             else:
                 string_value = self._ensure_string_value_is_possible(string_value, description['values'])
+                self._logger.debug(f'{variable}={string_value}')
 
             value = dynamic_convert_string(string_value)
 
             setattr(config, variable, value)
             if variable in db_ids and value:
                 config.databases.add(db_ids[variable])
+                self._logger.debug(f'Added database: {db_ids[variable]}')
 
         return ini_content
 
