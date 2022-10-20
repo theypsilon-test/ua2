@@ -67,7 +67,7 @@ class IniRepository:
         contents = ''
         try:
             contents = self._file_system.read_file_contents(path)
-            parser = self._read_ini_contents(contents)
+            parser = read_ini_contents(contents)
         except Exception as e:
             self._logger.debug(f'Could not read Downloader INI file at: {path}')
             self._logger.debug(f'contents: {contents}')
@@ -83,7 +83,7 @@ class IniRepository:
         contents = ''
         try:
             contents = f'[default]\n{self._file_system.read_file_contents(path).lower()}'
-            parser = self._read_ini_contents(contents)
+            parser = read_ini_contents(contents)
         except Exception as e:
             self._logger.debug(f'Incorrect old INI format at: {path}')
             self._logger.debug(f'contents: {contents}')
@@ -91,12 +91,6 @@ class IniRepository:
             return IniParser({})
 
         return IniParser(parser['default'])
-
-    @staticmethod
-    def _read_ini_contents(contents: str):
-        parser = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
-        parser.read_string(contents)
-        return parser
 
     def downloader_ini_standard_path(self) -> str:
         if self._base_path is None:
@@ -282,3 +276,9 @@ def candidate_databases(config: Config) -> List[Tuple[str, Database]]:
 
 def active_databases(config: Config) -> list[Database]:
     return [db for var, db in candidate_databases(config) if db.db_id in config.databases]
+
+
+def read_ini_contents(contents: str):
+    parser = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
+    parser.read_string(contents)
+    return parser

@@ -25,10 +25,11 @@ from test.testing_objects import downloader_ini, update_arcade_organizer_ini, de
 from test.ui_model_test_utils import gather_used_effects
 from test.update_all_service_tester import SettingsScreenTester, UiStub, default_databases, local_store
 from update_all.config import Config
+from update_all.ini_repository import read_ini_contents
 from update_all.local_store import LocalStore
 from update_all.other import GenericProvider
 from test.fake_filesystem import FileSystemFactory
-from update_all.databases import AllDBs, DB_ID_NAMES_TXT
+from update_all.databases import AllDBs, DB_ID_NAMES_TXT, db_ids_to_model_variable_pairs
 from update_all.settings_screen import SettingsScreen
 from update_all.settings_screen_model import settings_screen_model
 from update_all.ui_model_utilities import gather_variable_declarations
@@ -148,6 +149,18 @@ class TestSettingsScreen(unittest.TestCase):
 
         self.assertEqual('  - downloader.ini', ui.get_value('needs_save_file_list'))
         self.assertEqual('true', ui.get_value('needs_save'))
+
+    def test_save___on_default_downloader_ini_with_all_dbs_selected___writes_big_downloader_ini_matching_amount_of_dbs(self):
+        sut, ui, fs = tester(files={downloader_ini: {'content': default_downloader_ini_content()}})
+
+        for variable, _ in db_ids_to_model_variable_pairs():
+            ui.set_value(variable, 'true')
+
+        sut.save(ui)
+
+        ini_sections = len(read_ini_contents(fs.files[downloader_ini.lower()]['content']).sections())
+        self.assertEqual(len(db_ids_to_model_variable_pairs()), ini_sections)
+        self.assertGreaterEqual(ini_sections, 10)
 
 
 def tester(files=None, config=None, store=None) -> Tuple[SettingsScreen, UiStub, FileSystemState]:
