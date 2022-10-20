@@ -21,8 +21,8 @@ from typing import Tuple
 from unittest.mock import MagicMock
 
 from test.file_system_tester_state import FileSystemState
+from test.testing_objects import downloader_ini, update_arcade_organizer_ini, default_downloader_ini_content
 from test.ui_model_test_utils import gather_used_effects
-from test.unit.test_update_all_service import downloader_ini
 from test.update_all_service_tester import SettingsScreenTester, UiStub, default_databases, local_store
 from update_all.config import Config
 from update_all.local_store import LocalStore
@@ -63,8 +63,7 @@ class TestSettingsScreen(unittest.TestCase):
     def test_calculate_needs_save___with_bug_names_txt_updater_disabled_downloader_and_matching_options___returns_no_changes(self):
         config = Config(download_beta_cores=True, databases=default_databases(sub=[DB_ID_NAMES_TXT], add=[AllDBs.BIOS.db_id, AllDBs.THEYPSILON_UNOFFICIAL_DISTRIBUTION.db_id, AllDBs.LLAPI_FOLDER.db_id, AllDBs.ARCADE_ROMS.db_id, AllDBs.ARCADE_OFFSET_FOLDER.db_id, AllDBs.TTY2OLED_FILES.db_id, AllDBs.I2C2OLED_FILES.db_id, AllDBs.MISTERSAM_FILES.db_id]))
         sut, ui, _ = tester(files={
-            downloader_ini: {'content': Path(
-                'test/fixtures/downloader_ini/bug_names_txt_updater_disabled_downloader.ini').read_text()}
+            downloader_ini: {'content': Path('test/fixtures/downloader_ini/bug_names_txt_updater_disabled_downloader.ini').read_text()}
         }, config=config)
         sut.calculate_needs_save(ui)
         self.assertEqual('', ui.get_value('needs_save_file_list'))
@@ -105,6 +104,42 @@ class TestSettingsScreen(unittest.TestCase):
         self.assertGreaterEqual(len(initialized_effects), 5)
         self.assertEqual(used_effects, initialized_effects)
 
+    def test_calculate_needs_save___on_complete_ao_with_arcade_organizer_changes___returns_arcade_organizer_changes(self):
+        sut, ui, fs = tester(files={
+            update_arcade_organizer_ini: {'content': Path('test/fixtures/update_arcade-organizer_ini/complete_ao.ini').read_text()}
+        })
+
+        ui.set_value('arcade_organizer', 'true')
+        ui.set_value('arcade_organizer_topdir', 'core')
+
+        sut.calculate_needs_save(ui)
+
+        self.assertIn(Path(update_arcade_organizer_ini).name, ui.get_value('needs_save_file_list'))
+        self.assertEqual('true', ui.get_value('needs_save'))
+
+    def test_save___on_complete_ao_with_arcade_organizer_changes_but_deactivated___writes_expected_arcade_organizer_ini(self):
+        sut, ui, fs = tester(files={
+            update_arcade_organizer_ini: {'content': Path('test/fixtures/update_arcade-organizer_ini/complete_ao.ini').read_text()}
+        }, config=Config(arcade_organizer=False))
+
+        ui.set_value('arcade_organizer_topdir', 'core')
+
+        sut.save(ui)
+
+        self.assertEqual(Path('test/fixtures/update_arcade-organizer_ini/disabled_topdir_core_ao.ini').read_text(), fs.files[update_arcade_organizer_ini.lower()]['content'])
+
+
+    def test_save___on_complete_ao_with_arcade_organizer_changes___writes_expected_arcade_organizer_ini(self):
+        sut, ui, fs = tester(files={
+            update_arcade_organizer_ini: {'content': Path('test/fixtures/update_arcade-organizer_ini/complete_ao.ini').read_text()}
+        })
+
+        ui.set_value('arcade_organizer_topdir', 'core')
+
+        sut.save(ui)
+
+        self.assertEqual(Path('test/fixtures/update_arcade-organizer_ini/enabled_topdir_core_ao.ini').read_text(), fs.files[update_arcade_organizer_ini.lower()]['content'])
+
 
 def tester(files=None, config=None, store=None) -> Tuple[SettingsScreen, UiStub, FileSystemState]:
     ui = UiStub()
@@ -118,6 +153,3 @@ def tester(files=None, config=None, store=None) -> Tuple[SettingsScreen, UiStub,
 
     return settings_screen, ui, state
 
-
-def default_downloader_ini_content():
-    return Path('test/fixtures/downloader_ini/default_downloader.ini').read_text()

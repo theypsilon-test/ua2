@@ -206,6 +206,7 @@ class SettingsScreen(UiApplication):
             new_value = ui.get_value(variable).lower()
             if old_value != new_value:
                 needs_save_file_set.add("update_arcade-organizer.ini")
+                break
 
         local_store = self._store_provider.get()
         local_store.set_theme(ui.get_value('ui_theme'))
@@ -228,8 +229,31 @@ class SettingsScreen(UiApplication):
         self._copy_ui_options_to_current_config(ui)
 
         config = self._config_provider.get()
-        if config.arcade_organizer != Config().arcade_organizer:
-            self._file_system.make_dirs_parent(ARCADE_ORGANIZER_INI)
+        old_ao_ini = self._ini_repository.get_arcade_organizer_ini()
+        new_ao_ini = {}
+
+        ao_needs_save = False
+        for variable, description in gather_variable_declarations(settings_screen_model()).items():
+            if not variable.startswith('arcade_organizer'):
+                continue
+            rename = variable.replace('arcade_organizer_', '')
+            default = description['default']
+            value = ui.get_value(variable)
+
+            if value != default:
+                new_ao_ini[rename] = value
+
+            if ao_needs_save:
+                continue
+
+            old_value = old_ao_ini.get_string(rename, description['default']).lower()
+            new_value = value.lower()
+            if old_value != new_value:
+                ao_needs_save = True
+
+        if ao_needs_save:
+            self._ini_repository.write_arcade_organizer(new_ao_ini)
+        elif config.arcade_organizer != Config().arcade_organizer:
             self._ini_repository.write_arcade_organizer_active_at_arcade_organizer_ini(config)
 
         self._ini_repository.write_downloader_ini(config)

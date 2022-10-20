@@ -16,10 +16,9 @@
 # You can download the latest version of this tool from:
 # https://github.com/theypsilon-test/ua2
 from pathlib import Path
-from typing import Set, List
 
+from test.testing_objects import downloader_ini
 from update_all.config import Config
-from update_all.constants import DOWNLOADER_INI_STANDARD_PATH, MEDIA_FAT
 from update_all.databases import AllDBs, DB_ID_DISTRIBUTION_MISTER, DB_ID_NAMES_TXT
 from update_all.update_all_service import UpdateAllService
 from test.fake_filesystem import FileSystemFactory
@@ -33,9 +32,6 @@ def tester(files=None, folders=None, config: Config = None):
     state = FileSystemState(files=files, folders=folders)
     config_reader_tester = ConfigReaderTester(config=config or Config())
     return UpdateAllServiceTester(config_reader=config_reader_tester, file_system=FileSystemFactory(state=state).create_for_system_scope()), state
-
-
-downloader_ini = f'{MEDIA_FAT}/{DOWNLOADER_INI_STANDARD_PATH}'
 
 
 class TestUpdateAllService(unittest.TestCase):
@@ -57,7 +53,7 @@ class TestUpdateAllService(unittest.TestCase):
             downloader_ini: {'content': Path('test/fixtures/downloader_ini/dirty_downloader.ini').read_text()}
         }, config=config)
         sut.ini_repository.write_downloader_ini(config)
-        #sut.full_run()
+        sut.full_run()
         self.assertEqual(Path('test/fixtures/downloader_ini/changed_downloader.ini').read_text(), fs.files[downloader_ini]['content'])
 
     def test_write_downloader_ini___over_bug_duplications_downloader_ini_after_changing_some_options___writes_changed_downloader(self):
@@ -134,8 +130,7 @@ class TestUpdateAllService(unittest.TestCase):
     def test_write_downloader_ini__removes_hbmame_from_mister_filtered_roms_db___restores_previous_filters(self):
         config = Config(databases=default_databases(add=[AllDBs.ARCADE_ROMS.db_id]), hbmame_filter=False)
         sut, fs = tester(files={
-            downloader_ini: {'content': Path(
-                'test/fixtures/downloader_ini/mister_filtered_plus_hbmame_downloader.ini').read_text()}
+            downloader_ini: {'content': Path('test/fixtures/downloader_ini/mister_filtered_plus_hbmame_downloader.ini').read_text()}
         }, config=config)
         sut.ini_repository.write_downloader_ini(config)
         sut.full_run()
@@ -153,8 +148,7 @@ class TestUpdateAllService(unittest.TestCase):
     def test_write_downloader_ini__removes_hbmame_from_heavily_filtered_roms_db___restores_previous_filters(self):
         config = Config(databases=default_databases(add=[AllDBs.ARCADE_ROMS.db_id]), hbmame_filter=False)
         sut, fs = tester(files={
-            downloader_ini: {'content': Path(
-                'test/fixtures/downloader_ini/heavily_filtered_plus_hbmame_downloader.ini').read_text()}
+            downloader_ini: {'content': Path('test/fixtures/downloader_ini/heavily_filtered_plus_hbmame_downloader.ini').read_text()}
         }, config=config)
         sut.ini_repository.write_downloader_ini(config)
         sut.full_run()

@@ -20,16 +20,10 @@ from pathlib import Path
 
 from test.fake_filesystem import FileSystemFactory
 from test.file_system_tester_state import FileSystemState
+from test.testing_objects import downloader_ini, update_all_ini, update_arcade_organizer_ini, update_names_txt_ini, \
+    update_jtcores_ini
 from test.update_all_service_tester import TransitionServiceTester, local_store
 from update_all.config import Config
-from update_all.constants import MEDIA_FAT, DOWNLOADER_INI_STANDARD_PATH, FILE_update_all_ini, \
-    FILE_update_names_txt_ini, FILE_update_jtcores_ini, ARCADE_ORGANIZER_INI
-
-downloader_ini = f'{MEDIA_FAT}/{DOWNLOADER_INI_STANDARD_PATH}'
-update_all_ini = f'{MEDIA_FAT}/{FILE_update_all_ini}'
-update_names_txt_ini = f'{MEDIA_FAT}/{FILE_update_names_txt_ini}'
-update_jtcores_ini = f'{MEDIA_FAT}/{FILE_update_jtcores_ini}'
-update_arcade_organizer_ini = f'{MEDIA_FAT}/{ARCADE_ORGANIZER_INI}'
 
 
 def test_transition_from_update_all_1(files=None):
