@@ -385,7 +385,7 @@ def settings_screen_model(): return {
         },
         "misc_menu": {
             "type": "dialog_sub_menu",
-            "header": "Misc | Other Settings",
+            "header": "Misc Menu | Other Settings",
             "variables": {
                 "autoreboot": {"group": ["ua_ini", "store"], "default": "true", "values": ["false", "true"]},
                 "wait_time_for_reading": {"group": ["ua_ini", "store"], "default": "2", "values": ["2", "0", "30"]},
