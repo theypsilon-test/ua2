@@ -17,7 +17,7 @@
 # https://github.com/theypsilon-test/ua2
 import abc
 import curses
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from update_all.ui_engine import EffectChain, ProcessKeyResult, UiSection, Interpolator, UiSectionFactory
 
@@ -33,6 +33,9 @@ class UiDialogDrawer(abc.ABC):
         """"Adds menu entry"""
 
     def add_action(self, action, is_selected=False):
+        """"Adds action"""
+
+    def add_inactive_action(self, length: int, is_selected=False):
         """"Adds action"""
 
     def paint(self) -> int:
@@ -157,7 +160,7 @@ class DialogSectionFactory(UiSectionFactory):
         self._dialog_drawer_factory = dialog_drawer_factory
 
     def create_ui_section(self, ui_type: str, data: Dict[str, Any], interpolator: Interpolator) -> UiSection:
-        state = _NavigationState(len(data.get('entries', {})), len(data.get('actions', {})))
+        state = _NavigationState(self._count_entries(data), len(data.get('actions', {})))
         drawer = self._dialog_drawer_factory.create_ui_dialog_drawer(interpolator)
         if ui_type == 'menu':
             return _Menu(drawer, data, state)
@@ -170,6 +173,15 @@ class DialogSectionFactory(UiSectionFactory):
         else:
             raise ValueError(f'Not implemented ui_type: {ui_type}')
 
+    @staticmethod
+    def _count_entries(data: Dict[str, Any]) -> int:
+        count = 0
+        for entry in data.get('entries', []):
+            if len(entry) == 0:
+                continue
+            count += 1
+        return count
+
 
 class _Menu(UiSection):
     def __init__(self, drawer: UiDialogDrawer, data: Dict[str, Any], state: _NavigationState):
@@ -177,9 +189,20 @@ class _Menu(UiSection):
         self._data = data
         self._state = state
         self._hotkeys = {}
-        for index, entry in enumerate(self._data['entries']):
+        self._separators = {}
+        entries = []
+        for entry in self._data['entries']:
+            target_index = len(entries)
+            if len(entry) == 0:
+                self._separators[target_index] = self._separators.get(target_index, 0)
+                self._separators[target_index] += 1
+                continue
+
             first_letter = ord(entry['title'][0:1].lower())
-            self._hotkeys[first_letter] = index
+            self._hotkeys[first_letter] = target_index
+            entries.append(entry)
+
+        self._data['entries'] = entries
 
     def process_key(self) -> Optional[ProcessKeyResult]:
         self._drawer.start(self._data)
@@ -192,11 +215,21 @@ class _Menu(UiSection):
         if any_text:
             self._drawer.add_text_line(' ')
 
+        entry_index = 0
         for index, entry in enumerate(self._data['entries']):
-            self._drawer.add_menu_entry(entry['title'], entry.get('description', ''), index == self._state.position())
+            for _ in range(self._separators.get(index, 0)):
+                self._drawer.add_menu_entry(' ', '', False)
+
+            self._drawer.add_menu_entry(entry['title'], entry.get('description', ''), entry_index == self._state.position())
+            entry_index += 1
 
         for index, action in enumerate(self._data['actions']):
-            self._drawer.add_action(action['title'], index == self._state.lateral_position())
+            title = action['title']
+            is_selected = index == self._state.lateral_position()
+            if action['type'] == 'symbol' and action['symbol'] not in self._data['entries'][self._state.position()]['actions']:
+                self._drawer.add_inactive_action(len(title), is_selected)
+            else:
+                self._drawer.add_action(title, is_selected)
 
         key = self._drawer.paint()
         if key == curses.KEY_UP:
@@ -221,13 +254,18 @@ class _Menu(UiSection):
         self._drawer.clear()
 
 
-def _make_action_effect_chain(data: Dict[str, Any], state: _NavigationState) -> EffectChain:
+def _make_action_effect_chain(data: Dict[str, Any], state: _NavigationState) -> Optional[EffectChain]:
     props = data['actions'][state.lateral_position()]
     if props['type'] == 'symbol':
         selection = data['entries'][state.position()]
         if 'actions' not in selection:
             raise ValueError('Selection does not contain nested actions that can be linked to symbol.')
-        return EffectChain(selection['actions'][props['symbol']])
+
+        symbol = props['symbol']
+        if symbol not in selection['actions']:
+            return None
+
+        return EffectChain(selection['actions'][symbol])
     elif props['type'] == 'fixed':
         return EffectChain(props['fixed'])
     else:

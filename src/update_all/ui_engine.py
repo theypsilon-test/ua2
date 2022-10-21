@@ -217,7 +217,9 @@ class _UiSectionProcessor:
     def process(self):
         key_result = self._ui_section.process_key()
 
-        if isinstance(key_result, EffectChain):
+        if key_result is None:
+            return None
+        elif isinstance(key_result, EffectChain):
             return self._effect_resolver.resolve_effect_chain(key_result.chain)
         elif key_result in self._hotkeys:
             return self._effect_resolver.resolve_effect_chain(self._hotkeys[key_result])

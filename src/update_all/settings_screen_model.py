@@ -99,7 +99,7 @@ def settings_screen_model(): return {
                     "description": "{names_txt_updater:enabled} Better core names in the menus",
                     "actions": {
                         "ok": [{"type": "navigate", "target": "names_txt_menu"}],
-                        "toggle": _try_update_names_txt(),
+                        "toggle": _try_toggle_update_names_txt(),
                     }
                 },
                 {
@@ -126,44 +126,136 @@ def settings_screen_model(): return {
                         "toggle": [{"type": "rotate_variable", "target": "arcade_organizer"}],
                     }
                 },
+                {}, # separator
                 {
                     "title": "7 Unofficial Cores",
                     "description": "atrac17 Cores, LLAPI Forks, etc...",
-                    "actions": {
-                        "ok": [{"type": "navigate", "target": "unofficial_cores_menu"}],
-                        "toggle": [{"type": "navigate", "target": "unofficial_cores_menu"}],
-                    }
+                    "actions": {"ok": [{"type": "navigate", "target": "unofficial_cores_menu"}]}
                 },
                 {
                     "title": "8 Unofficial Scripts",
                     "description": "MiSTerSAM, MiSTer Extensions (wizzo), *-2oled",
-                    "actions": {
-                        "ok": [{"type": "navigate", "target": "unofficial_scripts_menu"}],
-                        "toggle":  [{"type": "navigate", "target": "unofficial_scripts_menu"}],
-                    }
+                    "actions": {"ok": [{"type": "navigate", "target": "unofficial_scripts_menu"}]}
                 },
                 {
                     "title": "9 Misc Menu",
                     "description": "Other Settings",
-                    "actions": {
-                        "ok": [{"type": "navigate", "target": "misc_menu"}],
-                        "toggle": [{"type": "navigate", "target": "misc_menu"}],
-                    }
+                    "actions": {"ok": [{"type": "navigate", "target": "misc_menu"}]}
                 },
                 {
                     "title": "0 Patrons Menu",
-                    "description": "Last updated: 2022.10.21",
-                    "actions": {"ok": _try_access_patrons_menu(), "toggle": _try_access_patrons_menu()}
+                    "description": "Taito Spinner, Themes, etc... [2022.10.21]",
+                    "actions": {"ok": [
+                        {"type": "calculate_has_right_available_code"},
+                        {
+                            "type": "condition",
+                            "variable": "has_right_available_code",
+                            "true": [{"type": "navigate", "target": "patrons_menu"}],
+                            "false": [{
+                                "ui": "message",
+                                "header": "Patreon Key not found!",
+                                "text": [
+                                    "This menu contains exclusive content for patrons only.",
+                                    " ",
+                                    "Get your @'Patreon Key'@ file from ~patreon.com/theypsilon~ and put it on the @Scripts@ folder to unlock early access and experimental options.",
+                                    " ",
+                                    "Thank you so much for your support!",
+                                ],
+                                "effects": [{
+                                    "ui": "message",
+                                    "header": "Support MiSTer",
+                                    "text": [
+                                        "Consider supporting @Alexey Melnikov@ aka @'Sorgelig'@ for his invaluable work as the main maintainer of the MiSTer Project: ~patreon.com/FPGAMiSTer~",
+                                        " ",
+                                        "Other key contributors:",
+                                        " ·@Ace@ ~ko-fi.com/ace9921~ - Arcade cores",
+                                        " ·@Artemio@ ~patreon.com/aurbina~ - Testing tools",
+                                        " ·@atrac17@ ~patreon.com/atrac17~ - MRAs & Modelines",
+                                        " ·@Blackwine@ ~patreon.com/blackwine~ - Arcade cores",
+                                        " ·@FPGAZumSpass@ ~patreon.com/FPGAZumSpass~ - Console & Computer cores",
+                                        " ·@d0pefish@ ~ko-fi.com/d0pefish~ - mt32pi author",
+                                        " ·@JOTEGO@ ~patreon.com/jotego~ - Arcade & Console cores",
+                                        " ·@MiSTer-X@ ~patreon.com/MrX_8B~ - Arcade cores",
+                                        " ·@Nullobject@ ~patreon.com/nullobject~ - Arcade cores",
+                                        " ·@Srg320@ ~patreon.com/srg320~ - Console cores",
+                                        " ·@theypsilon@ ~patreon.com/theypsilon~ - Downloader, Update All & Other Tools",
+                                        " ",
+                                        "Your favorite open-source projects require your support to keep evolving!"
+                                    ]
+                                }],
+                            }]
+                        }
+                    ]}
                 },
+                {},  # separator
                 {
                     "title": "SAVE",
                     "description": "Writes all changes to the INI file/s",
-                    "actions": {"ok": _try_save(), "toggle": _try_save()}
+                    "actions": {"ok": [
+                        {"type": "calculate_needs_save"},
+                        {
+                            "type": "condition",
+                            "variable": "needs_save",
+                            "true": [{
+                                "ui": "confirm",
+                                "header": "Are you sure?",
+                                "text": [
+                                    "Following files will be overwritten with your changes:",
+                                    "{needs_save_file_list}"
+                                ],
+                                "preselected_action": "No",
+                                "actions": [
+                                    {
+                                        "title": "Yes",
+                                        "type": "fixed",
+                                        "fixed": [{"type": "save"}, {"type": "navigate", "target": "back"}]
+                                    },
+                                    {
+                                        "title": "No",
+                                        "type": "fixed",
+                                        "fixed": [{"type": "navigate", "target": "back"}]
+                                    }
+                                ],
+                            }],
+                            "false": [{"ui": "message", "text": ["No changes to save"]}]
+                        }
+                    ]}
                 },
                 {
                     "title": "EXIT and RUN UPDATE ALL",
                     "description": "",
-                    "actions": {"ok": _try_exit(),  "toggle": _try_exit()}
+                    "actions": {"ok": [
+                        {"type": "calculate_needs_save"},
+                        {
+                            "type": "condition",
+                            "variable": "needs_save",
+                            "true": [{
+                                "ui": "confirm",
+                                "header": "INI file/s were not saved",
+                                "text": [
+                                    "Do you really want to run Update All without saving your changes?",
+                                    "(current changes will apply only for this run)",
+                                ],
+                                "actions": [
+                                    {
+                                        "title": "Yes",
+                                        "type": "fixed",
+                                        "fixed": [
+                                            {"type": "prepare_exit_dont_save_and_run"},
+                                            {"type": "navigate", "target": "exit_and_run"}
+                                        ]
+                                    },
+                                    {
+                                        "title": "No",
+                                        "type": "fixed",
+                                        "fixed": [{"type": "navigate", "target": "back"}]
+                                    }
+                                ],
+                            }],
+                            "false": [{"type": "navigate", "target": "exit_and_run"}]
+                        },
+                        {"type": "navigate", "target": "exit_and_run"}
+                    ]}
                 }
             ]
         },
@@ -261,7 +353,7 @@ def settings_screen_model(): return {
                 {
                     "title": "1 {names_txt_updater:do_enable}",
                     "description": "Activated: {names_txt_updater:yesno}",
-                    "actions": {"ok": _try_update_names_txt()}
+                    "actions": {"ok": _try_toggle_update_names_txt()}
                 },
                 {
                     "title": "2 Region",
@@ -983,37 +1075,6 @@ def _try_access_patrons_menu(): return [
 ]
 
 
-def _try_save(): return [
-    {"type": "calculate_needs_save"},
-    {
-        "type": "condition",
-        "variable": "needs_save",
-        "true": [{
-            "ui": "confirm",
-            "header": "Are you sure?",
-            "text": [
-                "Following files will be overwritten with your changes:",
-                "{needs_save_file_list}"
-            ],
-            "preselected_action": "No",
-            "actions": [
-                {
-                    "title": "Yes",
-                    "type": "fixed",
-                    "fixed": [{"type": "save"}, {"type": "navigate", "target": "back"}]
-                },
-                {
-                    "title": "No",
-                    "type": "fixed",
-                    "fixed": [{"type": "navigate", "target": "back"}]
-                }
-            ],
-        }],
-        "false": [{"ui": "message", "text": ["No changes to save"]}]
-    }
-]
-
-
 def _try_abort(): return [
     {"type": "calculate_needs_save"},
     {
@@ -1033,41 +1094,7 @@ def _try_abort(): return [
 ]
 
 
-def _try_exit(): return [
-    {"type": "calculate_needs_save"},
-    {
-        "type": "condition",
-        "variable": "needs_save",
-        "true": [{
-            "ui": "confirm",
-            "header": "INI file/s were not saved",
-            "text": [
-                "Do you really want to run Update All without saving your changes?",
-                "(current changes will apply only for this run)",
-            ],
-            "actions": [
-                {
-                    "title": "Yes",
-                    "type": "fixed",
-                    "fixed": [
-                        {"type": "prepare_exit_dont_save_and_run"},
-                        {"type": "navigate", "target": "exit_and_run"}
-                    ]
-                },
-                {
-                    "title": "No",
-                    "type": "fixed",
-                    "fixed": [{"type": "navigate", "target": "back"}]
-                }
-            ],
-        }],
-        "false": [{"type": "navigate", "target": "exit_and_run"}]
-    },
-    {"type": "navigate", "target": "exit_and_run"}
-]
-
-
-def _try_update_names_txt(): return [
+def _try_toggle_update_names_txt(): return [
     {
         "type": "condition",
         "variable": "names_txt_updater",

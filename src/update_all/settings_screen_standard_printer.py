@@ -360,6 +360,9 @@ class _Drawer(UiDialogDrawer):
     def add_action(self, action, is_selected=False):
         self._actions.append((f'<{self._interpolator.interpolate(action)}>', is_selected))
 
+    def add_inactive_action(self, length: int, is_selected=False):
+        self._actions.append((' ' * (length + 2), is_selected))
+
     def paint(self) -> int:
         total_lines = len(self._text_lines) + len(self._menu_entries) + 1
         max_length_header = len(self._header)
