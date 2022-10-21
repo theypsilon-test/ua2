@@ -454,7 +454,7 @@ def settings_screen_model(): return {
             },
             "entries": [
                 {
-                    "title": "1 MiSTer SAM files",
+                    "title": "1 MiSTer Super Attract Mode",
                     "description": "{mistersam_files_downloader:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "mistersam_files_downloader"}]}
                 },
@@ -464,12 +464,12 @@ def settings_screen_model(): return {
                     "actions": {"ok": [{"type": "rotate_variable", "target": "mrext/all"}]}
                 },
                 {
-                    "title": "3 tty2oled files",
+                    "title": "3 tty2oled Add-on script",
                     "description": "{tty2oled_files_downloader:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "tty2oled_files_downloader"}]}
                 },
                 {
-                    "title": "4 i2c2oled files",
+                    "title": "4 i2c2oled Add-on script",
                     "description": "{i2c2oled_files_downloader:yesno}",
                     "actions": {"ok": [{"type": "rotate_variable", "target": "i2c2oled_files_downloader"}]}
                 }
