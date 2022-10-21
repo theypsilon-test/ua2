@@ -78,6 +78,10 @@ class SettingsScreen(UiApplication):
         for variable, description in ao_variables.items():
             rename = variable.replace('arcade_organizer_', '')
             value = arcade_organizer_ini.get_string(rename, description['default'])
+            for possible_value in description['values']:
+                if possible_value.lower() == value.lower():
+                    value = possible_value
+                    break
             ui.set_value(variable, value)
 
         local_store = self._store_provider.get()
